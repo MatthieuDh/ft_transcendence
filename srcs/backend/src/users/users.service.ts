@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService} from '../prisma/prisma.service'
@@ -90,7 +90,37 @@ export class UsersService {
       where: { username }
     });
   }
+
+  async promote(username: string) {
+    return this.prisma.user.update({
+      where: { username },
+      data: { role: 'ADMIN'},
+      select: {
+        id: true,
+        username: true,
+        role: true,
+      }
+    });
+  }
+
+  async demote(username: string, adminName: string) {
+    if (username == adminName) {
+      throw new ForbiddenException('You cannot demote yourself');
+    }
+    const adminCount = await this.prisma.count({
+      where: {role: 'ADMIN'}
+    });
+    if (adminCount <= 1){
+      throw new ForbiddenException('Cannot demote the last admin');
+    }
+    return this.prisma.user.update({
+      where: { username },
+      data: { role: 'USER' },
+      select: {
+        id: true,
+        username: true,
+        role: true,
+      }
+    });
+  }
 }
-
-
-
