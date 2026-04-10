@@ -7,6 +7,7 @@ import * as bcrypt from 'bcrypt';
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
+
   async create(createUserDto: CreateUserDto) {
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
     return this.prisma.user.create({
@@ -17,7 +18,7 @@ export class UsersService {
       select:{
         id: true,
         username: true,
-        role: true,
+        globalRole: true, // Aangepast van role naar globalRole
         avatar: true,
         createdAt: true,
       }
@@ -29,7 +30,7 @@ export class UsersService {
       select: {
         id: true,
         username: true,
-        role: true,
+        globalRole: true, // Aangepast van role naar globalRole
         avatar: true,
         createdAt: true,
         updatedAt: true,
@@ -50,13 +51,13 @@ export class UsersService {
   }
 
   async update(id: number, updateUserDto: UpdateUserDto) {
-    return this.prisma.update({
+    return this.prisma.user.update({
       where: { id },
-      data: UpdateUserDto,
+      data: updateUserDto, // Dit was UpdateUserDto (hoofdletter), moet kleine letter zijn
       select: {
         id: true,
         username: true,
-        role: true,
+        globalRole: true, // Aangepast van role naar globalRole
         avatar: true,
         createdAt: true,
         updatedAt: true,
@@ -64,14 +65,14 @@ export class UsersService {
     });
   }
 
-    async updateByName(username: string, updateUserDto: UpdateUserDto) {
-    return this.prisma.update({
+  async updateByName(username: string, updateUserDto: UpdateUserDto) {
+    return this.prisma.user.update({ // Aangepast van prisma.update naar prisma.user.update
       where: { username },
-      data: UpdateUserDto,
+      data: updateUserDto, // Dit was UpdateUserDto (hoofdletter), moet kleine letter zijn
       select: {
         id: true,
         username: true,
-        role: true,
+        globalRole: true, // Aangepast van role naar globalRole
         avatar: true,
         createdAt: true,
         updatedAt: true,
@@ -85,7 +86,7 @@ export class UsersService {
     });
   }
 
-    async removeByName(username: string) {
+  async removeByName(username: string) {
     return this.prisma.user.delete({
       where: { username }
     });
@@ -94,11 +95,11 @@ export class UsersService {
   async promote(username: string) {
     return this.prisma.user.update({
       where: { username },
-      data: { role: 'ADMIN'},
+      data: { globalRole: 'ADMIN'}, // Aangepast van role naar globalRole
       select: {
         id: true,
         username: true,
-        role: true,
+        globalRole: true, // Aangepast van role naar globalRole
       }
     });
   }
@@ -107,19 +108,19 @@ export class UsersService {
     if (username == adminName) {
       throw new ForbiddenException('You cannot demote yourself');
     }
-    const adminCount = await this.prisma.count({
-      where: {role: 'ADMIN'}
+    const adminCount = await this.prisma.user.count({
+      where: {globalRole: 'ADMIN'} // Aangepast van role naar globalRole
     });
     if (adminCount <= 1){
       throw new ForbiddenException('Cannot demote the last admin');
     }
     return this.prisma.user.update({
       where: { username },
-      data: { role: 'USER' },
+      data: { globalRole: 'USER' }, // Aangepast van role naar globalRole
       select: {
         id: true,
         username: true,
-        role: true,
+        globalRole: true, // Aangepast van role naar globalRole
       }
     });
   }
