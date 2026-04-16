@@ -3,6 +3,7 @@ import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { Request } from '@nestjs/common';
 
 @ApiBearerAuth()
 @UseGuards(AuthGuard)
@@ -15,9 +16,10 @@ export class TasksController {
     return this.tasksService.create(createTaskDto);
   }
 
+
   @Get()
-  findAll() {
-    return this.tasksService.findAll();
+  findAll(@Request() req) {
+    return this.tasksService.findAll(req.user);
   }
 
   @Get(':id')
