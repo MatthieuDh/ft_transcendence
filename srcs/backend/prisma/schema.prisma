@@ -32,7 +32,7 @@ model User {
   createdAt          DateTime        @default(now())
   updatedAt          DateTime        @updatedAt
   projectMemberships ProjectMember[]
-  tasks              Task[]
+  tasks              Task[]          @relation("TaskAssignees")
 }
 
 model Project {
@@ -66,6 +66,5 @@ model Task {
   updatedAt   DateTime   @updatedAt
   projectId   Int
   project     Project    @relation(fields: [projectId], references: [id])
-  assigneeId  Int?
-  assignee    User?      @relation(fields: [assigneeId], references: [id])
+  assignees   User[]     @relation("TaskAssignees")
 }
