@@ -1,9 +1,21 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request, ForbiddenException } from '@nestjs/common';
+import { 
+  Controller, 
+  Get, 
+  Post, 
+  Body, 
+  Patch, 
+  Param, 
+  Delete, 
+  UseGuards, 
+  Request 
+} from '@nestjs/common';
+import { ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { AuthGuard } from '../auth/auth.guard';
-import { ApiBearerAuth } from '@nestjs/swagger';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @Controller('users')
 export class UsersController {
@@ -29,35 +41,27 @@ export class UsersController {
     return this.usersService.update(+id, updateUserDto);
   }
 
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard)
-  @Patch('promote/:username')
-  promote(@Param('username') username: string, @Request() req) {
-    const currentUser = req.user;
-    
-    if (currentUser.role !== 'ADMIN') {
-      throw new ForbiddenException('Nice try, but only admins can promote users!');
-    }
-    
-    return this.usersService.promote(username);
-  }
-
-  // -------------------------------
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard)
-  @Patch('demote/:username')
-  demote(@Param('username') username: string, @Request() req) {
-    const currentUser = req.user;
-    
-    if (currentUser.role !== 'ADMIN') {
-      throw new ForbiddenException('Nice try, but only admins can demote users!');
-    }
-    
-    return this.usersService.demote(username, currentUser.username);
-  }
-
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.usersService.remove(+id);
+  }
+
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard, RolesGuard) // <-- Check if the user is logged in first, THEN check their role
+  @Roles('ADMIN')                   // <-- The magic tag! Only ADMINs can access this route
+  @Patch('promote/:username')
+  promote(@Param('username') username: string) {
+    // If the execution reaches this point, we are 100% sure the user is an ADMIN.
+    return this.usersService.promote(username);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Patch('demote/:username')
+  demote(@Param('username') username: string, @Request() req) {
+    // to the service (e.g., to prevent an admin from demoting themselves).
+    return this.usersService.demote(username, req.user.username);
   }
 }
