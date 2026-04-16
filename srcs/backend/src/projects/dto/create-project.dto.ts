@@ -3,7 +3,7 @@ import { IsString, IsOptional, MinLength } from 'class-validator';
 export class CreateProjectDto {
   @IsString()
   @MinLength(3)
-  name: string;
+  name!: string;
 
   @IsString()
   @IsOptional()

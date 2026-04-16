@@ -3,7 +3,7 @@ import { IsString, IsNotEmpty, IsInt, IsOptional, IsArray } from 'class-validato
 export class CreateTaskDto {
   @IsString()
   @IsNotEmpty()
-  title: string;
+  title!: string;
 
   @IsString()
   @IsOptional()
@@ -11,7 +11,7 @@ export class CreateTaskDto {
 
   @IsInt()
   @IsNotEmpty()
-  projectId: number;
+  projectId!: number;
 
   @IsArray()
   @IsOptional()

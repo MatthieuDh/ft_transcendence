@@ -2,11 +2,11 @@ import { IsString, MinLength } from 'class-validator';
 
 export class CreateUserDto {
     @IsString()
-    username: string;
+    username!: string;
 
     @IsString()
     @MinLength(8)
-    password: string;
+    password!: string;
 }
 
 export class UpdateUserDto{
