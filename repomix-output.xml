@@ -48,6 +48,14 @@ srcs/
           migration.sql
         20260416102710_init/
           migration.sql
+        20260417114905_add_deadlines/
+          migration.sql
+        20260417122843_init/
+          migration.sql
+        20260417142029_add_deadline/
+          migration.sql
+        20260417185746_init/
+          migration.sql
         migration_lock.toml
       schema.prisma
     src/
@@ -55,6 +63,7 @@ srcs/
         decorators/
           roles.decorator.ts
         dto/
+          register.dto.ts
           sign-in.dto.ts
         guards/
           roles.guard.ts
@@ -64,6 +73,10 @@ srcs/
         auth.module.ts
         auth.service.spec.ts
         auth.service.ts
+      notifications/
+        notifications.module.ts
+        notifications.service.spec.ts
+        notifications.service.ts
       prisma/
         prisma.module.ts
         prisma.service.ts
@@ -123,11 +136,275 @@ srcs/
 .gitignore
 docker-compose.yml
 Makefile
+package.json
 README.md
 </directory_structure>
 
 <files>
 This section contains the contents of the repository's files.
+
+<file path="srcs/backend/prisma/migrations/20260417122843_init/migration.sql">
+-- AlterTable
+ALTER TABLE "Project" ADD COLUMN     "deadlineNotified" BOOLEAN NOT NULL DEFAULT false;
+
+-- AlterTable
+ALTER TABLE "Task" ADD COLUMN     "deadlineNotified" BOOLEAN NOT NULL DEFAULT false;
+</file>
+
+<file path="srcs/backend/prisma/migrations/20260417142029_add_deadline/migration.sql">
+/*
+  Warnings:
+
+  - A unique constraint covering the columns `[email]` on the table `User` will be added. If there are existing duplicate values, this will fail.
+
+*/
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN     "email" TEXT;
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+</file>
+
+<file path="srcs/backend/prisma/migrations/20260417185746_init/migration.sql">
+-- AlterTable
+ALTER TABLE "Project" ADD COLUMN     "status" TEXT NOT NULL DEFAULT 'TODO';
+</file>
+
+<file path="srcs/backend/src/auth/dto/register.dto.ts">
+import { IsEmail, IsString, MinLength } from 'class-validator';
+
+export class RegisterDto {
+  @IsString()
+  username: string;
+
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @MinLength(6)
+  password: string;
+}
+</file>
+
+<file path="srcs/backend/src/notifications/notifications.module.ts">
+import { Module } from '@nestjs/common';
+import { MailerModule } from '@nestjs-modules/mailer';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { NotificationsService } from './notifications.service';
+import { PrismaModule } from '../prisma/prisma.module';
+
+@Module({
+  imports: [
+    PrismaModule,
+
+    MailerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        transport: {
+          host: configService.get<string>('SMTP_HOST'),
+          port: configService.get<number>('SMTP_PORT'),
+          secure: true,
+          auth: {
+            user: configService.get<string>('SMTP_USER'),
+            pass: configService.get<string>('SMTP_PASS'),
+          },
+        },
+        defaults: {
+          from: `"Transcendence Bot" <${configService.get<string>('SMTP_USER')}>`,
+        },
+      }),
+    }),
+  ],
+  providers: [NotificationsService],
+})
+export class NotificationsModule {}
+</file>
+
+<file path="srcs/backend/src/notifications/notifications.service.spec.ts">
+import { Test, TestingModule } from '@nestjs/testing';
+import { NotificationsService } from './notifications.service';
+
+describe('NotificationsService', () => {
+  let service: NotificationsService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [NotificationsService],
+    }).compile();
+
+    service = module.get<NotificationsService>(NotificationsService);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+});
+</file>
+
+<file path="srcs/backend/src/notifications/notifications.service.ts">
+import { Injectable, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { MailerService } from '@nestjs-modules/mailer';
+import { PrismaService } from '../prisma/prisma.service';
+
+@Injectable()
+export class NotificationsService {
+  private readonly logger = new Logger(NotificationsService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private mailerService: MailerService,
+  ) {}
+
+  // Voor je test staat deze nu op EVERY_MINUTE
+  @Cron(CronExpression.EVERY_MINUTE)
+  async handleCron() {
+    this.logger.debug('Running automated deadline check for both Tasks and Projects...');
+
+    const now = new Date();
+
+    // ==========================================
+    // 1. CHECK ALLE TE LATE TAKEN
+    // ==========================================
+    const overdueTasks = await this.prisma.task.findMany({
+      where: {
+        deadline: { lt: now },
+        status: { notIn: ['DONE'] }, 
+        deadlineNotified: false,
+      },
+      include: {
+        assignees: true,
+        project: {
+          include: {
+            members: {
+              where: { role: 'PROJECT_LEADER' },
+              include: { user: true },
+            },
+          },
+        },
+      },
+    });
+
+    for (const task of overdueTasks) {
+      const projectLeader = task.project?.members[0]?.user;
+      const recipients = new Set<string>();
+
+      if (projectLeader?.email) {
+        recipients.add(projectLeader.email);
+      }
+
+      task.assignees.forEach((user) => {
+        if (user.email) recipients.add(user.email);
+      });
+
+      for (const email of recipients) {
+        await this.sendTaskEmail(email, task, projectLeader?.username);
+      }
+
+      await this.prisma.task.update({
+        where: { id: task.id },
+        data: { deadlineNotified: true },
+      });
+    }
+
+    // ==========================================
+    // 2. CHECK ALLE TE LATE PROJECTEN
+    // ==========================================
+    // ==========================================
+    // 2. CHECK ALLE TE LATE PROJECTEN
+    // ==========================================
+    const overdueProjects = await this.prisma.project.findMany({
+      
+      // 1. DIT IS HET PROJECT FILTER (Hier hoort status!)
+      where: { 
+        deadline: { lt: now },
+        deadlineNotified: false,
+        status: { notIn: ['DONE', 'OK'] }, 
+      },
+      
+      // 2. DIT IS DE GEKOPPELDE DATA (Hier hoort members!)
+      include: { 
+        members: {
+          where: { role: 'PROJECT_LEADER' },
+          include: { user: true },
+        },
+      },
+      
+    });
+    for (const project of overdueProjects) {
+      // Zoek de projectleider op
+      const projectLeader = project.members[0]?.user;
+
+      if (projectLeader?.email) {
+        await this.sendProjectEmail(projectLeader.email, project, projectLeader.username);
+      }
+
+      await this.prisma.project.update({
+        where: { id: project.id },
+        data: { deadlineNotified: true },
+      });
+    }
+  }
+
+  private async sendTaskEmail(email: string, task: any, leaderName: string) {
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject: `⚠️ URGENT: Task Deadline Missed - ${task.title}`,
+        text: `The deadline for task "${task.title}" has passed.`,
+        html: `
+          <div style="font-family: Arial, sans-serif; border: 1px solid #e0e0e0; padding: 20px; border-radius: 10px; max-width: 600px;">
+            <h2 style="color: #d32f2f;">🚨 Task Deadline Notification</h2>
+            <p>This is an automated alert regarding the project: <strong>${task.project?.name || 'Unknown'}</strong>.</p>
+            <p>The following task has exceeded its deadline without being marked as <b>DONE</b>:</p>
+            <div style="background-color: #f8f9fa; padding: 15px; border-left: 5px solid #d32f2f; margin: 20px 0;">
+              <strong>Task Name:</strong> ${task.title}<br>
+              <strong>Deadline:</strong> ${task.deadline.toLocaleDateString('en-GB')}<br>
+              <strong>Status:</strong> <span style="color: #d32f2f;">${task.status}</span><br>
+              <strong>Project Manager:</strong> ${leaderName || 'Not assigned'}
+            </div>
+            <p>Please take immediate action to update the status.</p>
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+            <p style="font-size: 12px; color: #777;">This is a system-generated message from the Transcendence Platform.</p>
+          </div>
+        `,
+      });
+      this.logger.log(`Task email sent to ${email} for task ${task.id}`);
+    } catch (error) {
+      this.logger.error(`Error sending task email to ${email}: ${error.message}`);
+    }
+  }
+
+  // --- MAIL TEMPLATE VOOR PROJECTEN ---
+  private async sendProjectEmail(email: string, project: any, leaderName: string) {
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject: `⚠️ CRITICAL: Project Deadline Missed - ${project.name}`,
+        text: `The deadline for the entire project "${project.name}" has passed.`,
+        html: `
+          <div style="font-family: Arial, sans-serif; border: 1px solid #e0e0e0; padding: 20px; border-radius: 10px; max-width: 600px;">
+            <h2 style="color: #B71C1C;">🛑 CRITICAL: Project Deadline Missed</h2>
+            <p>Dear <strong>${leaderName}</strong>,</p>
+            <p>This is an automated alert to inform you that an entire project you are managing has exceeded its final deadline:</p>
+            <div style="background-color: #ffebee; padding: 15px; border-left: 5px solid #B71C1C; margin: 20px 0;">
+              <strong>Project Name:</strong> ${project.name}<br>
+              <strong>Final Deadline:</strong> ${project.deadline.toLocaleDateString('en-GB')}<br>
+            </div>
+            <p>Please review the project status and outstanding tasks immediately.</p>
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+            <p style="font-size: 12px; color: #777;">This is a system-generated message from the Transcendence Platform.</p>
+          </div>
+        `,
+      });
+      this.logger.log(`Project email sent to ${email} for project ${project.id}`);
+    } catch (error) {
+      this.logger.error(`Error sending project email to ${email}: ${error.message}`);
+    }
+  }
+}
+</file>
 
 <file path="srcs/backend/prisma/migrations/20260410121850_init/migration.sql">
 -- CreateEnum
@@ -236,6 +513,14 @@ ALTER TABLE "_TaskAssignees" ADD CONSTRAINT "_TaskAssignees_A_fkey" FOREIGN KEY 
 
 -- AddForeignKey
 ALTER TABLE "_TaskAssignees" ADD CONSTRAINT "_TaskAssignees_B_fkey" FOREIGN KEY ("B") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+</file>
+
+<file path="srcs/backend/prisma/migrations/20260417114905_add_deadlines/migration.sql">
+-- AlterTable
+ALTER TABLE "Project" ADD COLUMN     "deadline" TIMESTAMP(3);
+
+-- AlterTable
+ALTER TABLE "Task" ADD COLUMN     "deadline" TIMESTAMP(3);
 </file>
 
 <file path="srcs/backend/prisma/migrations/migration_lock.toml">
@@ -414,63 +699,6 @@ describe('ProjectsController', () => {
 });
 </file>
 
-<file path="srcs/backend/src/projects/projects.controller.ts">
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
-import { ProjectsService } from './projects.service';
-import { CreateProjectDto } from './dto/create-project.dto';
-import { UpdateProjectDto } from './dto/update-project.dto';
-import { AuthGuard } from '../auth/auth.guard';
-import { ProjectLeaderGuard } from './project-leader.guard'; // <--- 1. Importeer je nieuwe uitsmijter
-import { ApiBearerAuth } from '@nestjs/swagger';
-import { AddMemberDto } from './dto/add-member.dto';
-
-@ApiBearerAuth()
-@UseGuards(AuthGuard) // De voordeur: Je moet ingelogd zijn voor ALLES hieronder
-@Controller('projects')
-export class ProjectsController {
-  constructor(private readonly projectsService: ProjectsService) {}
-
-  @Post()
-  create(@Body() createProjectDto: CreateProjectDto, @Request() req) {
-    const userId = req.user.sub; 
-    return this.projectsService.create(createProjectDto, userId);
-  }
-
-  @Get()
-  findAll() {
-    return this.projectsService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.projectsService.findOne(+id);
-  }
-
-  // --- BEVEILIGDE PROJECT ROUTES ---
-
-  @UseGuards(ProjectLeaderGuard) 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateProjectDto: UpdateProjectDto) {
-    return this.projectsService.update(+id, updateProjectDto);
-  }
-
-  @UseGuards(ProjectLeaderGuard) 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.projectsService.remove(+id);
-  }
-
-  @UseGuards(ProjectLeaderGuard) 
-  @Post(':id/members')
-  addMember(
-    @Param('id') id: string, 
-    @Body() addMemberDto: AddMemberDto
-  ) {
-    return this.projectsService.addMember(+id, addMemberDto.userId, addMemberDto.role);
-  }
-}
-</file>
-
 <file path="srcs/backend/src/projects/projects.module.ts">
 import { Module } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
@@ -504,104 +732,6 @@ describe('ProjectsService', () => {
     expect(service).toBeDefined();
   });
 });
-</file>
-
-<file path="srcs/backend/src/projects/projects.service.ts">
-import { Injectable } from '@nestjs/common';
-import { CreateProjectDto } from './dto/create-project.dto';
-import { UpdateProjectDto } from './dto/update-project.dto';
-import { PrismaService } from '../prisma/prisma.service';
-import { ConflictException } from '@nestjs/common';
-
-@Injectable()
-export class ProjectsService {
-  constructor(private prisma: PrismaService) {}
-
-  // --- PROJECT AANMAKEN (Inclusief automatische leider) ---
-  async create(createProjectDto: CreateProjectDto, userId: number) {
-    return this.prisma.project.create({
-      data: {
-        name: createProjectDto.name,
-        description: createProjectDto.description,
-        // Prisma 'Nested Writes': Maak direct een lid aan en koppel die aan dit project
-        members: {
-          create: {
-            userId: userId,
-            role: 'PROJECT_LEADER',
-          },
-        },
-      },
-      // Haal direct de ledenlijst mee op als antwoord
-      include: {
-        members: {
-          include: {
-            user: {
-              select: { username: true, globalRole: true }
-            }
-          }
-        }
-      }
-    });
-  }
-
-// --- NIEUW LID TOEVOEGEN AAN PROJECT ---
-  async addMember(projectId: number, userId: number, role: any) {
-    // 1. Check of deze gebruiker al in dit specifieke project zit
-    const existingMember = await this.prisma.projectMember.findUnique({
-      where: {
-        userId_projectId: {
-          userId: userId,
-          projectId: projectId,
-        },
-      },
-    });
-
-    if (existingMember) {
-      throw new ConflictException('Deze gebruiker is al lid van dit project!');
-    }
-
-    return this.prisma.projectMember.create({
-      data: {
-        projectId: projectId,
-        userId: userId,
-        role: role,
-      },
-      include: {
-        user: {
-          select: { username: true }
-        }
-      }
-    });
-  }
-
-  // --- ALLE PROJECTEN OPHALEN ---
-  async findAll() {
-    return this.prisma.project.findMany();
-  }
-
-  // --- ÉÉN PROJECT OPHALEN ---
-  async findOne(id: number) {
-    return this.prisma.project.findUnique({
-      where: { id },
-      include: { members: true } // Handig: haalt direct de ledenlijst mee op
-    });
-  }
-
-  // --- PROJECT UPDATEN ---
-  async update(id: number, updateProjectDto: UpdateProjectDto) {
-    return this.prisma.project.update({
-      where: { id },
-      data: updateProjectDto,
-    });
-  }
-
-  // --- PROJECT VERWIJDEREN ---
-  async remove(id: number) {
-    return this.prisma.project.delete({
-      where: { id }
-    });
-  }
-}
 </file>
 
 <file path="srcs/backend/src/tasks/dto/update-task.dto.ts">
@@ -1071,39 +1201,158 @@ export class AuthGuard implements CanActivate {
 }
 </file>
 
-<file path="srcs/backend/src/tasks/tasks.controller.ts">
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
-import { TasksService } from './tasks.service';
-import { CreateTaskDto } from './dto/create-task.dto';
+<file path="srcs/backend/src/projects/projects.controller.ts">
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
+import { ProjectsService } from './projects.service';
+import { CreateProjectDto } from './dto/create-project.dto';
+import { UpdateProjectDto } from './dto/update-project.dto';
 import { AuthGuard } from '../auth/auth.guard';
+import { ProjectLeaderGuard } from './project-leader.guard'; // <--- 1. Importeer je nieuwe uitsmijter
 import { ApiBearerAuth } from '@nestjs/swagger';
-import { Request } from '@nestjs/common';
+import { AddMemberDto } from './dto/add-member.dto';
 
 @ApiBearerAuth()
-@UseGuards(AuthGuard)
-@Controller('tasks')
-export class TasksController {
-  constructor(private readonly tasksService: TasksService) {}
+@UseGuards(AuthGuard) // you need to be loggen in before you can do ANYTHING with projects
+@Controller('projects')
+export class ProjectsController {
+  constructor(private readonly projectsService: ProjectsService) {}
 
   @Post()
-  create(@Body() createTaskDto: CreateTaskDto) {
-    return this.tasksService.create(createTaskDto);
+  create(@Body() createProjectDto: CreateProjectDto, @Request() req) {
+    const userId = req.user.sub; 
+    const deadlineDate = createProjectDto.deadline ? new Date(createProjectDto.deadline) : null;
+    return this.projectsService.create(createProjectDto, userId, deadlineDate);
   }
 
-
   @Get()
-  findAll(@Request() req) {
-    return this.tasksService.findAll(req.user);
+  findAll() {
+    return this.projectsService.findAll();
   }
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.tasksService.findOne(+id);
+    return this.projectsService.findOne(+id);
   }
 
+  // --- BEVEILIGDE PROJECT ROUTES ---
+
+  @UseGuards(ProjectLeaderGuard) 
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() updateProjectDto: UpdateProjectDto) {
+    return this.projectsService.update(+id, updateProjectDto);
+  }
+
+  @UseGuards(ProjectLeaderGuard) 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.tasksService.remove(+id);
+    return this.projectsService.remove(+id);
+  }
+
+  @UseGuards(ProjectLeaderGuard) 
+  @Post(':id/members')
+  addMember(
+    @Param('id') id: string, 
+    @Body() addMemberDto: AddMemberDto
+  ) {
+    return this.projectsService.addMember(+id, addMemberDto.userId, addMemberDto.role);
+  }
+}
+</file>
+
+<file path="srcs/backend/src/projects/projects.service.ts">
+import { Injectable } from '@nestjs/common';
+import { CreateProjectDto } from './dto/create-project.dto';
+import { UpdateProjectDto } from './dto/update-project.dto';
+import { PrismaService } from '../prisma/prisma.service';
+import { ConflictException } from '@nestjs/common';
+
+@Injectable()
+export class ProjectsService {
+  constructor(private prisma: PrismaService) {}
+
+  // --- PROJECT AANMAKEN (Inclusief automatische leider) ---
+  async create(createProjectDto: CreateProjectDto, userId: number, deadline: Date | null) {
+    return this.prisma.project.create({
+      data: {
+        name: createProjectDto.name,
+        description: createProjectDto.description,
+        deadline: deadline,
+        // Prisma 'Nested Writes': Make a new project AND create a new member in the same action
+        members: {
+          create: {
+            userId: userId,
+            role: 'PROJECT_LEADER',
+            
+          },
+        },
+      },
+      include: {
+        members: {
+          include: {
+            user: {
+              select: { username: true, globalRole: true, email: true }
+            }
+          }
+        }
+      }
+    });
+  }
+
+// add a new member to a project, but first check if they are already a member of that project
+  async addMember(projectId: number, userId: number, role: any) {
+    const existingMember = await this.prisma.projectMember.findUnique({
+      where: {
+        userId_projectId: {
+          userId: userId,
+          projectId: projectId,
+        },
+      },
+    });
+
+    if (existingMember) {
+      throw new ConflictException('This user is already a member of the project.');
+    }
+
+    return this.prisma.projectMember.create({
+      data: {
+        projectId: projectId,
+        userId: userId,
+        role: role,
+      },
+      include: {
+        user: {
+          select: { username: true }
+        }
+      }
+    });
+  }
+
+ 
+  async findAll() {
+    return this.prisma.project.findMany();
+  }
+
+  
+  async findOne(id: number) {
+    return this.prisma.project.findUnique({
+      where: { id },
+      include: { members: true } 
+    });
+  }
+
+  // --- PROJECT UPDATEN ---
+  async update(id: number, updateProjectDto: UpdateProjectDto) {
+    return this.prisma.project.update({
+      where: { id },
+      data: updateProjectDto,
+    });
+  }
+
+  
+  async remove(id: number) {
+    return this.prisma.project.delete({
+      where: { id }
+    });
   }
 }
 </file>
@@ -1134,11 +1383,12 @@ export class TasksService {
   constructor(private prisma: PrismaService) {}
 
   // 2. TAAK AANMAKEN
-  async create(createTaskDto: CreateTaskDto) {
+  async create(createTaskDto: CreateTaskDto, deadline: Date | null) {
     const { assigneeIds, ...taskData } = createTaskDto;
     return this.prisma.task.create({
       data: {
         ...taskData,
+        deadline: deadline,
         assignees: assigneeIds && assigneeIds.length > 0 ? {
           connect: assigneeIds.map(id => ({ id: id }))
         } : undefined,
@@ -1316,6 +1566,7 @@ services:
       postgres:
         condition: service_healthy
     environment:
+      TZ: Europe/Brussels
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
     ports:
@@ -1422,86 +1673,44 @@ export class AddMemberDto {
 }
 </file>
 
-<file path="srcs/backend/src/projects/dto/create-project.dto.ts">
-import { IsString, IsOptional, MinLength } from 'class-validator';
-
-export class CreateProjectDto {
-  @IsString()
-  @MinLength(3)
-  name: string;
-
-  @IsString()
-  @IsOptional()
-  description?: string;
-}
-</file>
-
-<file path="srcs/backend/src/users/users.controller.ts">
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Patch, 
-  Param, 
-  Delete, 
-  UseGuards, 
-  Request 
-} from '@nestjs/common';
-import { ApiBearerAuth } from '@nestjs/swagger';
-import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+<file path="srcs/backend/src/tasks/tasks.controller.ts">
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { TasksService } from './tasks.service';
+import { CreateTaskDto } from './dto/create-task.dto';
 import { AuthGuard } from '../auth/auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { Request } from '@nestjs/common';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
 
-@Controller('users')
-export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+@ApiBearerAuth()
+@UseGuards(AuthGuard)
+@Controller('tasks')
+export class TasksController {
+  constructor(private readonly tasksService: TasksService) {}
 
   @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
+  create(@Body() createTaskDto: CreateTaskDto) {
+    const deadlineDate = createTaskDto.deadline ? new Date(createTaskDto.deadline) : null;
+    return this.tasksService.create(createTaskDto, deadlineDate);
   }
 
+
   @Get()
-  findAll() {
-    return this.usersService.findAll();
+  findAll(@Request() req) {
+    return this.tasksService.findAll(req.user);
   }
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.usersService.findOne(+id);
+    return this.tasksService.findOne(+id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(+id, updateUserDto);
-  }
-
+  @Roles('ADMIN')
+  @UseGuards(RolesGuard) // making sure only ADMINs can remove tasks
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.usersService.remove(+id);
-  }
-
-
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard, RolesGuard) // <-- Check if the user is logged in first, THEN check their role
-  @Roles('ADMIN')                   // <-- The magic tag! Only ADMINs can access this route
-  @Patch('promote/:username')
-  promote(@Param('username') username: string) {
-    // If the execution reaches this point, we are 100% sure the user is an ADMIN.
-    return this.usersService.promote(username);
-  }
-
-  @ApiBearerAuth()
-  @UseGuards(AuthGuard, RolesGuard)
-  @Roles('ADMIN')
-  @Patch('demote/:username')
-  demote(@Param('username') username: string, @Request() req) {
-    // to the service (e.g., to prevent an admin from demoting themselves).
-    return this.usersService.demote(username, req.user.username);
+    return this.tasksService.remove(+id);
   }
 }
 </file>
@@ -1595,79 +1804,6 @@ CMD ["npm", "run", "dev"]
 }
 </file>
 
-<file path="srcs/backend/prisma/schema.prisma">
-generator client {
-  provider = "prisma-client-js"
-}
-
-datasource db {
-  provider = "postgresql"
-}
-
-enum GlobalRole {
-  USER
-  ADMIN
-}
-
-enum ProjectRole {
-  GUEST
-  MEMBER
-  PROJECT_LEADER
-}
-
-enum TaskStatus {
-  TODO
-  IN_PROGRESS
-  DONE
-}
-
-model User {
-  id                 Int             @id @default(autoincrement())
-  username           String          @unique
-  password           String
-  globalRole         GlobalRole      @default(USER)
-  avatar             String?
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
-  projectMemberships ProjectMember[]
-  tasks              Task[]          @relation("TaskAssignees")
-}
-
-model Project {
-  id          Int             @id @default(autoincrement())
-  name        String
-  description String?
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  members     ProjectMember[]
-  tasks       Task[]
-}
-
-model ProjectMember {
-  id        Int         @id @default(autoincrement())
-  role      ProjectRole @default(MEMBER)
-  joinedAt  DateTime    @default(now())
-  userId    Int
-  user      User        @relation(fields: [userId], references: [id])
-  projectId Int
-  project   Project     @relation(fields: [projectId], references: [id])
-
-  @@unique([userId, projectId])
-}
-
-model Task {
-  id          Int        @id @default(autoincrement())
-  title       String
-  description String?
-  status      TaskStatus @default(TODO)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  projectId   Int
-  project     Project    @relation(fields: [projectId], references: [id])
-  assignees   User[]     @relation("TaskAssignees")
-}
-</file>
-
 <file path="srcs/backend/src/auth/dto/sign-in.dto.ts">
 import { IsString, MinLength } from 'class-validator';
 
@@ -1726,11 +1862,250 @@ export class AuthService {
       throw new UnauthorizedException();
     }
   }
+  async signUp(username: string, email: string, pass: string): Promise<any> {
+  const salt = await bcrypt.genSalt();
+  const hashedPassword = await bcrypt.hash(pass, salt);
+
+ 
+  const newUser = await this.usersService.create({
+    username,
+    email,
+    password: hashedPassword,
+  });
+
+  return this.signIn(newUser.username, pass); 
+}
+}
+</file>
+
+<file path="srcs/backend/src/projects/dto/create-project.dto.ts">
+import { IsString, IsOptional, MinLength, IsDateString } from 'class-validator';
+
+export class CreateProjectDto {
+  @IsString()
+  @MinLength(3)
+  name: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsOptional()
+  @IsDateString()
+  deadline?: string;
+}
+</file>
+
+<file path="srcs/backend/src/users/dto/create-user.dto.ts">
+import { IsString, MinLength, IsEmail
+    
+ } from 'class-validator';
+
+export class CreateUserDto {
+    @IsString()
+    username: string;
+
+    @IsEmail()
+  email: string;
+
+    @IsString()
+    @MinLength(8)
+    password: string;
+}
+
+export class UpdateUserDto{
+    username?: string; //allow this? maybe split username and displayname
+    avatar?: string;
+}
+</file>
+
+<file path="srcs/backend/src/users/users.controller.ts">
+import { 
+  Controller, 
+  Get, 
+  Post, 
+  Body, 
+  Patch, 
+  Param, 
+  Delete, 
+  UseGuards, 
+  Request 
+} from '@nestjs/common';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { UsersService } from './users.service';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { AuthGuard } from '../auth/auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+
+@Controller('users')
+export class UsersController {
+  constructor(private readonly usersService: UsersService) {}
+
+  @Post()
+  create(@Body() createUserDto: CreateUserDto) {
+    return this.usersService.create(createUserDto);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('ADMIN') // only admins can see everyone
+  @Delete(':id')
+  @Get()
+  findAll() {
+    return this.usersService.findAll();
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.usersService.findOne(+id);
+  }
+
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+    return this.usersService.update(+id, updateUserDto);
+  }
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('ADMIN') // only admins can delete users
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.usersService.remove(+id);
+  }
+
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard, RolesGuard) // <-- Check if the user is logged in first, THEN check their role
+  @Roles('ADMIN')                   // <-- The magic tag! Only ADMINs can access this route
+  @Patch('promote/:username')
+  promote(@Param('username') username: string) {
+    // If the execution reaches this point, we are 100% sure the user is an ADMIN.
+    return this.usersService.promote(username);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Patch('demote/:username')
+  demote(@Param('username') username: string, @Request() req) {
+    // to the service (e.g., to prevent an admin from demoting themselves).
+    return this.usersService.demote(username, req.user.username);
+  }
+}
+</file>
+
+<file path="srcs/backend/src/app.module.ts">
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config'; // <--- Import staat hier goed
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module';
+import { ProjectsModule } from './projects/projects.module';
+import { TasksModule } from './tasks/tasks.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { NotificationsModule } from './notifications/notifications.module';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    UsersModule, 
+    AuthModule, 
+    ProjectsModule, 
+    TasksModule, 
+    ScheduleModule.forRoot(), 
+    NotificationsModule
+  ],
+  controllers: [AppController],
+  providers: [AppService],
+})
+export class AppModule {}
+</file>
+
+<file path="srcs/backend/prisma/schema.prisma">
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum GlobalRole {
+  USER
+  ADMIN
+}
+
+enum ProjectRole {
+  GUEST
+  MEMBER
+  PROJECT_LEADER
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+model User {
+  id                 Int             @id @default(autoincrement())
+  username           String          @unique
+  password           String
+  email              String?         @unique
+  globalRole         GlobalRole      @default(USER)
+  avatar             String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  projectMemberships ProjectMember[]
+  tasks              Task[]          @relation("TaskAssignees")
+}
+
+model Project {
+  id          Int             @id @default(autoincrement())
+  name        String
+  description String?
+  deadline    DateTime?
+  deadlineNotified Boolean   @default(false)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  status      String          @default("TODO")
+  members     ProjectMember[]
+  tasks       Task[]
+}
+
+model ProjectMember {
+  id        Int         @id @default(autoincrement())
+  role      ProjectRole @default(MEMBER)
+  joinedAt  DateTime    @default(now())
+  userId    Int
+  user      User        @relation(fields: [userId], references: [id])
+  projectId Int
+  project   Project     @relation(fields: [projectId], references: [id])
+
+  @@unique([userId, projectId])
+}
+
+model Task {
+  id          Int        @id @default(autoincrement())
+  title       String
+  description String?
+  status      TaskStatus @default(TODO)
+  deadline    DateTime?
+  deadlineNotified Boolean   @default(false)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  projectId   Int
+  project     Project    @relation(fields: [projectId], references: [id])
+  assignees   User[]     @relation("TaskAssignees")
 }
 </file>
 
 <file path="srcs/backend/src/tasks/dto/create-task.dto.ts">
-import { IsString, IsNotEmpty, IsInt, IsOptional, IsArray } from 'class-validator';
+import { IsString, IsNotEmpty, IsInt, IsOptional, IsArray, IsDateString } from 'class-validator';
 
 export class CreateTaskDto {
   @IsString()
@@ -1745,46 +2120,15 @@ export class CreateTaskDto {
   @IsNotEmpty()
   projectId: number;
 
+  @IsOptional()
+  @IsDateString()
+  deadline?: string;
+
   @IsArray()
   @IsOptional()
   @IsInt({ each: true })
   assigneeIds?: number[]; 
 }
-</file>
-
-<file path="srcs/backend/src/users/dto/create-user.dto.ts">
-import { IsString, MinLength } from 'class-validator';
-
-export class CreateUserDto {
-    @IsString()
-    username: string;
-
-    @IsString()
-    @MinLength(8)
-    password: string;
-}
-
-export class UpdateUserDto{
-    username?: string; //allow this? maybe split username and displayname
-    avatar?: string;
-}
-</file>
-
-<file path="srcs/backend/src/app.module.ts">
-import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { UsersModule } from './users/users.module';
-import { AuthModule } from './auth/auth.module';
-import { ProjectsModule } from './projects/projects.module';
-import { TasksModule } from './tasks/tasks.module';
-
-@Module({
-  imports: [UsersModule, AuthModule, ProjectsModule, TasksModule],
-  controllers: [AppController],
-  providers: [AppService],
-})
-export class AppModule {}
 </file>
 
 <file path="srcs/backend/src/users/users.service.ts">
@@ -1809,6 +2153,7 @@ export class UsersService {
         id: true,
         username: true,
         globalRole: true, // Aangepast van role naar globalRole
+        email: true,
         avatar: true,
         createdAt: true,
       }
@@ -1821,6 +2166,7 @@ export class UsersService {
         id: true,
         username: true,
         globalRole: true, // Aangepast van role naar globalRole
+        email: true,
         avatar: true,
         createdAt: true,
         updatedAt: true,
@@ -1940,17 +2286,21 @@ export class UsersService {
     "test:e2e": "jest --config ./test/jest-e2e.json"
   },
   "dependencies": {
+    "@nestjs-modules/mailer": "^2.3.4",
     "@nestjs/common": "^11.0.1",
+    "@nestjs/config": "^4.0.4",
     "@nestjs/core": "^11.0.1",
     "@nestjs/jwt": "^11.0.2",
     "@nestjs/mapped-types": "*",
     "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/schedule": "^6.1.3",
     "@nestjs/swagger": "^11.2.7",
     "@prisma/adapter-pg": "^7.7.0",
     "@prisma/client": "^7.6.0",
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.4",
+    "nodemailer": "^8.0.5",
     "pg": "^8.20.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
@@ -1965,6 +2315,7 @@ export class UsersService {
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
     "@types/node": "^22.10.7",
+    "@types/nodemailer": "^8.0.0",
     "@types/pg": "^8.20.0",
     "@types/supertest": "^6.0.2",
     "eslint": "^9.18.0",
@@ -2002,6 +2353,14 @@ export class UsersService {
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
+  }
+}
+</file>
+
+<file path="package.json">
+{
+  "dependencies": {
+    "typescript": "^5.9.3"
   }
 }
 </file>

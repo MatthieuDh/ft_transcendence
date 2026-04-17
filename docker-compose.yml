@@ -23,8 +23,13 @@ services:
       postgres:
         condition: service_healthy
     environment:
+      TZ: Europe/Brussels
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
     ports:
       - "3000:3000"
     volumes:

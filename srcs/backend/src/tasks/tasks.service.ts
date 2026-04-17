@@ -9,11 +9,12 @@ export class TasksService {
   constructor(private prisma: PrismaService) {}
 
   // 2. TAAK AANMAKEN
-  async create(createTaskDto: CreateTaskDto) {
+  async create(createTaskDto: CreateTaskDto, deadline: Date | null) {
     const { assigneeIds, ...taskData } = createTaskDto;
     return this.prisma.task.create({
       data: {
         ...taskData,
+        deadline: deadline,
         assignees: assigneeIds && assigneeIds.length > 0 ? {
           connect: assigneeIds.map(id => ({ id: id }))
         } : undefined,

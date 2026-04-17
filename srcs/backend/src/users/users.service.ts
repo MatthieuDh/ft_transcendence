@@ -19,6 +19,7 @@ export class UsersService {
         id: true,
         username: true,
         globalRole: true, // Aangepast van role naar globalRole
+        email: true,
         avatar: true,
         createdAt: true,
       }
@@ -31,6 +32,7 @@ export class UsersService {
         id: true,
         username: true,
         globalRole: true, // Aangepast van role naar globalRole
+        email: true,
         avatar: true,
         createdAt: true,
         updatedAt: true,

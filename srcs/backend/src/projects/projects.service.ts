@@ -9,16 +9,18 @@ export class ProjectsService {
   constructor(private prisma: PrismaService) {}
 
   // --- PROJECT AANMAKEN (Inclusief automatische leider) ---
-  async create(createProjectDto: CreateProjectDto, userId: number) {
+  async create(createProjectDto: CreateProjectDto, userId: number, deadline: Date | null) {
     return this.prisma.project.create({
       data: {
         name: createProjectDto.name,
         description: createProjectDto.description,
+        deadline: deadline,
         // Prisma 'Nested Writes': Make a new project AND create a new member in the same action
         members: {
           create: {
             userId: userId,
             role: 'PROJECT_LEADER',
+            
           },
         },
       },
@@ -26,7 +28,7 @@ export class ProjectsService {
         members: {
           include: {
             user: {
-              select: { username: true, globalRole: true }
+              select: { username: true, globalRole: true, email: true }
             }
           }
         }

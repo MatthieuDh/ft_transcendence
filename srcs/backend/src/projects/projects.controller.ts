@@ -16,7 +16,8 @@ export class ProjectsController {
   @Post()
   create(@Body() createProjectDto: CreateProjectDto, @Request() req) {
     const userId = req.user.sub; 
-    return this.projectsService.create(createProjectDto, userId);
+    const deadlineDate = createProjectDto.deadline ? new Date(createProjectDto.deadline) : null;
+    return this.projectsService.create(createProjectDto, userId, deadlineDate);
   }
 
   @Get()

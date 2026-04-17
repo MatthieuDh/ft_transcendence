@@ -42,4 +42,17 @@ export class AuthService {
       throw new UnauthorizedException();
     }
   }
+  async signUp(username: string, email: string, pass: string): Promise<any> {
+  const salt = await bcrypt.genSalt();
+  const hashedPassword = await bcrypt.hash(pass, salt);
+
+ 
+  const newUser = await this.usersService.create({
+    username,
+    email,
+    password: hashedPassword,
+  });
+
+  return this.signIn(newUser.username, pass); 
+}
 }

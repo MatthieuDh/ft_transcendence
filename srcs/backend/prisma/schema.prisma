@@ -27,6 +27,7 @@ model User {
   id                 Int             @id @default(autoincrement())
   username           String          @unique
   password           String
+  email              String?         @unique
   globalRole         GlobalRole      @default(USER)
   avatar             String?
   createdAt          DateTime        @default(now())
@@ -40,8 +41,10 @@ model Project {
   name        String
   description String?
   deadline    DateTime?
+  deadlineNotified Boolean   @default(false)
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
+  status      String          @default("TODO")
   members     ProjectMember[]
   tasks       Task[]
 }
@@ -64,6 +67,7 @@ model Task {
   description String?
   status      TaskStatus @default(TODO)
   deadline    DateTime?
+  deadlineNotified Boolean   @default(false)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   projectId   Int

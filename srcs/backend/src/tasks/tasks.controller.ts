@@ -15,7 +15,8 @@ export class TasksController {
 
   @Post()
   create(@Body() createTaskDto: CreateTaskDto) {
-    return this.tasksService.create(createTaskDto);
+    const deadlineDate = createTaskDto.deadline ? new Date(createTaskDto.deadline) : null;
+    return this.tasksService.create(createTaskDto, deadlineDate);
   }
 
 
