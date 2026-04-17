@@ -26,6 +26,10 @@ export class UsersController {
     return this.usersService.create(createUserDto);
   }
 
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('ADMIN') // only admins can see everyone
+  @Delete(':id')
   @Get()
   findAll() {
     return this.usersService.findAll();
@@ -40,7 +44,9 @@ export class UsersController {
   update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
     return this.usersService.update(+id, updateUserDto);
   }
-
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('ADMIN') // only admins can delete users
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.usersService.remove(+id);

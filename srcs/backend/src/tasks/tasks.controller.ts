@@ -4,6 +4,8 @@ import { CreateTaskDto } from './dto/create-task.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { Request } from '@nestjs/common';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
 
 @ApiBearerAuth()
 @UseGuards(AuthGuard)
@@ -27,6 +29,8 @@ export class TasksController {
     return this.tasksService.findOne(+id);
   }
 
+  @Roles('ADMIN')
+  @UseGuards(RolesGuard) // making sure only ADMINs can remove tasks
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.tasksService.remove(+id);

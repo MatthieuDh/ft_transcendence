@@ -1,0 +1,2009 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+srcs/
+  backend/
+    prisma/
+      migrations/
+        20260410121850_init/
+          migration.sql
+        20260416102710_init/
+          migration.sql
+        migration_lock.toml
+      schema.prisma
+    src/
+      auth/
+        decorators/
+          roles.decorator.ts
+        dto/
+          sign-in.dto.ts
+        guards/
+          roles.guard.ts
+        auth.controller.spec.ts
+        auth.controller.ts
+        auth.guard.ts
+        auth.module.ts
+        auth.service.spec.ts
+        auth.service.ts
+      prisma/
+        prisma.module.ts
+        prisma.service.ts
+      projects/
+        dto/
+          add-member.dto.ts
+          create-project.dto.ts
+          update-project.dto.ts
+        entities/
+          project.entity.ts
+        project-leader.guard.ts
+        projects.controller.spec.ts
+        projects.controller.ts
+        projects.module.ts
+        projects.service.spec.ts
+        projects.service.ts
+      tasks/
+        dto/
+          create-task.dto.ts
+          update-task.dto.ts
+        entities/
+          task.entity.ts
+        tasks.controller.spec.ts
+        tasks.controller.ts
+        tasks.module.ts
+        tasks.service.spec.ts
+        tasks.service.ts
+      users/
+        dto/
+          create-user.dto.ts
+          update-user.dto.ts
+        users.controller.spec.ts
+        users.controller.ts
+        users.module.ts
+        users.service.spec.ts
+        users.service.ts
+      app.controller.spec.ts
+      app.controller.ts
+      app.module.ts
+      app.service.ts
+      main.ts
+    test/
+      app.e2e-spec.ts
+      jest-e2e.json
+    .gitignore
+    .prettierrc
+    Dockerfile
+    eslint.config.mjs
+    nest-cli.json
+    package.json
+    prisma.config.ts
+    README.md
+    tsconfig.build.json
+    tsconfig.json
+  frontend/
+    Dockerfile
+.gitignore
+docker-compose.yml
+Makefile
+README.md
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="srcs/backend/prisma/migrations/20260410121850_init/migration.sql">
+-- CreateEnum
+CREATE TYPE "GlobalRole" AS ENUM ('USER', 'ADMIN');
+
+-- CreateEnum
+CREATE TYPE "ProjectRole" AS ENUM ('GUEST', 'MEMBER', 'PROJECT_LEADER');
+
+-- CreateEnum
+CREATE TYPE "TaskStatus" AS ENUM ('TODO', 'IN_PROGRESS', 'DONE');
+
+-- CreateTable
+CREATE TABLE "User" (
+    "id" SERIAL NOT NULL,
+    "username" TEXT NOT NULL,
+    "password" TEXT NOT NULL,
+    "globalRole" "GlobalRole" NOT NULL DEFAULT 'USER',
+    "avatar" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Project" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "Project_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ProjectMember" (
+    "id" SERIAL NOT NULL,
+    "role" "ProjectRole" NOT NULL DEFAULT 'MEMBER',
+    "joinedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "userId" INTEGER NOT NULL,
+    "projectId" INTEGER NOT NULL,
+
+    CONSTRAINT "ProjectMember_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Task" (
+    "id" SERIAL NOT NULL,
+    "title" TEXT NOT NULL,
+    "description" TEXT,
+    "status" "TaskStatus" NOT NULL DEFAULT 'TODO',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "projectId" INTEGER NOT NULL,
+    "assigneeId" INTEGER,
+
+    CONSTRAINT "Task_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ProjectMember_userId_projectId_key" ON "ProjectMember"("userId", "projectId");
+
+-- AddForeignKey
+ALTER TABLE "ProjectMember" ADD CONSTRAINT "ProjectMember_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ProjectMember" ADD CONSTRAINT "ProjectMember_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Task" ADD CONSTRAINT "Task_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Task" ADD CONSTRAINT "Task_assigneeId_fkey" FOREIGN KEY ("assigneeId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+</file>
+
+<file path="srcs/backend/prisma/migrations/20260416102710_init/migration.sql">
+/*
+  Warnings:
+
+  - You are about to drop the column `assigneeId` on the `Task` table. All the data in the column will be lost.
+
+*/
+-- DropForeignKey
+ALTER TABLE "Task" DROP CONSTRAINT "Task_assigneeId_fkey";
+
+-- AlterTable
+ALTER TABLE "Task" DROP COLUMN "assigneeId";
+
+-- CreateTable
+CREATE TABLE "_TaskAssignees" (
+    "A" INTEGER NOT NULL,
+    "B" INTEGER NOT NULL,
+
+    CONSTRAINT "_TaskAssignees_AB_pkey" PRIMARY KEY ("A","B")
+);
+
+-- CreateIndex
+CREATE INDEX "_TaskAssignees_B_index" ON "_TaskAssignees"("B");
+
+-- AddForeignKey
+ALTER TABLE "_TaskAssignees" ADD CONSTRAINT "_TaskAssignees_A_fkey" FOREIGN KEY ("A") REFERENCES "Task"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_TaskAssignees" ADD CONSTRAINT "_TaskAssignees_B_fkey" FOREIGN KEY ("B") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+</file>
+
+<file path="srcs/backend/prisma/migrations/migration_lock.toml">
+# Please do not edit this file manually
+# It should be added in your version-control system (e.g., Git)
+provider = "postgresql"
+</file>
+
+<file path="srcs/backend/src/auth/decorators/roles.decorator.ts">
+import { SetMetadata } from '@nestjs/common';
+export const Roles = (...roles: string[]) => SetMetadata('roles', roles);
+</file>
+
+<file path="srcs/backend/src/auth/guards/roles.guard.ts">
+import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+
+@Injectable()
+export class RolesGuard implements CanActivate {
+  constructor(private reflector: Reflector) {}
+
+  canActivate(context: ExecutionContext): boolean {
+    // 1. check which roles are required by the route handler (controller method)
+    const requiredRoles = this.reflector.get<string[]>('roles', context.getHandler());
+    
+    // ik there are no required roles, allow access
+    if (!requiredRoles) {
+      return true;
+    }
+
+    const request = context.switchToHttp().getRequest();
+    const user = request.user;
+
+    // 3. we check for the presence of the user and if their role is included in the required roles
+    if (!user || !requiredRoles.includes(user.role)) {
+      throw new ForbiddenException('Nice try, but you do not have permission to do this!');
+    }
+
+    return true; // we allow access if the user has one of the required roles
+  }
+}
+</file>
+
+<file path="srcs/backend/src/auth/auth.controller.spec.ts">
+import { Test, TestingModule } from '@nestjs/testing';
+import { AuthController } from './auth.controller';
+import { AuthService } from './auth.service';
+
+describe('AuthController', () => {
+  let controller: AuthController;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [AuthController],
+      providers: [AuthService],
+    }).compile();
+
+    controller = module.get<AuthController>(AuthController);
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+});
+</file>
+
+<file path="srcs/backend/src/auth/auth.service.spec.ts">
+import { Test, TestingModule } from '@nestjs/testing';
+import { AuthService } from './auth.service';
+
+describe('AuthService', () => {
+  let service: AuthService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [AuthService],
+    }).compile();
+
+    service = module.get<AuthService>(AuthService);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+});
+</file>
+
+<file path="srcs/backend/src/prisma/prisma.module.ts">
+import { Module } from "@nestjs/common";
+import { PrismaService } from "./prisma.service";
+
+@Module({
+    providers: [PrismaService],
+    exports: [PrismaService],
+})
+export class PrismaModule {}
+</file>
+
+<file path="srcs/backend/src/projects/dto/update-project.dto.ts">
+import { PartialType } from '@nestjs/swagger';
+import { CreateProjectDto } from './create-project.dto';
+
+export class UpdateProjectDto extends PartialType(CreateProjectDto) {}
+</file>
+
+<file path="srcs/backend/src/projects/entities/project.entity.ts">
+export class Project {}
+</file>
+
+<file path="srcs/backend/src/projects/project-leader.guard.ts">
+import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+
+@Injectable()
+export class ProjectLeaderGuard implements CanActivate {
+  constructor(private prisma: PrismaService) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest();
+    
+    // 1. Wie ben jij? (Komt uit de AuthGuard die vóór deze guard draait)
+    const userId = request.user.sub; 
+    
+    // 2. Welk project probeer je aan te passen? (Haalt de ':id' uit de URL)
+    const projectId = parseInt(request.params.id); 
+
+    if (isNaN(projectId)) {
+      throw new ForbiddenException('Geen geldig project ID opgegeven.');
+    }
+
+    // 3. De Database Check: Zoek jouw specifieke rol in dit specifieke project
+    const member = await this.prisma.projectMember.findUnique({
+      where: {
+        userId_projectId: {
+          userId: userId,
+          projectId: projectId,
+        },
+      },
+    });
+
+    // 4. Het Oordeel
+    if (!member) {
+      throw new ForbiddenException('you do not have the right to access this project!');
+    }
+
+    if (member.role !== 'PROJECT_LEADER') {
+      throw new ForbiddenException('you do not have the right to access this project!');
+    }
+
+    // Alles klopt? Groen licht!
+    return true; 
+  }
+}
+</file>
+
+<file path="srcs/backend/src/projects/projects.controller.spec.ts">
+import { Test, TestingModule } from '@nestjs/testing';
+import { ProjectsController } from './projects.controller';
+import { ProjectsService } from './projects.service';
+
+describe('ProjectsController', () => {
+  let controller: ProjectsController;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [ProjectsController],
+      providers: [ProjectsService],
+    }).compile();
+
+    controller = module.get<ProjectsController>(ProjectsController);
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+});
+</file>
+
+<file path="srcs/backend/src/projects/projects.controller.ts">
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
+import { ProjectsService } from './projects.service';
+import { CreateProjectDto } from './dto/create-project.dto';
+import { UpdateProjectDto } from './dto/update-project.dto';
+import { AuthGuard } from '../auth/auth.guard';
+import { ProjectLeaderGuard } from './project-leader.guard'; // <--- 1. Importeer je nieuwe uitsmijter
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { AddMemberDto } from './dto/add-member.dto';
+
+@ApiBearerAuth()
+@UseGuards(AuthGuard) // De voordeur: Je moet ingelogd zijn voor ALLES hieronder
+@Controller('projects')
+export class ProjectsController {
+  constructor(private readonly projectsService: ProjectsService) {}
+
+  @Post()
+  create(@Body() createProjectDto: CreateProjectDto, @Request() req) {
+    const userId = req.user.sub; 
+    return this.projectsService.create(createProjectDto, userId);
+  }
+
+  @Get()
+  findAll() {
+    return this.projectsService.findAll();
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.projectsService.findOne(+id);
+  }
+
+  // --- BEVEILIGDE PROJECT ROUTES ---
+
+  @UseGuards(ProjectLeaderGuard) 
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() updateProjectDto: UpdateProjectDto) {
+    return this.projectsService.update(+id, updateProjectDto);
+  }
+
+  @UseGuards(ProjectLeaderGuard) 
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.projectsService.remove(+id);
+  }
+
+  @UseGuards(ProjectLeaderGuard) 
+  @Post(':id/members')
+  addMember(
+    @Param('id') id: string, 
+    @Body() addMemberDto: AddMemberDto
+  ) {
+    return this.projectsService.addMember(+id, addMemberDto.userId, addMemberDto.role);
+  }
+}
+</file>
+
+<file path="srcs/backend/src/projects/projects.module.ts">
+import { Module } from '@nestjs/common';
+import { ProjectsService } from './projects.service';
+import { ProjectsController } from './projects.controller';
+import { PrismaModule } from '../prisma/prisma.module';
+
+@Module({
+  imports: [PrismaModule],
+  controllers: [ProjectsController],
+  providers: [ProjectsService],
+})
+export class ProjectsModule {}
+</file>
+
+<file path="srcs/backend/src/projects/projects.service.spec.ts">
+import { Test, TestingModule } from '@nestjs/testing';
+import { ProjectsService } from './projects.service';
+
+describe('ProjectsService', () => {
+  let service: ProjectsService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [ProjectsService],
+    }).compile();
+
+    service = module.get<ProjectsService>(ProjectsService);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+});
+</file>
+
+<file path="srcs/backend/src/projects/projects.service.ts">
+import { Injectable } from '@nestjs/common';
+import { CreateProjectDto } from './dto/create-project.dto';
+import { UpdateProjectDto } from './dto/update-project.dto';
+import { PrismaService } from '../prisma/prisma.service';
+import { ConflictException } from '@nestjs/common';
+
+@Injectable()
+export class ProjectsService {
+  constructor(private prisma: PrismaService) {}
+
+  // --- PROJECT AANMAKEN (Inclusief automatische leider) ---
+  async create(createProjectDto: CreateProjectDto, userId: number) {
+    return this.prisma.project.create({
+      data: {
+        name: createProjectDto.name,
+        description: createProjectDto.description,
+        // Prisma 'Nested Writes': Maak direct een lid aan en koppel die aan dit project
+        members: {
+          create: {
+            userId: userId,
+            role: 'PROJECT_LEADER',
+          },
+        },
+      },
+      // Haal direct de ledenlijst mee op als antwoord
+      include: {
+        members: {
+          include: {
+            user: {
+              select: { username: true, globalRole: true }
+            }
+          }
+        }
+      }
+    });
+  }
+
+// --- NIEUW LID TOEVOEGEN AAN PROJECT ---
+  async addMember(projectId: number, userId: number, role: any) {
+    // 1. Check of deze gebruiker al in dit specifieke project zit
+    const existingMember = await this.prisma.projectMember.findUnique({
+      where: {
+        userId_projectId: {
+          userId: userId,
+          projectId: projectId,
+        },
+      },
+    });
+
+    if (existingMember) {
+      throw new ConflictException('Deze gebruiker is al lid van dit project!');
+    }
+
+    return this.prisma.projectMember.create({
+      data: {
+        projectId: projectId,
+        userId: userId,
+        role: role,
+      },
+      include: {
+        user: {
+          select: { username: true }
+        }
+      }
+    });
+  }
+
+  // --- ALLE PROJECTEN OPHALEN ---
+  async findAll() {
+    return this.prisma.project.findMany();
+  }
+
+  // --- ÉÉN PROJECT OPHALEN ---
+  async findOne(id: number) {
+    return this.prisma.project.findUnique({
+      where: { id },
+      include: { members: true } // Handig: haalt direct de ledenlijst mee op
+    });
+  }
+
+  // --- PROJECT UPDATEN ---
+  async update(id: number, updateProjectDto: UpdateProjectDto) {
+    return this.prisma.project.update({
+      where: { id },
+      data: updateProjectDto,
+    });
+  }
+
+  // --- PROJECT VERWIJDEREN ---
+  async remove(id: number) {
+    return this.prisma.project.delete({
+      where: { id }
+    });
+  }
+}
+</file>
+
+<file path="srcs/backend/src/tasks/dto/update-task.dto.ts">
+import { PartialType } from '@nestjs/swagger';
+import { CreateTaskDto } from './create-task.dto';
+
+export class UpdateTaskDto extends PartialType(CreateTaskDto) {}
+</file>
+
+<file path="srcs/backend/src/tasks/entities/task.entity.ts">
+export class Task {}
+</file>
+
+<file path="srcs/backend/src/tasks/tasks.controller.spec.ts">
+import { Test, TestingModule } from '@nestjs/testing';
+import { TasksController } from './tasks.controller';
+import { TasksService } from './tasks.service';
+
+describe('TasksController', () => {
+  let controller: TasksController;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [TasksController],
+      providers: [TasksService],
+    }).compile();
+
+    controller = module.get<TasksController>(TasksController);
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+});
+</file>
+
+<file path="srcs/backend/src/tasks/tasks.service.spec.ts">
+import { Test, TestingModule } from '@nestjs/testing';
+import { TasksService } from './tasks.service';
+
+describe('TasksService', () => {
+  let service: TasksService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [TasksService],
+    }).compile();
+
+    service = module.get<TasksService>(TasksService);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+});
+</file>
+
+<file path="srcs/backend/src/users/dto/update-user.dto.ts">
+import { PartialType } from '@nestjs/mapped-types';
+import { CreateUserDto } from './create-user.dto';
+
+export class UpdateUserDto extends PartialType(CreateUserDto) {}
+</file>
+
+<file path="srcs/backend/src/users/users.controller.spec.ts">
+import { Test, TestingModule } from '@nestjs/testing';
+import { UsersController } from './users.controller';
+import { UsersService } from './users.service';
+
+describe('UsersController', () => {
+  let controller: UsersController;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [UsersController],
+      providers: [UsersService],
+    }).compile();
+
+    controller = module.get<UsersController>(UsersController);
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+});
+</file>
+
+<file path="srcs/backend/src/users/users.service.spec.ts">
+import { Test, TestingModule } from '@nestjs/testing';
+import { UsersService } from './users.service';
+
+describe('UsersService', () => {
+  let service: UsersService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [UsersService],
+    }).compile();
+
+    service = module.get<UsersService>(UsersService);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+});
+</file>
+
+<file path="srcs/backend/src/app.controller.spec.ts">
+import { Test, TestingModule } from '@nestjs/testing';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+
+describe('AppController', () => {
+  let appController: AppController;
+
+  beforeEach(async () => {
+    const app: TestingModule = await Test.createTestingModule({
+      controllers: [AppController],
+      providers: [AppService],
+    }).compile();
+
+    appController = app.get<AppController>(AppController);
+  });
+
+  describe('root', () => {
+    it('should return "Hello World!"', () => {
+      expect(appController.getHello()).toBe('Hello World!');
+    });
+  });
+});
+</file>
+
+<file path="srcs/backend/src/app.controller.ts">
+import { Controller, Get } from '@nestjs/common';
+import { AppService } from './app.service';
+
+@Controller()
+export class AppController {
+  constructor(private readonly appService: AppService) {}
+
+  @Get()
+  getHello(): string {
+    return this.appService.getHello();
+  }
+}
+</file>
+
+<file path="srcs/backend/src/app.service.ts">
+import { Injectable } from '@nestjs/common';
+
+@Injectable()
+export class AppService {
+  getHello(): string {
+    return 'Hello World!';
+  }
+}
+</file>
+
+<file path="srcs/backend/test/app.e2e-spec.ts">
+import { Test, TestingModule } from '@nestjs/testing';
+import { INestApplication } from '@nestjs/common';
+import request from 'supertest';
+import { App } from 'supertest/types';
+import { AppModule } from './../src/app.module';
+
+describe('AppController (e2e)', () => {
+  let app: INestApplication<App>;
+
+  beforeEach(async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = moduleFixture.createNestApplication();
+    await app.init();
+  });
+
+  it('/ (GET)', () => {
+    return request(app.getHttpServer())
+      .get('/')
+      .expect(200)
+      .expect('Hello World!');
+  });
+});
+</file>
+
+<file path="srcs/backend/test/jest-e2e.json">
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "testEnvironment": "node",
+  "testRegex": ".e2e-spec.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  }
+}
+</file>
+
+<file path="srcs/backend/.prettierrc">
+{
+  "singleQuote": true,
+  "trailingComma": "all"
+}
+</file>
+
+<file path="srcs/backend/eslint.config.mjs">
+// @ts-check
+import eslint from '@eslint/js';
+import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
+import globals from 'globals';
+import tseslint from 'typescript-eslint';
+
+export default tseslint.config(
+  {
+    ignores: ['eslint.config.mjs'],
+  },
+  eslint.configs.recommended,
+  ...tseslint.configs.recommendedTypeChecked,
+  eslintPluginPrettierRecommended,
+  {
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        ...globals.jest,
+      },
+      sourceType: 'commonjs',
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  },
+  {
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-floating-promises': 'warn',
+      '@typescript-eslint/no-unsafe-argument': 'warn',
+      "prettier/prettier": ["error", { endOfLine: "auto" }],
+    },
+  },
+);
+</file>
+
+<file path="srcs/backend/nest-cli.json">
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "src",
+  "compilerOptions": {
+    "deleteOutDir": true
+  }
+}
+</file>
+
+<file path="srcs/backend/README.md">
+<p align="center">
+  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
+</p>
+
+[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
+[circleci-url]: https://circleci.com/gh/nestjs/nest
+
+  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
+    <p align="center">
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
+<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
+<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
+<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
+<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
+  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
+    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
+  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
+</p>
+  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
+  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+
+## Description
+
+[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+
+## Project setup
+
+```bash
+$ npm install
+```
+
+## Compile and run the project
+
+```bash
+# development
+$ npm run start
+
+# watch mode
+$ npm run start:dev
+
+# production mode
+$ npm run start:prod
+```
+
+## Run tests
+
+```bash
+# unit tests
+$ npm run test
+
+# e2e tests
+$ npm run test:e2e
+
+# test coverage
+$ npm run test:cov
+```
+
+## Deployment
+
+When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+
+If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+
+```bash
+$ npm install -g @nestjs/mau
+$ mau deploy
+```
+
+With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+
+## Resources
+
+Check out a few resources that may come in handy when working with NestJS:
+
+- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
+- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
+- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
+- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
+- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
+- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
+- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
+- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+
+## Support
+
+Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+
+## Stay in touch
+
+- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
+- Website - [https://nestjs.com](https://nestjs.com/)
+- Twitter - [@nestframework](https://twitter.com/nestframework)
+
+## License
+
+Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+</file>
+
+<file path="srcs/backend/tsconfig.build.json">
+{
+  "extends": "./tsconfig.json",
+  "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
+}
+</file>
+
+<file path="srcs/frontend/Dockerfile">
+
+</file>
+
+<file path=".gitignore">
+# compiled output
+/dist
+node_modules/
+/build
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS
+.DS_Store
+
+# Tests
+/coverage
+/.nyc_output
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# dotenv environment variable files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# temp directory
+.temp
+.tmp
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Diagnostic reports (https://nodejs.org/api/report.html)
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+/generated/prisma
+</file>
+
+<file path="Makefile">
+
+</file>
+
+<file path="README.md">
+
+</file>
+
+<file path="srcs/backend/src/auth/auth.guard.ts">
+import { Injectable, CanActivate, ExecutionContext, UnauthorizedException } from "@nestjs/common";
+import { JwtService } from "@nestjs/jwt";
+import { Request } from 'express';
+import { Observable } from "rxjs";
+
+@Injectable()
+export class AuthGuard implements CanActivate {
+    constructor(private jwtService: JwtService) {}
+
+    async canActivate(context: ExecutionContext): Promise<boolean> {
+        const request = context.switchToHttp().getRequest();
+        const token = this.extractTokenFromHeader(request);
+        if (!token) {
+            throw new UnauthorizedException();
+        }
+        try {
+            const payload = await this.jwtService.verifyAsync(token);
+            request['user'] = payload;
+        } catch {
+            throw new UnauthorizedException();
+        }
+        return true;
+        
+    }
+
+    private extractTokenFromHeader(request: Request): string | undefined {
+        const [type, token] = request.headers.authorization?.split(' ' ) ?? [];
+        return type === 'Bearer' ? token :undefined;
+    }
+}
+</file>
+
+<file path="srcs/backend/src/tasks/tasks.controller.ts">
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { TasksService } from './tasks.service';
+import { CreateTaskDto } from './dto/create-task.dto';
+import { AuthGuard } from '../auth/auth.guard';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { Request } from '@nestjs/common';
+
+@ApiBearerAuth()
+@UseGuards(AuthGuard)
+@Controller('tasks')
+export class TasksController {
+  constructor(private readonly tasksService: TasksService) {}
+
+  @Post()
+  create(@Body() createTaskDto: CreateTaskDto) {
+    return this.tasksService.create(createTaskDto);
+  }
+
+
+  @Get()
+  findAll(@Request() req) {
+    return this.tasksService.findAll(req.user);
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.tasksService.findOne(+id);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.tasksService.remove(+id);
+  }
+}
+</file>
+
+<file path="srcs/backend/src/tasks/tasks.module.ts">
+import { Module } from '@nestjs/common';
+import { TasksService } from './tasks.service';
+import { TasksController } from './tasks.controller';
+import { PrismaModule } from '../prisma/prisma.module';
+
+@Module({
+  imports: [PrismaModule],
+  controllers: [TasksController],
+  providers: [TasksService],
+})
+export class TasksModule {}
+</file>
+
+<file path="srcs/backend/src/tasks/tasks.service.ts">
+import { Injectable } from '@nestjs/common';
+import { CreateTaskDto } from './dto/create-task.dto';
+import { UpdateTaskDto } from './dto/update-task.dto';
+import { PrismaService } from '../prisma/prisma.service'; // Vergeet deze import niet!
+
+@Injectable()
+export class TasksService {
+  // 1. Prisma toevoegen via de constructor
+  constructor(private prisma: PrismaService) {}
+
+  // 2. TAAK AANMAKEN
+  async create(createTaskDto: CreateTaskDto) {
+    const { assigneeIds, ...taskData } = createTaskDto;
+    return this.prisma.task.create({
+      data: {
+        ...taskData,
+        assignees: assigneeIds && assigneeIds.length > 0 ? {
+          connect: assigneeIds.map(id => ({ id: id }))
+        } : undefined,
+      },
+      include: { assignees: { select: { id: true, username: true } } }
+    });
+  }
+
+  // 3. ALLE TAKEN OPHALEN (Hier zit de magie voor jouw vraag!)
+  async findAll(user: any) {
+    // Check 1: Is de gebruiker een Global Admin? Dan mag hij alles zien.
+    if (user.role === 'ADMIN') {
+      return this.prisma.task.findMany({
+        include: { 
+          assignees: { select: { username: true } },
+          project: { select: { name: true } } 
+        }
+      });
+    }
+
+    // Check 2: Normale user? Laat alleen taken zien van projecten waar de user lid is.
+    return this.prisma.task.findMany({
+      where: {
+        project: {
+          members: {
+            some: {
+              userId: user.sub // 'sub' is het ID van de ingelogde user uit het JWT token
+            }
+          }
+        }
+      },
+      include: { 
+        assignees: { select: { username: true } },
+        project: { select: { name: true } } 
+      }
+    });
+  }
+
+  
+  async findOne(id: number) {
+    return this.prisma.task.findUnique({
+      where: { id },
+      include: { 
+        assignees: { select: { username: true } },
+        project: { select: { name: true } } 
+      }
+    });
+  }
+
+  
+
+  async update(id: number, updateTaskDto: UpdateTaskDto) {
+    const { assigneeIds, ...taskData } = updateTaskDto;
+    return this.prisma.task.update({
+      where: { id },
+      data: {
+        ...taskData,
+        assignees: assigneeIds ? {
+          set: assigneeIds.map(userId => ({ id: userId }))
+        } : undefined,
+      },
+      include: { assignees: { select: { username: true } } }
+    });
+  }
+
+  // 6. TAAK VERWIJDEREN
+  async remove(id: number) {
+    return this.prisma.task.delete({
+      where: { id }
+    });
+  }
+}
+</file>
+
+<file path="srcs/backend/.gitignore">
+# compiled output
+/dist
+node_modules/
+/build
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS
+.DS_Store
+
+# Tests
+/coverage
+/.nyc_output
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# dotenv environment variable files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# temp directory
+.temp
+.tmp
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Diagnostic reports (https://nodejs.org/api/report.html)
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+/generated/prisma
+</file>
+
+<file path="srcs/backend/prisma.config.ts">
+import "dotenv/config";
+import { defineConfig } from "prisma/config";
+
+export default defineConfig({
+  schema: "prisma/schema.prisma",
+  migrations: {
+    path: "prisma/migrations",
+    seed: "npx ts-node prisma/seed.ts", // <-- Hier staat jouw toevoeging!
+  },
+  datasource: {
+    url: process.env["DATABASE_URL"],
+  },
+});
+</file>
+
+<file path="docker-compose.yml">
+services:
+  postgres:
+    image: postgres:17
+    container_name: transcendence_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./srcs/backend
+    container_name: transcendence_backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./srcs/backend:/app
+      - /app/node_modules
+    command: sh -c "npx prisma migrate dev --name init && npm run start:dev"
+
+volumes:
+  postgres_data:
+</file>
+
+<file path="srcs/backend/src/auth/auth.controller.ts">
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, UseGuards, Request } from '@nestjs/common';
+import { AuthService } from './auth.service';
+import { SignInDto } from './dto/sign-in.dto';
+import { AuthGuard } from './auth.guard';
+import { ApiBearerAuth } from '@nestjs/swagger';
+
+@Controller('auth')
+export class AuthController {
+  constructor(private readonly authService: AuthService) {}
+
+  @HttpCode(HttpStatus.OK)
+  @Post('login')
+  signIn(@Body() signInDto: SignInDto){
+    return this.authService.signIn(signInDto.username, signInDto.password);
+  }
+
+  @UseGuards(AuthGuard)
+  @ApiBearerAuth()
+  @Get('profile')
+  getProfile(@Request() req) {
+    return req.user;
+  }
+
+  @Post('refresh')
+  refresh(@Body() body: { refresh_token: string }) {
+    return this.authService.refresh(body.refresh_token);
+  }
+}
+</file>
+
+<file path="srcs/backend/src/auth/auth.module.ts">
+import { Module } from '@nestjs/common';
+import { AuthService } from './auth.service';
+import { AuthController } from './auth.controller';
+import { UsersModule } from 'src/users/users.module';
+import { JwtModule } from '@nestjs/jwt';
+
+@Module({
+  imports: [
+    UsersModule, 
+    JwtModule.register({
+      global: true,
+      secret: process.env.JWT_SECRET,
+      signOptions: {expiresIn: '15m'},
+  }),
+],
+  controllers: [AuthController],
+  providers: [AuthService],
+  exports: [AuthService],
+})
+export class AuthModule {}
+</file>
+
+<file path="srcs/backend/src/prisma/prisma.service.ts">
+import { Injectable, OnModuleInit } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
+import { Pool } from 'pg';
+import { PrismaPg } from '@prisma/adapter-pg';
+
+@Injectable()
+export class PrismaService extends PrismaClient implements OnModuleInit {
+  constructor() {
+    // 1. Haal de URL op uit je omgeving
+    const connectionString = process.env.DATABASE_URL;
+    
+    // 2. Bouw de nieuwe, supersnelle Prisma 7 Adapter
+    const pool = new Pool({ connectionString });
+    const adapter = new PrismaPg(pool);
+    
+    // 3. Geef de adapter door aan Prisma
+    super({ adapter });
+  }
+
+  async onModuleInit() {
+    await this.$connect()
+  }
+}
+</file>
+
+<file path="srcs/backend/src/projects/dto/add-member.dto.ts">
+import { IsInt, IsString, IsIn } from 'class-validator';
+
+export class AddMemberDto {
+  @IsInt()
+  userId: number;
+
+  @IsString()
+  @IsIn(['GUEST', 'MEMBER', 'PROJECT_LEADER'])
+  role: string;
+}
+</file>
+
+<file path="srcs/backend/src/projects/dto/create-project.dto.ts">
+import { IsString, IsOptional, MinLength } from 'class-validator';
+
+export class CreateProjectDto {
+  @IsString()
+  @MinLength(3)
+  name: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+}
+</file>
+
+<file path="srcs/backend/src/users/users.controller.ts">
+import { 
+  Controller, 
+  Get, 
+  Post, 
+  Body, 
+  Patch, 
+  Param, 
+  Delete, 
+  UseGuards, 
+  Request 
+} from '@nestjs/common';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { UsersService } from './users.service';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { AuthGuard } from '../auth/auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+
+@Controller('users')
+export class UsersController {
+  constructor(private readonly usersService: UsersService) {}
+
+  @Post()
+  create(@Body() createUserDto: CreateUserDto) {
+    return this.usersService.create(createUserDto);
+  }
+
+  @Get()
+  findAll() {
+    return this.usersService.findAll();
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.usersService.findOne(+id);
+  }
+
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
+    return this.usersService.update(+id, updateUserDto);
+  }
+
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.usersService.remove(+id);
+  }
+
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard, RolesGuard) // <-- Check if the user is logged in first, THEN check their role
+  @Roles('ADMIN')                   // <-- The magic tag! Only ADMINs can access this route
+  @Patch('promote/:username')
+  promote(@Param('username') username: string) {
+    // If the execution reaches this point, we are 100% sure the user is an ADMIN.
+    return this.usersService.promote(username);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Patch('demote/:username')
+  demote(@Param('username') username: string, @Request() req) {
+    // to the service (e.g., to prevent an admin from demoting themselves).
+    return this.usersService.demote(username, req.user.username);
+  }
+}
+</file>
+
+<file path="srcs/backend/src/users/users.module.ts">
+import { Module } from '@nestjs/common';
+import { UsersService } from './users.service';
+import { UsersController } from './users.controller';
+import { PrismaModule } from '../prisma/prisma.module';
+
+@Module({
+  imports: [PrismaModule],
+  controllers: [UsersController],
+  providers: [UsersService],
+  exports: [UsersService],
+})
+export class UsersModule {}
+</file>
+
+<file path="srcs/backend/src/main.ts">
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+import { ValidationPipe } from '@nestjs/common';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  app.useGlobalPipes(new ValidationPipe());
+
+  // --- SWAGGER CONFIGURATIE ---
+  const config = new DocumentBuilder()
+    .setTitle('Transcendence API')
+    .setDescription('De API documentatie voor ons Transcendence project')
+    .setVersion('1.0')
+    .addBearerAuth() // Dit zorgt voor een "Authorize" knopje voor je JWT tokens later!
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  
+  // Dit vertelt NestJS: Zet de documentatie website op '/api'
+  SwaggerModule.setup('api', app, document);
+  // ----------------------------
+
+  await app.listen(process.env.PORT ?? 3000);
+}
+bootstrap();
+</file>
+
+<file path="srcs/backend/Dockerfile">
+FROM node:22-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+RUN npx prisma generate
+
+EXPOSE 3000
+
+CMD ["npm", "run", "dev"]
+</file>
+
+<file path="srcs/backend/tsconfig.json">
+{
+  "compilerOptions": {
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "resolvePackageJsonExports": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2023",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "incremental": true,
+    "skipLibCheck": true,
+    "strictNullChecks": true,
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitAny": false,
+    "strictBindCallApply": false,
+    "noFallthroughCasesInSwitch": false
+  }
+}
+</file>
+
+<file path="srcs/backend/prisma/schema.prisma">
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum GlobalRole {
+  USER
+  ADMIN
+}
+
+enum ProjectRole {
+  GUEST
+  MEMBER
+  PROJECT_LEADER
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+model User {
+  id                 Int             @id @default(autoincrement())
+  username           String          @unique
+  password           String
+  globalRole         GlobalRole      @default(USER)
+  avatar             String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  projectMemberships ProjectMember[]
+  tasks              Task[]          @relation("TaskAssignees")
+}
+
+model Project {
+  id          Int             @id @default(autoincrement())
+  name        String
+  description String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  members     ProjectMember[]
+  tasks       Task[]
+}
+
+model ProjectMember {
+  id        Int         @id @default(autoincrement())
+  role      ProjectRole @default(MEMBER)
+  joinedAt  DateTime    @default(now())
+  userId    Int
+  user      User        @relation(fields: [userId], references: [id])
+  projectId Int
+  project   Project     @relation(fields: [projectId], references: [id])
+
+  @@unique([userId, projectId])
+}
+
+model Task {
+  id          Int        @id @default(autoincrement())
+  title       String
+  description String?
+  status      TaskStatus @default(TODO)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  projectId   Int
+  project     Project    @relation(fields: [projectId], references: [id])
+  assignees   User[]     @relation("TaskAssignees")
+}
+</file>
+
+<file path="srcs/backend/src/auth/dto/sign-in.dto.ts">
+import { IsString, MinLength } from 'class-validator';
+
+export class SignInDto {
+    @IsString()
+    username: string;
+
+    @IsString()
+    @MinLength(8)
+    password!: string;
+}
+</file>
+
+<file path="srcs/backend/src/auth/auth.service.ts">
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { UsersService } from '../users/users.service'
+import * as bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
+import { access } from 'fs';
+
+interface JwtPayload {
+  sub: number;
+  username: string;
+}
+
+@Injectable()
+export class AuthService {
+  constructor(
+    private usersService: UsersService, 
+    private jwtService: JwtService
+  ){}
+
+  async signIn(username: string, pass:string): Promise<{access_token: string, refresh_token: string}> {
+    const user = await this.usersService.findByName(username);
+    if (!user) {
+      throw new UnauthorizedException();
+    }
+    const isPasswordValid = await bcrypt.compare(pass, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException();
+    }
+    const payload = { sub: user.id, username: user.username, role: user.globalRole };
+    return {
+      access_token: await this.jwtService.signAsync(payload, {expiresIn: '15m'}),
+      refresh_token: await this.jwtService.signAsync(payload, {expiresIn: '7d'}),
+    };
+  }
+
+  async refresh(refreshToken: string): Promise<{access_token: string}> {
+    try {
+      const payload = this.jwtService.verifyAsync<JwtPayload>(refreshToken, {secret: process.env.JWT_SECRET});
+      return {
+              access_token: await this.jwtService.signAsync(payload, {expiresIn: '15m'}),
+      }
+    } catch {
+      throw new UnauthorizedException();
+    }
+  }
+}
+</file>
+
+<file path="srcs/backend/src/tasks/dto/create-task.dto.ts">
+import { IsString, IsNotEmpty, IsInt, IsOptional, IsArray } from 'class-validator';
+
+export class CreateTaskDto {
+  @IsString()
+  @IsNotEmpty()
+  title: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsInt()
+  @IsNotEmpty()
+  projectId: number;
+
+  @IsArray()
+  @IsOptional()
+  @IsInt({ each: true })
+  assigneeIds?: number[]; 
+}
+</file>
+
+<file path="srcs/backend/src/users/dto/create-user.dto.ts">
+import { IsString, MinLength } from 'class-validator';
+
+export class CreateUserDto {
+    @IsString()
+    username: string;
+
+    @IsString()
+    @MinLength(8)
+    password: string;
+}
+
+export class UpdateUserDto{
+    username?: string; //allow this? maybe split username and displayname
+    avatar?: string;
+}
+</file>
+
+<file path="srcs/backend/src/app.module.ts">
+import { Module } from '@nestjs/common';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module';
+import { ProjectsModule } from './projects/projects.module';
+import { TasksModule } from './tasks/tasks.module';
+
+@Module({
+  imports: [UsersModule, AuthModule, ProjectsModule, TasksModule],
+  controllers: [AppController],
+  providers: [AppService],
+})
+export class AppModule {}
+</file>
+
+<file path="srcs/backend/src/users/users.service.ts">
+import { ForbiddenException, Injectable } from '@nestjs/common';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { PrismaService} from '../prisma/prisma.service'
+import * as bcrypt from 'bcrypt';
+
+@Injectable()
+export class UsersService {
+  constructor(private prisma: PrismaService) {}
+
+  async create(createUserDto: CreateUserDto) {
+    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+    return this.prisma.user.create({
+      data: {
+        ...createUserDto,
+        password: hashedPassword,
+      },
+      select:{
+        id: true,
+        username: true,
+        globalRole: true, // Aangepast van role naar globalRole
+        avatar: true,
+        createdAt: true,
+      }
+    });
+  }
+
+  async findAll() {
+    return this.prisma.user.findMany({
+      select: {
+        id: true,
+        username: true,
+        globalRole: true, // Aangepast van role naar globalRole
+        avatar: true,
+        createdAt: true,
+        updatedAt: true,
+      }
+    });
+  }
+
+  async findOne(id: number) {
+    return this.prisma.user.findUnique({
+      where: { id }
+    });
+  }
+
+  async findByName(username: string){
+    return this.prisma.user.findUnique({
+      where: { username }
+    });
+  }
+
+  async update(id: number, updateUserDto: UpdateUserDto) {
+    return this.prisma.user.update({
+      where: { id },
+      data: updateUserDto, // Dit was UpdateUserDto (hoofdletter), moet kleine letter zijn
+      select: {
+        id: true,
+        username: true,
+        globalRole: true, // Aangepast van role naar globalRole
+        avatar: true,
+        createdAt: true,
+        updatedAt: true,
+      }
+    });
+  }
+
+  async updateByName(username: string, updateUserDto: UpdateUserDto) {
+    return this.prisma.user.update({ // Aangepast van prisma.update naar prisma.user.update
+      where: { username },
+      data: updateUserDto, // Dit was UpdateUserDto (hoofdletter), moet kleine letter zijn
+      select: {
+        id: true,
+        username: true,
+        globalRole: true, // Aangepast van role naar globalRole
+        avatar: true,
+        createdAt: true,
+        updatedAt: true,
+      }
+    });
+  }
+
+  async remove(id: number) {
+    return this.prisma.user.delete({
+      where: { id }
+    });
+  }
+
+  async removeByName(username: string) {
+    return this.prisma.user.delete({
+      where: { username }
+    });
+  }
+
+  async promote(username: string) {
+    return this.prisma.user.update({
+      where: { username },
+      data: { globalRole: 'ADMIN'}, // Aangepast van role naar globalRole
+      select: {
+        id: true,
+        username: true,
+        globalRole: true, // Aangepast van role naar globalRole
+      }
+    });
+  }
+
+  async demote(username: string, adminName: string) {
+    if (username == adminName) {
+      throw new ForbiddenException('You cannot demote yourself');
+    }
+    const adminCount = await this.prisma.user.count({
+      where: {globalRole: 'ADMIN'} // Aangepast van role naar globalRole
+    });
+    if (adminCount <= 1){
+      throw new ForbiddenException('Cannot demote the last admin');
+    }
+    return this.prisma.user.update({
+      where: { username },
+      data: { globalRole: 'USER' }, // Aangepast van role naar globalRole
+      select: {
+        id: true,
+        username: true,
+        globalRole: true, // Aangepast van role naar globalRole
+      }
+    });
+  }
+}
+</file>
+
+<file path="srcs/backend/package.json">
+{
+  "name": "backend",
+  "version": "0.0.1",
+  "description": "",
+  "author": "",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "build": "nest build",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "start:debug": "nest start --debug --watch",
+    "start:prod": "node dist/main",
+    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:cov": "jest --coverage",
+    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
+    "test:e2e": "jest --config ./test/jest-e2e.json"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.0.1",
+    "@nestjs/core": "^11.0.1",
+    "@nestjs/jwt": "^11.0.2",
+    "@nestjs/mapped-types": "*",
+    "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/swagger": "^11.2.7",
+    "@prisma/adapter-pg": "^7.7.0",
+    "@prisma/client": "^7.6.0",
+    "bcrypt": "^6.0.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.4",
+    "pg": "^8.20.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.2.0",
+    "@eslint/js": "^9.18.0",
+    "@nestjs/cli": "^11.0.0",
+    "@nestjs/schematics": "^11.0.0",
+    "@nestjs/testing": "^11.0.1",
+    "@types/bcrypt": "^6.0.0",
+    "@types/express": "^5.0.0",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^22.10.7",
+    "@types/pg": "^8.20.0",
+    "@types/supertest": "^6.0.2",
+    "eslint": "^9.18.0",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-prettier": "^5.2.2",
+    "globals": "^16.0.0",
+    "jest": "^30.0.0",
+    "prettier": "^3.4.2",
+    "prisma": "^7.6.0",
+    "source-map-support": "^0.5.21",
+    "supertest": "^7.0.0",
+    "ts-jest": "^29.2.5",
+    "ts-loader": "^9.5.2",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.20.0"
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
+    "rootDir": "src",
+    "testRegex": ".*\\.spec\\.ts$",
+    "transform": {
+      "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "collectCoverageFrom": [
+      "**/*.(t|j)s"
+    ],
+    "coverageDirectory": "../coverage",
+    "testEnvironment": "node"
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  }
+}
+</file>
+
+</files>

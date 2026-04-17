@@ -8,7 +8,7 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 import { AddMemberDto } from './dto/add-member.dto';
 
 @ApiBearerAuth()
-@UseGuards(AuthGuard) // De voordeur: Je moet ingelogd zijn voor ALLES hieronder
+@UseGuards(AuthGuard) // you need to be loggen in before you can do ANYTHING with projects
 @Controller('projects')
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}

@@ -14,7 +14,7 @@ export class ProjectsService {
       data: {
         name: createProjectDto.name,
         description: createProjectDto.description,
-        // Prisma 'Nested Writes': Maak direct een lid aan en koppel die aan dit project
+        // Prisma 'Nested Writes': Make a new project AND create a new member in the same action
         members: {
           create: {
             userId: userId,
@@ -22,7 +22,6 @@ export class ProjectsService {
           },
         },
       },
-      // Haal direct de ledenlijst mee op als antwoord
       include: {
         members: {
           include: {
@@ -35,9 +34,8 @@ export class ProjectsService {
     });
   }
 
-// --- NIEUW LID TOEVOEGEN AAN PROJECT ---
+// add a new member to a project, but first check if they are already a member of that project
   async addMember(projectId: number, userId: number, role: any) {
-    // 1. Check of deze gebruiker al in dit specifieke project zit
     const existingMember = await this.prisma.projectMember.findUnique({
       where: {
         userId_projectId: {
@@ -48,7 +46,7 @@ export class ProjectsService {
     });
 
     if (existingMember) {
-      throw new ConflictException('Deze gebruiker is al lid van dit project!');
+      throw new ConflictException('This user is already a member of the project.');
     }
 
     return this.prisma.projectMember.create({
@@ -65,16 +63,16 @@ export class ProjectsService {
     });
   }
 
-  // --- ALLE PROJECTEN OPHALEN ---
+ 
   async findAll() {
     return this.prisma.project.findMany();
   }
 
-  // --- ÉÉN PROJECT OPHALEN ---
+  
   async findOne(id: number) {
     return this.prisma.project.findUnique({
       where: { id },
-      include: { members: true } // Handig: haalt direct de ledenlijst mee op
+      include: { members: true } 
     });
   }
 
@@ -86,7 +84,7 @@ export class ProjectsService {
     });
   }
 
-  // --- PROJECT VERWIJDEREN ---
+  
   async remove(id: number) {
     return this.prisma.project.delete({
       where: { id }
