@@ -2,7 +2,6 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../users/users.service'
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
-import { access } from 'fs';
 
 interface JwtPayload {
   sub: number;
@@ -34,7 +33,7 @@ export class AuthService {
 
   async refresh(refreshToken: string): Promise<{access_token: string}> {
     try {
-      const payload = this.jwtService.verifyAsync<JwtPayload>(refreshToken, {secret: process.env.JWT_SECRET});
+      const payload = await this.jwtService.verifyAsync<JwtPayload>(refreshToken, {secret: process.env.JWT_SECRET});
       return {
               access_token: await this.jwtService.signAsync(payload, {expiresIn: '15m'}),
       }

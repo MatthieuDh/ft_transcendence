@@ -2,13 +2,13 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request }
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
-import { AuthGuard } from '../auth/auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ProjectLeaderGuard } from './project-leader.guard'; // <--- 1. Importeer je nieuwe uitsmijter
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { AddMemberDto } from './dto/add-member.dto';
 
 @ApiBearerAuth()
-@UseGuards(AuthGuard) // you need to be loggen in before you can do ANYTHING with projects
+@UseGuards(JwtAuthGuard) // you need to be loggen in before you can do ANYTHING with projects
 @Controller('projects')
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}

@@ -13,7 +13,7 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { AuthGuard } from '../auth/auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 
@@ -27,7 +27,7 @@ export class UsersController {
   }
 
   @ApiBearerAuth()
-  @UseGuards(AuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN') // only admins can see everyone
   @Delete(':id')
   @Get()
@@ -45,7 +45,7 @@ export class UsersController {
     return this.usersService.update(+id, updateUserDto);
   }
   @ApiBearerAuth()
-  @UseGuards(AuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN') // only admins can delete users
   @Delete(':id')
   remove(@Param('id') id: string) {
@@ -54,7 +54,7 @@ export class UsersController {
 
 
   @ApiBearerAuth()
-  @UseGuards(AuthGuard, RolesGuard) // <-- Check if the user is logged in first, THEN check their role
+  @UseGuards(JwtAuthGuard, RolesGuard) // <-- Check if the user is logged in first, THEN check their role
   @Roles('ADMIN')                   // <-- The magic tag! Only ADMINs can access this route
   @Patch('promote/:username')
   promote(@Param('username') username: string) {
@@ -63,7 +63,7 @@ export class UsersController {
   }
 
   @ApiBearerAuth()
-  @UseGuards(AuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Patch('demote/:username')
   demote(@Param('username') username: string, @Request() req) {
