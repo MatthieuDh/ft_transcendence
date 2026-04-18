@@ -1,89 +1,118 @@
 import { Injectable } from '@nestjs/common';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
-import { PrismaService } from '../prisma/prisma.service'; // Vergeet deze import niet!
+import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class TasksService {
-  // 1. Prisma toevoegen via de constructor
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
-  // 2. TAAK AANMAKEN
   async create(createTaskDto: CreateTaskDto, deadline: Date | null) {
     const { assigneeIds, ...taskData } = createTaskDto;
-    return this.prisma.task.create({
+
+    // Create task and capture result in newTask variable
+    const newTask = await this.prisma.task.create({
       data: {
         ...taskData,
         deadline: deadline,
         assignees: assigneeIds && assigneeIds.length > 0 ? {
-          connect: assigneeIds.map(id => ({ id: id }))
+          connect: assigneeIds.map((id) => ({ id: id })),
         } : undefined,
       },
-      include: { assignees: { select: { id: true, username: true } } }
+      include: { assignees: { select: { id: true, username: true } } },
     });
+
+    // Notify each assigned user
+    if (assigneeIds && assigneeIds.length > 0) {
+      for (const userId of assigneeIds) {
+        await this.notificationsService.createNotification(
+          userId,
+          'TASK_ASSIGNED',
+          `You have been assigned to: ${newTask.title}`,
+        );
+      }
+    }
+
+    return newTask;
   }
 
-  // 3. ALLE TAKEN OPHALEN (Hier zit de magie voor jouw vraag!)
   async findAll(user: any) {
-    // Check 1: Is de gebruiker een Global Admin? Dan mag hij alles zien.
+    // Admins see everything, users see tasks of their projects
     if (user.role === 'ADMIN') {
       return this.prisma.task.findMany({
-        include: { 
+        include: {
           assignees: { select: { username: true } },
-          project: { select: { name: true } } 
-        }
+          project: { select: { name: true } },
+        },
       });
     }
 
-    // Check 2: Normale user? Laat alleen taken zien van projecten waar de user lid is.
     return this.prisma.task.findMany({
       where: {
         project: {
           members: {
-            some: {
-              userId: user.sub // 'sub' is het ID van de ingelogde user uit het JWT token
-            }
-          }
-        }
+            some: { userId: user.sub },
+          },
+        },
       },
-      include: { 
+      include: {
         assignees: { select: { username: true } },
-        project: { select: { name: true } } 
-      }
+        project: { select: { name: true } },
+      },
     });
   }
 
-  
   async findOne(id: number) {
     return this.prisma.task.findUnique({
       where: { id },
-      include: { 
+      include: {
         assignees: { select: { username: true } },
-        project: { select: { name: true } } 
-      }
+        project: { select: { name: true } },
+      },
     });
   }
 
-  
-
   async update(id: number, updateTaskDto: UpdateTaskDto) {
     const { assigneeIds, ...taskData } = updateTaskDto;
-    return this.prisma.task.update({
+    
+    const updatedTask = await this.prisma.task.update({
       where: { id },
       data: {
         ...taskData,
         assignees: assigneeIds ? {
-          set: assigneeIds.map(userId => ({ id: userId }))
+          set: assigneeIds.map((userId) => ({ id: userId })),
         } : undefined,
       },
-      include: { assignees: { select: { username: true } } }
+      include: { 
+        assignees: true,
+        project: {
+          include: { members: { where: { role: 'PROJECT_LEADER' } } }
+        }
+      },
     });
+
+    // Notify project leader if status is changed to DONE
+    if (updateTaskDto.status === 'DONE') {
+      const leaderId = updatedTask.project.members[0]?.userId;
+      if (leaderId) {
+        await this.notificationsService.createNotification(
+          leaderId,
+          'TASK_DONE',
+          `Task completed: ${updatedTask.title}`
+        );
+      }
+    }
+
+    return updatedTask;
   }
 
-  // 6. TAAK VERWIJDEREN
   async remove(id: number) {
     return this.prisma.task.delete({
-      where: { id }
+      where: { id },
     });
   }
 }

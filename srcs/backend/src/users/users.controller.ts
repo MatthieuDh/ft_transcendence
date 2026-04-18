@@ -28,8 +28,7 @@ export class UsersController {
 
   @ApiBearerAuth()
   @UseGuards(AuthGuard, RolesGuard)
-  @Roles('ADMIN') // only admins can see everyone
-  @Delete(':id')
+  @Roles('ADMIN', 'USER') // only admins can see everyone
   @Get()
   findAll() {
     return this.usersService.findAll();

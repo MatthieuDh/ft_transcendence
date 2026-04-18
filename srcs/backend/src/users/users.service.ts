@@ -10,6 +10,8 @@ export class UsersService {
 
   async create(createUserDto: CreateUserDto) {
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+    const userCount = await this.prisma.user.count();
+      const globalRole = userCount === 0 ? 'ADMIN' : 'USER'; // I make the first user an admin, the rest are just users
     return this.prisma.user.create({
       data: {
         ...createUserDto,
@@ -18,7 +20,7 @@ export class UsersService {
       select:{
         id: true,
         username: true,
-        globalRole: true, // Aangepast van role naar globalRole
+        globalRole: true,
         email: true,
         avatar: true,
         createdAt: true,
@@ -31,7 +33,7 @@ export class UsersService {
       select: {
         id: true,
         username: true,
-        globalRole: true, // Aangepast van role naar globalRole
+        globalRole: true,
         email: true,
         avatar: true,
         createdAt: true,
@@ -97,32 +99,33 @@ export class UsersService {
   async promote(username: string) {
     return this.prisma.user.update({
       where: { username },
-      data: { globalRole: 'ADMIN'}, // Aangepast van role naar globalRole
+      data: { globalRole: 'ADMIN'}, 
       select: {
         id: true,
         username: true,
-        globalRole: true, // Aangepast van role naar globalRole
+        globalRole: true,   
       }
     });
   }
+
 
   async demote(username: string, adminName: string) {
     if (username == adminName) {
       throw new ForbiddenException('You cannot demote yourself');
     }
     const adminCount = await this.prisma.user.count({
-      where: {globalRole: 'ADMIN'} // Aangepast van role naar globalRole
+      where: {globalRole: 'ADMIN'}
     });
     if (adminCount <= 1){
       throw new ForbiddenException('Cannot demote the last admin');
     }
     return this.prisma.user.update({
       where: { username },
-      data: { globalRole: 'USER' }, // Aangepast van role naar globalRole
+      data: { globalRole: 'USER' },
       select: {
         id: true,
         username: true,
-        globalRole: true, // Aangepast van role naar globalRole
+        globalRole: true,
       }
     });
   }

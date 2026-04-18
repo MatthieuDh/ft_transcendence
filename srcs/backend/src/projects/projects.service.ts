@@ -1,26 +1,28 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, ConflictException } from '@nestjs/common';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { PrismaService } from '../prisma/prisma.service';
-import { ConflictException } from '@nestjs/common';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class ProjectsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
-  // --- PROJECT AANMAKEN (Inclusief automatische leider) ---
+  // --- PROJECT AANMAKEN ---
   async create(createProjectDto: CreateProjectDto, userId: number, deadline: Date | null) {
-    return this.prisma.project.create({
+    // 1. Create project and capture result in newProject variable
+    const newProject = await this.prisma.project.create({
       data: {
         name: createProjectDto.name,
         description: createProjectDto.description,
         deadline: deadline,
-        // Prisma 'Nested Writes': Make a new project AND create a new member in the same action
         members: {
           create: {
             userId: userId,
             role: 'PROJECT_LEADER',
-            
           },
         },
       },
@@ -34,9 +36,21 @@ export class ProjectsService {
         }
       }
     });
+
+    // 2. Send notification to the creator (PROJECT_LEADER)
+    for (const member of newProject.members) {
+      await this.notificationsService.createNotification(
+        member.userId,
+        'PROJECT_CREATED',
+        `Project successfully created: ${newProject.name}`
+      );
+    }
+
+    // 3. Return the created project
+    return newProject;
   }
 
-// add a new member to a project, but first check if they are already a member of that project
+  // --- MEMBER TOEVOEGEN ---
   async addMember(projectId: number, userId: number, role: any) {
     const existingMember = await this.prisma.projectMember.findUnique({
       where: {
@@ -51,26 +65,36 @@ export class ProjectsService {
       throw new ConflictException('This user is already a member of the project.');
     }
 
-    return this.prisma.projectMember.create({
+    // 1. Create new member and include project name for the notification
+    const newMember = await this.prisma.projectMember.create({
       data: {
         projectId: projectId,
         userId: userId,
         role: role,
       },
       include: {
-        user: {
-          select: { username: true }
-        }
+        user: { select: { username: true } },
+        project: { select: { name: true } } // We need this to show the name in the notification!
       }
     });
+
+    // 2. Send live notification to the newly added user
+    await this.notificationsService.createNotification(
+      userId,
+      'PROJECT_JOINED',
+      `You have been added to the project: ${newMember.project.name} as ${role}`
+    );
+
+    // 3. Return the new member
+    return newMember;
   }
 
- 
+  // --- ALLE PROJECTEN OPHALEN ---
   async findAll() {
     return this.prisma.project.findMany();
   }
 
-  
+  // --- ÉÉN PROJECT OPHALEN ---
   async findOne(id: number) {
     return this.prisma.project.findUnique({
       where: { id },
@@ -86,7 +110,7 @@ export class ProjectsService {
     });
   }
 
-  
+  // --- PROJECT VERWIJDEREN ---
   async remove(id: number) {
     return this.prisma.project.delete({
       where: { id }

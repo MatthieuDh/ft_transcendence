@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transcendence God Mode</title>
+    <style>
+        /* --- JOUW ORIGINELE STYLING (ONGEWIJZIGD) --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; color: #333; }
+        .navbar { display: flex; justify-content: space-between; align-items: center; background-color: #1a252f; color: white; padding: 15px 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .navbar-brand { font-size: 20px; font-weight: bold; }
+        .user-switcher { display: flex; gap: 10px; align-items: center; background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; }
+        .user-switcher select { padding: 5px; border-radius: 4px; font-weight: bold; border: none; outline: none; cursor: pointer; }
+        .notification-container { position: relative; cursor: pointer; user-select: none; }
+        .bell-icon { font-size: 24px; transition: transform 0.2s; display: inline-block; }
+        .notification-container:hover .bell-icon { transform: scale(1.1); }
+        .badge { position: absolute; top: -5px; right: -8px; background-color: #e74c3c; color: white; border-radius: 50%; padding: 2px 6px; font-size: 12px; font-weight: bold; box-shadow: 0 0 0 2px #1a252f; display: none; }
+        .dropdown { display: none; position: absolute; top: 45px; right: 0; width: 320px; background-color: #ffffff; color: #333; box-shadow: 0 8px 16px rgba(0,0,0,0.15); border-radius: 8px; border: 1px solid #ddd; z-index: 1000; overflow: hidden; }
+        .dropdown-header { background-color: #f8f9fa; padding: 12px 15px; font-weight: bold; border-bottom: 1px solid #eee; color: #2c3e50; }
+        .notification-list { max-height: 300px; overflow-y: auto; }
+        .dropdown-item { padding: 15px; border-bottom: 1px solid #eee; font-size: 14px; display: flex; gap: 10px; }
+        .dropdown-item:hover { background-color: #f1f3f5; }
+        .empty-state { padding: 20px; text-align: center; color: #888; font-style: italic; font-size: 14px;}
+        .mark-read-btn { width: 100%; padding: 12px; background-color: #f8f9fa; color: #0066cc; border: none; border-top: 1px solid #eee; cursor: pointer; font-weight: bold; }
+        .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+        .card { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .card h3 { border-bottom: 2px solid #f0f2f5; padding-bottom: 10px; margin-bottom: 15px; color: #2c3e50; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .form-section { background: #fafafa; padding: 15px; border-radius: 8px; border: 1px solid #eee; }
+        .form-section h4 { margin-bottom: 15px; color: #444; font-size: 15px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; margin-bottom: 5px; font-size: 13px; font-weight: bold; color: #666;}
+        .form-group input, .form-group select { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 5px; font-family: inherit; font-size: 14px; }
+        button.action-btn { background-color: #3498db; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 5px; transition: 0.2s; }
+        button.action-btn:hover { background-color: #2980b9; }
+        button.warning-btn { background-color: #e67e22; }
+        button.warning-btn:hover { background-color: #d35400; }
+        .status-badge { display: block; padding: 10px; background: #d4edda; color: #155724; border-radius: 5px; font-size: 14px; font-weight: bold; text-align: center;}
+        .online-user-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #eee;}
+        .green-dot { width: 10px; height: 10px; background-color: #2ecc71; border-radius: 50%; display: inline-block; box-shadow: 0 0 5px rgba(46, 204, 113, 0.5);}
+        #toast { position: fixed; bottom: 20px; right: 20px; background: #333; color: white; padding: 15px 20px; border-radius: 5px; display: none; z-index: 9999; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+
+        .auth-bar { background-color: #2c3e50; color: white; padding: 10px 30px; display: flex; gap: 15px; align-items: center; font-size: 14px; border-bottom: 2px solid #34495e; }
+        .auth-bar input { padding: 6px; border-radius: 4px; border: none; width: 140px; }
+        .auth-status { display: flex; align-items: center; gap: 8px; font-weight: bold; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background-color: #e74c3c; }
+        .dot.online { background-color: #2ecc71; box-shadow: 0 0 5px #2ecc71; }
+    </style>
+</head>
+<body>
+
+    <div class="auth-bar">
+        <div class="auth-status">
+            <div id="statusDot" class="dot"></div>
+            <span>API: <span id="statusTxt">Log in voor data</span></span>
+        </div>
+        <input type="text" id="loginUser" placeholder="Username">
+        <input type="password" id="loginPass" placeholder="Wachtwoord">
+        <button onclick="login()" style="width: auto; padding: 5px 15px; margin: 0; background: #34495e; color: white; border: none; cursor: pointer; border-radius: 4px;">Login</button>
+    </div>
+
+    <div class="navbar">
+        <div class="navbar-brand">🚀 Transcendence God Mode</div>
+        <div class="user-switcher">
+            <label for="currentUser" style="font-size: 14px;">Sessie voor:</label>
+            <select id="currentUser" onchange="switchUser()">
+                <option value="">Laden...</option>
+            </select>
+        </div>
+        <div class="notification-container" onclick="toggleDropdown(event)">
+            <span class="bell-icon">🔔</span>
+            <span class="badge" id="badgeCount">0</span>
+            <div class="dropdown" id="notificationMenu" onclick="event.stopPropagation()">
+                <div class="dropdown-header">Recente Meldingen</div>
+                <div class="notification-list" id="notificationList"></div>
+                <button class="mark-read-btn" onclick="markAllAsRead()">Markeer alles als gelezen</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="main-content">
+            <div class="card">
+                <h3>👥 Gebruikers Beheer</h3>
+                <div class="form-grid">
+                    <div class="form-section">
+                        <h4>Nieuwe User Aanmaken</h4>
+                        <div class="form-group"><input type="text" id="newUsername" placeholder="Username"></div>
+                        <div class="form-group"><input type="email" id="newUserEmail" placeholder="E-mailadres"></div>
+                        <div class="form-group"><input type="password" id="newUserPass" placeholder="Wachtwoord"></div>
+                        <button class="action-btn" onclick="createUser()">Aanmaken</button>
+                    </div>
+                    <div class="form-section">
+                        <h4>Rol Wijzigen</h4>
+                        <div class="form-group">
+                            <label>Selecteer User</label>
+                            <select id="roleUserId" class="dynamic-user-select"><option value="">Laden...</option></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Nieuwe Rol</label>
+                            <select id="newRole">
+                                <option value="USER">USER</option>
+                                <option value="ADMIN">ADMIN</option>
+                            </select>
+                        </div>
+                        <button class="action-btn warning-btn" onclick="changeRole()">Rol Updaten</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>📁 Projecten & Leden</h3>
+                <div class="form-grid">
+                    <div class="form-section">
+                        <h4>Nieuw Project</h4>
+                        <div class="form-group"><input type="text" id="projName" placeholder="Project Naam"></div>
+                        <div class="form-group"><input type="text" id="projDesc" placeholder="Beschrijving"></div>
+                        <div class="form-group">
+                            <label>Deadline</label>
+                            <input type="datetime-local" id="projDeadline">
+                        </div>
+                        <button class="action-btn" onclick="createProject()">Project Aanmaken</button>
+                    </div>
+                    <div class="form-section">
+                        <h4>Member Toevoegen</h4>
+                        <div class="form-group">
+                            <label>Kies Project</label>
+                            <select id="memberProjId" class="dynamic-project-select"><option value="">Laden...</option></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Kies User</label>
+                            <select id="memberUserId" class="dynamic-user-select"><option value="">Laden...</option></select>
+                        </div>
+                        <button class="action-btn warning-btn" onclick="addMember()">Toevoegen</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>📋 Taak Aanmaken</h3>
+                <div class="form-grid">
+                    <div class="form-section" style="grid-column: 1 / -1;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div class="form-group">
+                                <label>Titel</label>
+                                <input type="text" id="taskTitle" placeholder="Taak omschrijving">
+                            </div>
+                            <div class="form-group">
+                                <label>Deadline</label>
+                                <input type="datetime-local" id="taskDeadline">
+                            </div>
+                            <div class="form-group">
+                                <label>Kies Project</label>
+                                <select id="taskProjId" class="dynamic-project-select"><option value="">Laden...</option></select>
+                            </div>
+                            <div class="form-group">
+                                <label>Assignee</label>
+                                <select id="taskAssignee" class="dynamic-user-select"><option value="">Laden...</option></select>
+                            </div>
+                        </div>
+                        <button class="action-btn" onclick="createTask()">Taak Aanmaken</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="card">
+                <h3>Server Status</h3>
+                <div class="status-badge" id="connStatus">⏳ Verbinden...</div>
+            </div>
+            <div class="card">
+                <h3>🟢 Vrienden Online</h3>
+                <div id="onlineUsersList" style="margin-top: 15px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast">Actie uitgevoerd!</div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        const API_URL = 'http://localhost:3000'; 
+        let jwtToken = null; 
+        let currentUserId = null;
+        let unreadNotifications = [];
+        let onlineUsers = new Set(); 
+        let socket;
+
+        async function login() {
+            const username = document.getElementById('loginUser').value;
+            const password = document.getElementById('loginPass').value;
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    jwtToken = data.access_token;
+                    document.getElementById('statusDot').className = 'dot online';
+                    document.getElementById('statusTxt').innerText = 'Ingelogd';
+                    showToast("✅ Login succes!");
+                    fetchDatabaseData(); 
+                } else { showToast("❌ Login mislukt: " + data.message); }
+            } catch (e) { showToast("❌ Kan auth server niet bereiken"); }
+        }
+
+        async function fetchDatabaseData() {
+            if (!jwtToken) return;
+            const headers = { 'Authorization': `Bearer ${jwtToken}` };
+
+            // 1. Users ophalen (NU MET AUTO-EXTRACT VOOR WRAPPED DATA)
+            try {
+                const userRes = await fetch(`${API_URL}/users`, { headers });
+                let users = await userRes.json();
+                
+                // SLIMME FIX: Als de data in een object zit (zoals { data: [...] }), pakken we de lijst eruit
+                if (!Array.isArray(users) && users.data && Array.isArray(users.data)) {
+                    users = users.data;
+                }
+
+                console.log("DEBUG USERS PROCESSED:", users);
+
+                const userSelects = document.querySelectorAll('.dynamic-user-select, #currentUser');
+                userSelects.forEach(select => {
+                    select.innerHTML = '';
+                    if (Array.isArray(users)) {
+                        users.forEach(user => {
+                            const name = user.username || `User ${user.id}`;
+                            select.innerHTML += `<option value="${user.id}">${name}</option>`;
+                        });
+                    } else {
+                        select.innerHTML = '<option value="">Fout bij laden</option>';
+                    }
+                });
+
+                if (!currentUserId && Array.isArray(users) && users.length > 0) {
+                    currentUserId = users[0].id;
+                    connectSocket();
+                }
+            } catch (err) { console.error("Fout bij laden users:", err); }
+
+            // 2. Projecten ophalen
+            try {
+                const projRes = await fetch(`${API_URL}/projects`, { headers });
+                let projs = await projRes.json();
+                
+                if (!Array.isArray(projs) && projs.data && Array.isArray(projs.data)) {
+                    projs = projs.data;
+                }
+
+                const projSelects = document.querySelectorAll('.dynamic-project-select');
+                projSelects.forEach(select => {
+                    select.innerHTML = '';
+                    if (Array.isArray(projs)) {
+                        projs.forEach(p => {
+                            select.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+                        });
+                    }
+                });
+            } catch (err) { console.error("Fout bij laden projecten:", err); }
+        }
+
+        function connectSocket() {
+            if(!currentUserId || !jwtToken) return;
+            if(socket) socket.disconnect(); 
+            socket = io(API_URL, { auth: { token: jwtToken } });
+            socket.on('connect', () => {
+                document.getElementById('connStatus').innerHTML = `🟢 Live als User ${currentUserId}`;
+                socket.emit('identify', parseInt(currentUserId));
+            });
+            socket.on('new_notification', (data) => { unreadNotifications.unshift(data); updateNotificationsUI(); });
+            socket.on('user_status_change', (data) => {
+                if (data.userId !== parseInt(currentUserId)) { 
+                    data.status === 'ONLINE' ? onlineUsers.add(data.userId) : onlineUsers.delete(data.userId);
+                    updateOnlineUsersUI(); 
+                }
+            });
+        }
+
+        async function apiCall(endpoint, method, bodyData, refreshDataAfter = false) {
+            const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwtToken}` };
+            try {
+                const response = await fetch(`${API_URL}${endpoint}`, { method, headers, body: JSON.stringify(bodyData) });
+                if (response.ok) {
+                    showToast('✅ Actie succesvol!');
+                    if (refreshDataAfter) fetchDatabaseData();
+                } else {
+                    const err = await response.json();
+                    showToast('❌ Fout: ' + (err.message || 'Onbekend'));
+                }
+            } catch (e) { showToast('❌ Backend onbereikbaar'); }
+        }
+
+        function createUser() {
+            apiCall('/users', 'POST', {
+                username: document.getElementById('newUsername').value,
+                email: document.getElementById('newUserEmail').value,
+                password: document.getElementById('newUserPass').value
+            }, true);
+        }
+
+        function changeRole() {
+            const id = document.getElementById('roleUserId').value;
+            apiCall(`/users/${id}`, 'PATCH', { globalRole: document.getElementById('newRole').value });
+        }
+
+        function createProject() {
+            let dl = document.getElementById('projDeadline').value;
+            apiCall('/projects', 'POST', {
+                name: document.getElementById('projName').value,
+                description: document.getElementById('projDesc').value,
+                userId: parseInt(currentUserId),
+                ...(dl ? { deadline: new Date(dl).toISOString() } : {})
+            }, true);
+        }
+
+        function addMember() {
+            const projId = document.getElementById('memberProjId').value;
+            apiCall(`/projects/${projId}/members`, 'POST', {
+                userId: parseInt(document.getElementById('memberUserId').value),
+                role: 'MEMBER'
+            });
+        }
+
+        function createTask() {
+            let dl = document.getElementById('taskDeadline').value;
+            apiCall('/tasks', 'POST', {
+                title: document.getElementById('taskTitle').value,
+                projectId: parseInt(document.getElementById('taskProjId').value),
+                assigneeIds: [parseInt(document.getElementById('taskAssignee').value)],
+                ...(dl ? { deadline: new Date(dl).toISOString() } : {})
+            });
+        }
+
+        function updateNotificationsUI() {
+            const badgeCount = document.getElementById('badgeCount');
+            const notificationList = document.getElementById('notificationList');
+            badgeCount.style.display = unreadNotifications.length > 0 ? 'block' : 'none';
+            badgeCount.innerText = unreadNotifications.length;
+            notificationList.innerHTML = unreadNotifications.map(n => `<div class="dropdown-item">🔔 ${n.message}</div>`).join('') || '<div class="empty-state">Geen meldingen.</div>';
+        }
+        function updateOnlineUsersUI() {
+            document.getElementById('onlineUsersList').innerHTML = Array.from(onlineUsers).map(id => `<div class="online-user-item">🟢 User ID: ${id}</div>`).join('') || '<div class="empty-state">Iedereen offline</div>';
+        }
+        function switchUser() { currentUserId = document.getElementById('currentUser').value; connectSocket(); }
+        function toggleDropdown(event) { event.stopPropagation(); const menu = document.getElementById('notificationMenu'); menu.style.display = menu.style.display === 'block' ? 'none' : 'block'; }
+        window.onclick = function() { document.getElementById('notificationMenu').style.display = 'none'; }
+        function showToast(msg) { const toast = document.getElementById('toast'); toast.innerText = msg; toast.style.display = 'block'; setTimeout(() => toast.style.display = 'none', 3000); }
+        async function markAllAsRead() { unreadNotifications = []; updateNotificationsUI(); apiCall(`/notifications/user/${currentUserId}/read`, 'PATCH', {}); }
+    </script>
+</body>
+</html>

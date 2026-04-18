@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transcendence Dashboard</title>
+    <style>
+        /* Reset & Basis styling */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; color: #333; }
+
+        /* Navigatiebalk */
+        .navbar {
+            display: flex; justify-content: space-between; align-items: center;
+            background-color: #1a252f; color: white; padding: 15px 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .navbar-brand { font-size: 20px; font-weight: bold; }
+
+        /* Belletje & Badge */
+        .notification-container { position: relative; cursor: pointer; user-select: none; }
+        .bell-icon { font-size: 24px; transition: transform 0.2s; display: inline-block; }
+        .notification-container:hover .bell-icon { transform: scale(1.1); }
+        
+        .badge {
+            position: absolute; top: -5px; right: -8px;
+            background-color: #e74c3c; color: white;
+            border-radius: 50%; padding: 2px 6px;
+            font-size: 12px; font-weight: bold;
+            box-shadow: 0 0 0 2px #1a252f;
+            display: none;
+        }
+
+        /* De Dropdown List */
+        .dropdown {
+            display: none; position: absolute; top: 45px; right: 0;
+            width: 320px; background-color: #ffffff; color: #333;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15); border-radius: 8px;
+            border: 1px solid #ddd; z-index: 1000; overflow: hidden;
+        }
+        
+        .dropdown-header {
+            background-color: #f8f9fa; padding: 12px 15px;
+            font-weight: bold; border-bottom: 1px solid #eee; color: #2c3e50;
+        }
+
+        .notification-list { max-height: 300px; overflow-y: auto; }
+        
+        .dropdown-item {
+            padding: 15px; border-bottom: 1px solid #eee;
+            font-size: 14px; line-height: 1.4; display: flex; gap: 10px;
+        }
+        .dropdown-item:last-child { border-bottom: none; }
+        .dropdown-item:hover { background-color: #f1f3f5; }
+        .dropdown-item .icon { font-size: 18px; }
+
+        .empty-state { padding: 20px; text-align: center; color: #888; font-style: italic; font-size: 14px;}
+
+        .mark-read-btn {
+            width: 100%; padding: 12px; background-color: #f8f9fa; color: #0066cc;
+            border: none; border-top: 1px solid #eee; cursor: pointer;
+            font-weight: bold; transition: background 0.2s;
+        }
+        .mark-read-btn:hover { background-color: #e9ecef; }
+
+        /* Pagina Content Grid */
+        .container { max-width: 1000px; margin: 40px auto; padding: 0 20px; display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+        .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .status-badge { display: inline-block; padding: 5px 10px; background: #d4edda; color: #155724; border-radius: 15px; font-size: 14px; margin-top: 15px;}
+        
+        /* Online Users Lijstje */
+        .online-user-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #eee;}
+        .online-user-item:last-child { border-bottom: none; }
+        .green-dot { width: 10px; height: 10px; background-color: #2ecc71; border-radius: 50%; display: inline-block; box-shadow: 0 0 5px rgba(46, 204, 113, 0.5);}
+    </style>
+</head>
+<body>
+
+    <div class="navbar">
+        <div class="navbar-brand">🚀 Transcendence</div>
+        
+        <div class="notification-container" onclick="toggleDropdown(event)">
+            <span class="bell-icon">🔔</span>
+            <span class="badge" id="badgeCount">0</span>
+            
+            <div class="dropdown" id="notificationMenu" onclick="event.stopPropagation()">
+                <div class="dropdown-header">Recente Meldingen</div>
+                <div class="notification-list" id="notificationList"></div>
+                <button class="mark-read-btn" onclick="markAllAsRead()">Markeer alles als gelezen</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2>Welkom op het test-dashboard!</h2>
+            <p style="margin-top: 10px; color: #555; line-height: 1.6;">
+                Dit is je hoofdwerkruimte. Ga naar Swagger API om acties uit te voeren die notificaties genereren.
+            </p>
+            <div class="status-badge" id="connStatus">⏳ Verbinden met server...</div>
+        </div>
+
+        <div class="card">
+            <h3>🟢 Vrienden Online</h3>
+            <div id="onlineUsersList" style="margin-top: 15px;">
+                </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        // --- 1. VARIABELEN ---
+        let unreadNotifications = [];
+        // We gebruiken een Set() voor online users, dat is handig want dan kun je nooit per ongeluk 2x dezelfde user toevoegen!
+        let onlineUsers = new Set(); 
+
+        const badgeCount = document.getElementById('badgeCount');
+        const notificationMenu = document.getElementById('notificationMenu');
+        const notificationList = document.getElementById('notificationList');
+        const connStatus = document.getElementById('connStatus');
+        const onlineUsersList = document.getElementById('onlineUsersList');
+
+        // --- 2. UI FUNCTIES ---
+
+        // Functie 1: Update het Belletje
+        function updateNotificationsUI() {
+            if (unreadNotifications.length > 0) {
+                badgeCount.innerText = unreadNotifications.length;
+                badgeCount.style.display = 'block';
+            } else {
+                badgeCount.style.display = 'none';
+            }
+
+            notificationList.innerHTML = '';
+            if (unreadNotifications.length === 0) {
+                notificationList.innerHTML = '<div class="empty-state">Geen nieuwe meldingen.</div>';
+            } else {
+                unreadNotifications.forEach(notif => {
+                    let icon = notif.type === 'PROJECT_JOINED' ? '📁' : '📋';
+                    notificationList.innerHTML += `
+                        <div class="dropdown-item">
+                            <span class="icon">${icon}</span>
+                            <span>${notif.message}</span>
+                        </div>`;
+                });
+            }
+        }
+
+        // Functie 2: Update het Zijbalkje
+        function updateOnlineUsersUI() {
+            onlineUsersList.innerHTML = '';
+            if (onlineUsers.size === 0) {
+                onlineUsersList.innerHTML = '<div class="empty-state">Iedereen is offline 😴</div>';
+            } else {
+                onlineUsers.forEach(userId => {
+                    onlineUsersList.innerHTML += `
+                        <div class="online-user-item">
+                            <span class="green-dot"></span>
+                            <span>User ${userId}</span>
+                        </div>`;
+                });
+            }
+        }
+
+        // Klik-gedrag voor de dropdown
+        function toggleDropdown(event) {
+            event.stopPropagation();
+            notificationMenu.style.display = notificationMenu.style.display === 'block' ? 'none' : 'block';
+        }
+        window.onclick = function() { notificationMenu.style.display = 'none'; }
+
+        // Knop om database te updaten
+        async function markAllAsRead() {
+            unreadNotifications = []; 
+            updateNotificationsUI();
+            notificationMenu.style.display = 'none';
+
+            try {
+                const response = await fetch('http://localhost:3000/notifications/user/1/read', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (response.ok) console.log('✅ Database succesvol geüpdatet');
+            } catch (error) {
+                console.error('Backend is niet bereikbaar:', error);
+            }
+        }
+
+        // --- 3. WEBSOCKET LOGICA ---
+        const socket = io('http://localhost:3000');
+        
+        socket.on('connect', () => {
+            connStatus.innerHTML = '🟢 Live verbonden met backend (User ID: 1)';
+            socket.emit('identify', 1);
+        });
+
+        socket.on('disconnect', () => {
+            connStatus.innerHTML = '🔴 Verbinding verbroken...';
+        });
+
+        // HIER LUISTEREN WE NAAR TAKEN & PROJECTEN (Gaan naar het belletje)
+        socket.on('new_notification', (data) => {
+            unreadNotifications.unshift(data); 
+            updateNotificationsUI(); 
+        });
+
+        // HIER LUISTEREN WE NAAR ONLINE/OFFLINE (Gaan naar de zijbalk)
+        socket.on('user_status_change', (data) => {
+            if (data.userId !== 1) { // We tonen onszelf niet in het lijstje
+                if (data.status === 'ONLINE') {
+                    onlineUsers.add(data.userId); // Zet in de lijst
+                } else if (data.status === 'OFFLINE') {
+                    onlineUsers.delete(data.userId); // Verwijder uit de lijst
+                }
+                updateOnlineUsersUI(); // Teken het lijstje opnieuw
+            }
+        });
+
+        // Eerste keer tekenen
+        updateNotificationsUI();
+        updateOnlineUsersUI();
+    </script>
+</body>
+</html>

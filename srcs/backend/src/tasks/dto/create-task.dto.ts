@@ -1,4 +1,5 @@
-import { IsString, IsNotEmpty, IsInt, IsOptional, IsArray, IsDateString } from 'class-validator';
+import { TaskStatus } from '@prisma/client';
+import { IsString, IsNotEmpty, IsInt, IsOptional, IsArray, IsDateString, IsEnum  } from 'class-validator';
 
 export class CreateTaskDto {
   @IsString()
@@ -13,6 +14,10 @@ export class CreateTaskDto {
   @IsNotEmpty()
   projectId: number;
 
+@IsOptional()
+  @IsEnum(TaskStatus) 
+  status?: TaskStatus;
+
   @IsOptional()
   @IsDateString()
   deadline?: string;
@@ -22,3 +27,5 @@ export class CreateTaskDto {
   @IsInt({ each: true })
   assigneeIds?: number[]; 
 }
+
+

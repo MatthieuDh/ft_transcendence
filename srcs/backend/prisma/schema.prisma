@@ -23,6 +23,12 @@ enum TaskStatus {
   DONE
 }
 
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  COMPLETED
+}
+
 model User {
   id                 Int             @id @default(autoincrement())
   username           String          @unique
@@ -34,6 +40,7 @@ model User {
   updatedAt          DateTime        @updatedAt
   projectMemberships ProjectMember[]
   tasks              Task[]          @relation("TaskAssignees")
+  notifications Notification[]
 }
 
 model Project {
@@ -44,7 +51,7 @@ model Project {
   deadlineNotified Boolean   @default(false)
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
-  status      String          @default("TODO")
+  status      ProjectStatus   @default(PLANNING)
   members     ProjectMember[]
   tasks       Task[]
 }
@@ -54,10 +61,9 @@ model ProjectMember {
   role      ProjectRole @default(MEMBER)
   joinedAt  DateTime    @default(now())
   userId    Int
-  user      User        @relation(fields: [userId], references: [id])
   projectId Int
-  project   Project     @relation(fields: [projectId], references: [id])
-
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   @@unique([userId, projectId])
 }
 
@@ -73,4 +79,14 @@ model Task {
   projectId   Int
   project     Project    @relation(fields: [projectId], references: [id])
   assignees   User[]     @relation("TaskAssignees")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  type      String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
 }

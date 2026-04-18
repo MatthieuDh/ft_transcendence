@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { MailerService } from '@nestjs-modules/mailer';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsGateway } from './notifications.gateway';
 
 @Injectable()
 export class NotificationsService {
@@ -10,7 +11,24 @@ export class NotificationsService {
   constructor(
     private prisma: PrismaService,
     private mailerService: MailerService,
+    private readonly notificationsGateway: NotificationsGateway,
   ) {}
+
+async createNotification(userId: number, type: string, message: string) {
+    // 1. Persist in database
+    const notification = await this.prisma.notification.create({
+      data: {
+        userId,
+        type,
+        message,
+      },
+    });
+
+    // 2. Send real-time via WebSocket
+    this.notificationsGateway.sendNotificationToUser(userId, notification);
+
+    return notification;
+  }
 
   // Voor je test staat deze nu op EVERY_MINUTE
   @Cron(CronExpression.EVERY_MINUTE)
@@ -157,5 +175,24 @@ export class NotificationsService {
     } catch (error) {
       this.logger.error(`Error sending project email to ${email}: ${error.message}`);
     }
+  }
+  async markAllAsRead(userId: number) {
+    return this.prisma.notification.updateMany({
+      where: { 
+        userId: userId,
+        isRead: false 
+      },
+      data: { 
+        isRead: true 
+      },
+    });
+  }
+
+  async getUserNotifications(userId: number) {
+    return this.prisma.notification.findMany({
+      where: { userId: userId },
+      orderBy: { createdAt: 'desc' },
+      take: 20, // we need to decide how many we want to save
+    });
   }
 }

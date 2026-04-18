@@ -35,7 +35,6 @@ services:
     volumes:
       - ./srcs/backend:/app
       - /app/node_modules
-    command: sh -c "npx prisma migrate dev --name init && npm run start:dev"
-
+    command: sh -c "npx prisma generate && npm run start:dev"
 volumes:
   postgres_data:
