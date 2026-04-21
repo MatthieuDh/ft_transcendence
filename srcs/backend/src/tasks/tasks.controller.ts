@@ -6,6 +6,7 @@ import { ApiBearerAuth } from '@nestjs/swagger';
 import { Request } from '@nestjs/common';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { ProjectLeaderGuard } from 'src/projects/project-leader.guard';
 
 @ApiBearerAuth()
 @UseGuards(AuthGuard)
@@ -18,11 +19,25 @@ export class TasksController {
     const deadlineDate = createTaskDto.deadline ? new Date(createTaskDto.deadline) : null;
     return this.tasksService.create(createTaskDto, deadlineDate);
   }
+@ApiBearerAuth()
+  @UseGuards(AuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Get('all')
+  findAllAdmins() {
+    return this.tasksService.findAll(); 
+  }
+
+@ApiBearerAuth()
+  @UseGuards(AuthGuard) 
+  @Get()
+  findMyTasks(@Request() req) {
+    return this.tasksService.findMyTasks(req.user.sub);
+  }
 
 
   @Get()
   findAll(@Request() req) {
-    return this.tasksService.findAll(req.user);
+    return this.tasksService.findAll();
   }
 
   @Get(':id')
@@ -30,8 +45,7 @@ export class TasksController {
     return this.tasksService.findOne(+id);
   }
 
-  @Roles('ADMIN')
-  @UseGuards(RolesGuard) // making sure only ADMINs can remove tasks
+  @UseGuards(RolesGuard, ProjectLeaderGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.tasksService.remove(+id);

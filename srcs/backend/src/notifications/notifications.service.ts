@@ -30,16 +30,13 @@ async createNotification(userId: number, type: string, message: string) {
     return notification;
   }
 
-  // Voor je test staat deze nu op EVERY_MINUTE
-  @Cron(CronExpression.EVERY_MINUTE)
+@Cron('0 */10 9-17 * * 1-5')
   async handleCron() {
     this.logger.debug('Running automated deadline check for both Tasks and Projects...');
 
     const now = new Date();
 
-    // ==========================================
-    // 1. CHECK ALLE TE LATE TAKEN
-    // ==========================================
+   
     const overdueTasks = await this.prisma.task.findMany({
       where: {
         deadline: { lt: now },
@@ -81,22 +78,15 @@ async createNotification(userId: number, type: string, message: string) {
       });
     }
 
-    // ==========================================
-    // 2. CHECK ALLE TE LATE PROJECTEN
-    // ==========================================
-    // ==========================================
-    // 2. CHECK ALLE TE LATE PROJECTEN
-    // ==========================================
+
     const overdueProjects = await this.prisma.project.findMany({
       
-      // 1. DIT IS HET PROJECT FILTER (Hier hoort status!)
       where: { 
         deadline: { lt: now },
         deadlineNotified: false,
-        status: { notIn: ['DONE', 'OK'] }, 
+        status: { notIn: ['COMPLETED'] }, 
       },
       
-      // 2. DIT IS DE GEKOPPELDE DATA (Hier hoort members!)
       include: { 
         members: {
           where: { role: 'PROJECT_LEADER' },
@@ -106,7 +96,6 @@ async createNotification(userId: number, type: string, message: string) {
       
     });
     for (const project of overdueProjects) {
-      // Zoek de projectleider op
       const projectLeader = project.members[0]?.user;
 
       if (projectLeader?.email) {
@@ -149,7 +138,6 @@ async createNotification(userId: number, type: string, message: string) {
     }
   }
 
-  // --- MAIL TEMPLATE VOOR PROJECTEN ---
   private async sendProjectEmail(email: string, project: any, leaderName: string) {
     try {
       await this.mailerService.sendMail({

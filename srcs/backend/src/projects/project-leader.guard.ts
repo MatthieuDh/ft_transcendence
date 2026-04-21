@@ -7,18 +7,35 @@ export class ProjectLeaderGuard implements CanActivate {
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
     const request = context.switchToHttp().getRequest();
-    
-    // 1. Wie ben jij? (Komt uit de AuthGuard die vóór deze guard draait)
-    const userId = request.user.sub; 
-    
-    // 2. Welk project probeer je aan te passen? (Haalt de ':id' uit de URL)
-    const projectId = parseInt(request.params.id); 
+    const userId = request.user.sub;
+    const globalRole = request.user.globalRole;
 
-    if (isNaN(projectId)) {
-      throw new ForbiddenException('Geen geldig project ID opgegeven.');
+    if (globalRole === 'ADMIN') { //for now admin has all permissions, we can change this later if we want to
+      return true;
     }
 
-    // 3. De Database Check: Zoek jouw specifieke rol in dit specifieke project
+    let projectId: number;
+    const path = request.route.path;
+
+    if (path.includes('/tasks')) {
+      const taskId = parseInt(request.params.id);
+      if (isNaN(taskId)) throw new ForbiddenException('Invalid task ID provided');
+
+      const task = await this.prisma.task.findUnique({
+        where: { id: taskId },
+        select: { projectId: true }
+      });
+
+      if (!task) throw new ForbiddenException('Task not found');
+      projectId = task.projectId;
+    } else {
+      projectId = parseInt(request.params.id);
+    }
+
+    if (isNaN(projectId)) {
+      throw new ForbiddenException('Invalid project ID provided');
+    }
+
     const member = await this.prisma.projectMember.findUnique({
       where: {
         userId_projectId: {
@@ -28,16 +45,10 @@ export class ProjectLeaderGuard implements CanActivate {
       },
     });
 
-    // 4. Het Oordeel
-    if (!member) {
-      throw new ForbiddenException('you do not have the right to access this project!');
+    if (!member || member.role !== 'PROJECT_LEADER') {
+      throw new ForbiddenException('You do not have permission to modify this project');
     }
 
-    if (member.role !== 'PROJECT_LEADER') {
-      throw new ForbiddenException('you do not have the right to access this project!');
-    }
-
-    // Alles klopt? Groen licht!
-    return true; 
+    return true;
   }
 }

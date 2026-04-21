@@ -3,12 +3,12 @@ import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { AuthGuard } from '../auth/auth.guard';
-import { ProjectLeaderGuard } from './project-leader.guard'; // <--- 1. Importeer je nieuwe uitsmijter
+import { ProjectLeaderGuard } from './project-leader.guard'; 
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { AddMemberDto } from './dto/add-member.dto';
 
 @ApiBearerAuth()
-@UseGuards(AuthGuard) // you need to be loggen in before you can do ANYTHING with projects
+@UseGuards(AuthGuard) // you need to be logged in before you can do ANYTHING with projects
 @Controller('projects')
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
@@ -29,8 +29,6 @@ export class ProjectsController {
   findOne(@Param('id') id: string) {
     return this.projectsService.findOne(+id);
   }
-
-  // --- BEVEILIGDE PROJECT ROUTES ---
 
   @UseGuards(ProjectLeaderGuard) 
   @Patch(':id')

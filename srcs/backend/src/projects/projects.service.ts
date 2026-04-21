@@ -13,7 +13,6 @@ export class ProjectsService {
 
   // --- PROJECT AANMAKEN ---
   async create(createProjectDto: CreateProjectDto, userId: number, deadline: Date | null) {
-    // 1. Create project and capture result in newProject variable
     const newProject = await this.prisma.project.create({
       data: {
         name: createProjectDto.name,
@@ -37,7 +36,6 @@ export class ProjectsService {
       }
     });
 
-    // 2. Send notification to the creator (PROJECT_LEADER)
     for (const member of newProject.members) {
       await this.notificationsService.createNotification(
         member.userId,
@@ -45,12 +43,9 @@ export class ProjectsService {
         `Project successfully created: ${newProject.name}`
       );
     }
-
-    // 3. Return the created project
     return newProject;
   }
 
-  // --- MEMBER TOEVOEGEN ---
   async addMember(projectId: number, userId: number, role: any) {
     const existingMember = await this.prisma.projectMember.findUnique({
       where: {
@@ -64,8 +59,6 @@ export class ProjectsService {
     if (existingMember) {
       throw new ConflictException('This user is already a member of the project.');
     }
-
-    // 1. Create new member and include project name for the notification
     const newMember = await this.prisma.projectMember.create({
       data: {
         projectId: projectId,
@@ -74,27 +67,22 @@ export class ProjectsService {
       },
       include: {
         user: { select: { username: true } },
-        project: { select: { name: true } } // We need this to show the name in the notification!
+        project: { select: { name: true } } 
       }
     });
 
-    // 2. Send live notification to the newly added user
     await this.notificationsService.createNotification(
       userId,
       'PROJECT_JOINED',
       `You have been added to the project: ${newMember.project.name} as ${role}`
     );
-
-    // 3. Return the new member
     return newMember;
   }
 
-  // --- ALLE PROJECTEN OPHALEN ---
   async findAll() {
     return this.prisma.project.findMany();
   }
 
-  // --- ÉÉN PROJECT OPHALEN ---
   async findOne(id: number) {
     return this.prisma.project.findUnique({
       where: { id },
@@ -102,7 +90,6 @@ export class ProjectsService {
     });
   }
 
-  // --- PROJECT UPDATEN ---
   async update(id: number, updateProjectDto: UpdateProjectDto) {
     return this.prisma.project.update({
       where: { id },
@@ -110,7 +97,6 @@ export class ProjectsService {
     });
   }
 
-  // --- PROJECT VERWIJDEREN ---
   async remove(id: number) {
     return this.prisma.project.delete({
       where: { id }

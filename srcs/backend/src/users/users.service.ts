@@ -11,11 +11,12 @@ export class UsersService {
   async create(createUserDto: CreateUserDto) {
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
     const userCount = await this.prisma.user.count();
-      const globalRole = userCount === 0 ? 'ADMIN' : 'USER'; // I make the first user an admin, the rest are just users
+      const globalRole = userCount === 0 ? 'ADMIN' : 'USER'; 
     return this.prisma.user.create({
       data: {
         ...createUserDto,
         password: hashedPassword,
+        globalRole: globalRole,
       },
       select:{
         id: true,
@@ -57,11 +58,11 @@ export class UsersService {
   async update(id: number, updateUserDto: UpdateUserDto) {
     return this.prisma.user.update({
       where: { id },
-      data: updateUserDto, // Dit was UpdateUserDto (hoofdletter), moet kleine letter zijn
+      data: updateUserDto, 
       select: {
         id: true,
         username: true,
-        globalRole: true, // Aangepast van role naar globalRole
+        globalRole: true, 
         avatar: true,
         createdAt: true,
         updatedAt: true,

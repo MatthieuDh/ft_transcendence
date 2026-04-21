@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -14,7 +14,19 @@ export class TasksService {
   async create(createTaskDto: CreateTaskDto, deadline: Date | null) {
     const { assigneeIds, ...taskData } = createTaskDto;
 
-    // Create task and capture result in newTask variable
+    if (assigneeIds && assigneeIds.length > 0) {
+      const validMembers = await this.prisma.projectMember.findMany({
+        where: {
+          projectId: taskData.projectId,
+          userId: { in: assigneeIds },
+        },
+      });
+
+      if (validMembers.length !== assigneeIds.length) {
+        throw new BadRequestException('Make sure all assignees are members of the project');
+      } 
+    }
+
     const newTask = await this.prisma.task.create({
       data: {
         ...taskData,
@@ -26,7 +38,6 @@ export class TasksService {
       include: { assignees: { select: { id: true, username: true } } },
     });
 
-    // Notify each assigned user
     if (assigneeIds && assigneeIds.length > 0) {
       for (const userId of assigneeIds) {
         await this.notificationsService.createNotification(
@@ -40,22 +51,25 @@ export class TasksService {
     return newTask;
   }
 
-  async findAll(user: any) {
-    // Admins see everything, users see tasks of their projects
-    if (user.role === 'ADMIN') {
-      return this.prisma.task.findMany({
-        include: {
-          assignees: { select: { username: true } },
-          project: { select: { name: true } },
-        },
-      });
-    }
+  // in tasks.service.ts
 
+  // Wordt alleen door Admins aangeroepen via de Controller
+  async findAll() {
+    return this.prisma.task.findMany({
+      include: {
+        assignees: { select: { username: true } },
+        project: { select: { name: true } },
+      },
+    });
+  }
+
+  // Wordt door normale users aangeroepen
+  async findMyTasks(userId: number) {
     return this.prisma.task.findMany({
       where: {
         project: {
           members: {
-            some: { userId: user.sub },
+            some: { userId: userId },
           },
         },
       },
@@ -79,12 +93,30 @@ export class TasksService {
   async update(id: number, updateTaskDto: UpdateTaskDto) {
     const { assigneeIds, ...taskData } = updateTaskDto;
     
+    // Ophalen van de huidige taak om te weten bij welk project hij hoort
+    const currentTask = await this.prisma.task.findUnique({ where: { id } });
+    if (!currentTask) throw new NotFoundException('Task not found');
+
+    // --- SPOOK MEDEWERKER CHECK (VOOR DE ACHTERDEUR) ---
+    if (assigneeIds && assigneeIds.length > 0) {
+      const validMembers = await this.prisma.projectMember.findMany({
+        where: {
+          projectId: currentTask.projectId,
+          userId: { in: assigneeIds },
+        },
+      });
+
+      if (validMembers.length !== assigneeIds.length) {
+        throw new BadRequestException('Make sure all new assignees are members of the project');
+      }
+    }
+    
     const updatedTask = await this.prisma.task.update({
       where: { id },
       data: {
         ...taskData,
         assignees: assigneeIds ? {
-          set: assigneeIds.map((userId) => ({ id: userId })),
+          set: assigneeIds.map((userId) => ({ id: userId })), // set: overschrijft de hele lijst met assignees
         } : undefined,
       },
       include: { 
