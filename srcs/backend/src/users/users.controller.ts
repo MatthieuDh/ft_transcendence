@@ -39,12 +39,13 @@ export class UsersController {
     return this.usersService.findOne(+id);
   }
 
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Patch('me')
   update( @Request() req, @Body() updateUserDto: UpdateUserDto,) {
     return this.usersService.update(req.user.id, updateUserDto);
   }
-  
+
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN') // only admins can delete users
