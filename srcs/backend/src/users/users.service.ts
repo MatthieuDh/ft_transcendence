@@ -3,12 +3,33 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService} from '../prisma/prisma.service'
 import * as bcrypt from 'bcrypt';
+import { GlobalRole } from '@prisma/client';
+
+const userSelect = {
+  id: true,
+  username: true,
+  email: true,
+  globalRole: true,
+  avatar: true,
+  createdAt: true,
+};
+
+export type SafeUser = {
+  id: number;
+  username: string;
+  email: string | null;
+  globalRole: GlobalRole;
+  avatar: string | null;
+  createdAt: Date;
+};
 
 @Injectable()
 export class UsersService {
   constructor(private prisma: PrismaService) {}
 
+
   async create(createUserDto: CreateUserDto) {
+    if (!createUserDto.password) throw new Error('Password is required');
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
     const userCount = await this.prisma.user.count();
       const globalRole = userCount === 0 ? 'ADMIN' : 'USER'; 
@@ -18,28 +39,24 @@ export class UsersService {
         password: hashedPassword,
         globalRole: globalRole,
       },
-      select:{
-        id: true,
-        username: true,
-        globalRole: true,
-        email: true,
-        avatar: true,
-        createdAt: true,
-      }
+      select: userSelect,
     });
   }
 
+  async createOAuthUser(data: { email: string; googleId: string; username: string }) {
+    return this.prisma.user.create({
+      data: {
+        email: data.email,
+        googleId: data.googleId,
+        username: data.username,
+      },
+    select: userSelect,
+  });
+}
+
   async findAll() {
     return this.prisma.user.findMany({
-      select: {
-        id: true,
-        username: true,
-        globalRole: true,
-        email: true,
-        avatar: true,
-        createdAt: true,
-        updatedAt: true,
-      }
+      select: userSelect,
     });
   }
 
@@ -54,35 +71,39 @@ export class UsersService {
       where: { username }
     });
   }
+  async findByGoogleId(googleId: string){
+    return this.prisma.user.findUnique({
+      where: { googleId }
+    })
+  }
+
+  async findByEmail(email: string){
+    return this.prisma.user.findUnique({
+      where: { email }
+    })
+  }
 
   async update(id: number, updateUserDto: UpdateUserDto) {
     return this.prisma.user.update({
       where: { id },
-      data: updateUserDto, 
-      select: {
-        id: true,
-        username: true,
-        globalRole: true, 
-        avatar: true,
-        createdAt: true,
-        updatedAt: true,
-      }
+      data: updateUserDto,
+      select: userSelect,
     });
   }
 
   async updateByName(username: string, updateUserDto: UpdateUserDto) {
-    return this.prisma.user.update({ // Aangepast van prisma.update naar prisma.user.update
+    return this.prisma.user.update({
       where: { username },
-      data: updateUserDto, // Dit was UpdateUserDto (hoofdletter), moet kleine letter zijn
-      select: {
-        id: true,
-        username: true,
-        globalRole: true, // Aangepast van role naar globalRole
-        avatar: true,
-        createdAt: true,
-        updatedAt: true,
-      }
+      data: updateUserDto,
+      select: userSelect,
     });
+  }
+
+  async updateGoogleId(id: number, googleId: string){
+    return this.prisma.user.update({
+      where: { id },
+      data: { googleId },
+    })
   }
 
   async remove(id: number) {

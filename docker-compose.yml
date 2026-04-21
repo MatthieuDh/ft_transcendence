@@ -25,6 +25,9 @@ services:
     environment:
       TZ: Europe/Brussels
       DATABASE_URL: ${DATABASE_URL}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL}
       JWT_SECRET: ${JWT_SECRET}
       SMTP_HOST: ${SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT}
@@ -35,6 +38,7 @@ services:
     volumes:
       - ./srcs/backend:/app
       - /app/node_modules
-    command: sh -c "npx prisma generate && npm run start:dev"
+    command: sh -c "npx prisma migrate deploy && npm run start:dev"
+
 volumes:
   postgres_data:
