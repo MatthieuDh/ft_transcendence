@@ -29,7 +29,6 @@ export class UsersController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN', 'USER')
-  @Delete(':id')
   @Get()
   findAll() {
     return this.usersService.findAll();
@@ -51,7 +50,6 @@ export class UsersController {
   remove(@Param('id') id: string) {
     return this.usersService.remove(+id);
   }
-
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard) // <-- Check if the user is logged in first, THEN check their role
