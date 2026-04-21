@@ -1,8 +1,12 @@
-import { IsString, MinLength } from 'class-validator';
+import { IsString, MinLength, IsEmail } from 'class-validator';
 
 export class CreateUserDto {
     @IsString()
     username: string;
+
+    @IsString()
+    @IsEmail()
+    email: string;
 
     @IsString()
     @MinLength(8)
@@ -10,6 +14,6 @@ export class CreateUserDto {
 }
 
 export class UpdateUserDto{
-    username?: string; //allow this? maybe split username and displayname
+    username?: string;
     avatar?: string;
 }

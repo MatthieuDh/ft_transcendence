@@ -3,6 +3,7 @@ import { AuthService } from './auth.service';
 import { SignInDto } from './dto/sign-in.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { ApiBearerAuth } from '@nestjs/swagger';
+import { GoogleAuthGuard } from './guards/google.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -24,5 +25,16 @@ export class AuthController {
   @Post('refresh')
   refresh(@Body() body: { refresh_token: string }) {
     return this.authService.refresh(body.refresh_token);
+  }
+
+  @Get('google')
+  @UseGuards(GoogleAuthGuard)
+  googleAuth(){
+  }
+
+  @Get('google/callback')
+  @UseGuards(GoogleAuthGuard)
+  async googleAuthCallback(@Request() req){
+    return this.authService.signInOAuth(req.user);
   }
 }

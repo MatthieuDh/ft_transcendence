@@ -4,21 +4,19 @@ import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, {
+    logger: ['error', 'warn', 'log', 'debug', 'verbose'],  // add this
+  });
   app.useGlobalPipes(new ValidationPipe());
 
-  // --- SWAGGER CONFIGURATIE ---
   const config = new DocumentBuilder()
     .setTitle('Transcendence API')
     .setDescription('De API documentatie voor ons Transcendence project')
     .setVersion('1.0')
-    .addBearerAuth() // Dit zorgt voor een "Authorize" knopje voor je JWT tokens later!
+    .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
-  
-  // Dit vertelt NestJS: Zet de documentatie website op '/api'
   SwaggerModule.setup('api', app, document);
-  // ----------------------------
 
   await app.listen(process.env.PORT ?? 3000);
 }
