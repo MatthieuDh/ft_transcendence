@@ -27,14 +27,9 @@ export class UsersController {
   }
 
   @ApiBearerAuth()
-<<<<<<< HEAD
-  @UseGuards(AuthGuard, RolesGuard)
-  @Roles('ADMIN', 'USER') // only admins can see everyone
-=======
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN') // only admins can see everyone
+  @Roles('ADMIN', 'USER')
   @Delete(':id')
->>>>>>> OAuth
   @Get()
   findAll() {
     return this.usersService.findAll();

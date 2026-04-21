@@ -11,7 +11,6 @@ export class ProjectsService {
     private readonly notificationsService: NotificationsService,
   ) {}
 
-  // --- PROJECT AANMAKEN ---
   async create(createProjectDto: CreateProjectDto, userId: number, deadline: Date | null) {
     const newProject = await this.prisma.project.create({
       data: {

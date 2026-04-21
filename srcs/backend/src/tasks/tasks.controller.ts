@@ -20,7 +20,7 @@ export class TasksController {
     return this.tasksService.create(createTaskDto, deadlineDate);
   }
 @ApiBearerAuth()
-  @UseGuards(AuthGuard, RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Get('all')
   findAllAdmins() {
@@ -28,7 +28,7 @@ export class TasksController {
   }
 
 @ApiBearerAuth()
-  @UseGuards(AuthGuard) 
+  @UseGuards(JwtAuthGuard) 
   @Get()
   findMyTasks(@Request() req) {
     return this.tasksService.findMyTasks(req.user.sub);
