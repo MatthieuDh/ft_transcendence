@@ -64,7 +64,7 @@ async refresh(refreshToken: string): Promise<{access_token: string}> {
     }
  }
 
- async signUp(username: string, email: string, pass: string): Promise<any> {
+ async signUp(username: string, email: string, avatar: string, pass: string): Promise<any> {
   const salt = await bcrypt.genSalt();
   const hashedPassword = await bcrypt.hash(pass, salt);
 
@@ -72,7 +72,9 @@ async refresh(refreshToken: string): Promise<{access_token: string}> {
   const newUser = await this.usersService.create({
     username,
     email,
+    avatar,
     password: hashedPassword,
+
   });
 
   return this.signIn(newUser.username, pass); 

@@ -39,10 +39,12 @@ export class UsersController {
     return this.usersService.findOne(+id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(+id, updateUserDto);
+  @UseGuards(JwtAuthGuard)
+  @Patch('me')
+  update( @Request() req, @Body() updateUserDto: UpdateUserDto,) {
+    return this.usersService.update(req.user.id, updateUserDto);
   }
+  
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN') // only admins can delete users
