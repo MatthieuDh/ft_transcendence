@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, assignMetadata } from '@nestjs/common';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -93,11 +93,9 @@ export class TasksService {
   async update(id: number, updateTaskDto: UpdateTaskDto) {
     const { assigneeIds, ...taskData } = updateTaskDto;
     
-    // Ophalen van de huidige taak om te weten bij welk project hij hoort
     const currentTask = await this.prisma.task.findUnique({ where: { id } });
     if (!currentTask) throw new NotFoundException('Task not found');
 
-    // --- SPOOK MEDEWERKER CHECK (VOOR DE ACHTERDEUR) ---
     if (assigneeIds && assigneeIds.length > 0) {
       const validMembers = await this.prisma.projectMember.findMany({
         where: {
@@ -116,7 +114,7 @@ export class TasksService {
       data: {
         ...taskData,
         assignees: assigneeIds ? {
-          set: assigneeIds.map((userId) => ({ id: userId })), // set: overschrijft de hele lijst met assignees
+          set: assigneeIds.map((userId) => ({ id: userId })),
         } : undefined,
       },
       include: { 
@@ -127,14 +125,13 @@ export class TasksService {
       },
     });
 
-    // Notify project leader if status is changed to DONE
-    if (updateTaskDto.status === 'DONE') {
+    if (updateTaskDto.status === 'PENDING_EVALUATION') {
       const leaderId = updatedTask.project.members[0]?.userId;
       if (leaderId) {
         await this.notificationsService.createNotification(
           leaderId,
-          'TASK_DONE',
-          `Task completed: ${updatedTask.title}`
+          'TASK_PENDING_EVALUATION',
+          `Task is pending evaluation: ${updatedTask.title}`
         );
       }
     }
@@ -143,6 +140,21 @@ export class TasksService {
   }
 
   async remove(id: number) {
+    const task = await this.prisma.task.findUnique({
+      where: { id },
+      include: { assignees: true },
+    });
+
+    if (task && task.assignees.length > 0) {
+      for (const assignee of task.assignees) {
+        await this.notificationsService.createNotification(
+          assignee.id,
+          'TASK_DELETED',
+          `Task has been deleted: ${task.title}`
+        );
+      }
+    }
+
     return this.prisma.task.delete({
       where: { id },
     });

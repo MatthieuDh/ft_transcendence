@@ -20,6 +20,7 @@ enum ProjectRole {
 enum TaskStatus {
   TODO
   IN_PROGRESS
+  PENDING_EVALUATION
   DONE
 }
 
