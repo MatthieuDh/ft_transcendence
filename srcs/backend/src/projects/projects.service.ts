@@ -3,13 +3,44 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationsGateway } from 'src/notifications/notifications.gateway';
 
 @Injectable()
 export class ProjectsService {
   constructor(
     private prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
+    private readonly notificationsGateway: NotificationsGateway,
   ) {}
+
+  async createmessage(projectId: number, userId: number, content: string) {
+    const newMessage = await this.prisma.message.create({
+      data: {
+        content: content,
+        projectId: projectId,
+        userId: userId,
+      },
+      include: {
+        user: {
+          select: { username: true, avatar: true }
+        }
+      }
+    });
+    this.notificationsGateway.sendProjectNotification(projectId, newMessage);
+    return newMessage;
+  }
+
+  async getProjectMessages(projectId: number) {
+    return this.prisma.message.findMany({
+      where: { projectId: projectId },
+      orderBy: { Time : 'asc' },
+      include: {
+        user: {
+          select: { username: true, avatar: true }
+        }
+      }
+    });
+  }
 
   async create(createProjectDto: CreateProjectDto, userId: number, deadline: Date | null) {
     const newProject = await this.prisma.project.create({
@@ -101,4 +132,6 @@ export class ProjectsService {
       where: { id }
     });
   }
+
+  
 }

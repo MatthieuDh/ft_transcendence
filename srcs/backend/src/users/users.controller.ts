@@ -38,7 +38,7 @@ export class UsersController {
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(+id);
   }
-
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Patch('me')
   update( @Request() req, @Body() updateUserDto: UpdateUserDto,) {

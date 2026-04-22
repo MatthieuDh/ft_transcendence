@@ -66,4 +66,22 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
       }
     }
   }
+  @SubscribeMessage('joined project')
+  handleJoinedProject(@ConnectedSocket() client: Socket, @MessageBody() data: { username: string; projectId: number }) {
+    const room = `project_${data.projectId}`;
+    client.join(room);
+    this.logger.log(`User ${data.username} joined room: ${room}`);
+  }
+
+  @SubscribeMessage('left project')
+  handleLeftProject(@ConnectedSocket() client: Socket, @MessageBody() data: { username: string; projectId: number }) {
+    const room = `project_${data.projectId}`;
+    client.leave(room);
+    this.logger.log(`User ${data.username} left room: ${room}`);
+  }
+
+  sendProjectNotification(projectId: number, message: any) {
+    const room = `project_${projectId}`;
+    this.server.to(room).emit('new_project_notification', message);
+  }
 }
