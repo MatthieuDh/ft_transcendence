@@ -14,21 +14,25 @@ export class ProjectsService {
   ) {}
 
   async createmessage(projectId: number, userId: number, content: string) {
-    const newMessage = await this.prisma.message.create({
-      data: {
-        content: content,
-        projectId: projectId,
-        userId: userId,
-      },
-      include: {
-        user: {
-          select: { username: true, avatar: true }
-        }
+  const newMessage = await this.prisma.message.create({
+    data: {
+      content: content,
+      projectId: projectId, 
+      userId: userId,
+    },
+    include: {
+      user: {
+        select: { username: true, avatar: true }
       }
-    });
-    this.notificationsGateway.sendProjectNotification(projectId, newMessage);
-    return newMessage;
-  }
+    }
+  });
+  this.notificationsGateway.sendProjectNotification(projectId, {
+    ...newMessage,
+    projectId: projectId 
+  });
+
+  return newMessage;
+}
 
   async getProjectMessages(projectId: number) {
     return this.prisma.message.findMany({
