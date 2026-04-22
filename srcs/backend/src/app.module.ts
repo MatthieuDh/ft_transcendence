@@ -8,6 +8,7 @@ import { ProjectsModule } from './projects/projects.module';
 import { TasksModule } from './tasks/tasks.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { NotificationsModule } from './notifications/notifications.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -19,7 +20,7 @@ import { NotificationsModule } from './notifications/notifications.module';
     ProjectsModule, 
     TasksModule, 
     ScheduleModule.forRoot(), 
-    NotificationsModule
+    NotificationsModule, DashboardModule
   ],
   controllers: [AppController],
   providers: [AppService],
