@@ -83,6 +83,7 @@ model Task {
   projectId   Int
   project     Project    @relation(fields: [projectId], references: [id])
   assignees   User[]     @relation("TaskAssignees")
+  statusHistory TaskStatusHistory[]
 }
 
 model Notification {
@@ -93,4 +94,13 @@ model Notification {
   message   String
   isRead    Boolean  @default(false)
   createdAt DateTime @default(now())
+}
+
+model TaskStatusHistory {
+  id        Int        @id @default(autoincrement())
+  taskId    Int
+  task      Task       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  status    TaskStatus
+  changedAt DateTime   @default(now())
+  changedBy Int?
 }
