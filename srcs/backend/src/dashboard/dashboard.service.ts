@@ -6,7 +6,8 @@ interface DashboardFilters{
     from?: Date;
     to?: Date;
     memberId?: number;
-    status?: ProjectStatus;
+    projectStatus?: ProjectStatus;
+    taskStatus?: TaskStatus;
 }
 
 @Injectable()
@@ -15,7 +16,7 @@ export class DashboardService {
 
 
     async getGlobalMetrics(filters: DashboardFilters = {}) {
-        const {from, to, memberId, status } = filters;
+        const {from, to, memberId, projectStatus} = filters;
         const projectWhere = {
             ...(from || to ? {
                 createdAt:{
@@ -26,7 +27,7 @@ export class DashboardService {
             ...(memberId ? { 
                 members : { some: { userId: memberId}},
             }: {}),
-            ...(status ? { status } : {}),
+            ...(projectStatus ? { status: projectStatus } : {}),
         };
 
         const now = new Date();
@@ -80,13 +81,27 @@ export class DashboardService {
         };
     }
 
-    async getProjectMetrics(projectId: number) {
+    async getProjectMetrics(projectId: number, filters: DashboardFilters = {}) {
+        const { from, to, memberId, taskStatus } = filters;
+        const taskWhere = {
+            ...(from || to ? {
+                createdAt:{
+                    ...(from ? { gte: from } : {}),
+                    ...(to ? { lte: to } : {}),
+                },
+            } : {}),
+            ...(memberId ? { 
+                assignees : { some: { id: memberId}},
+            }: {}),
+            ...(taskStatus ? { status: taskStatus } : {}),
+        };
         const now = new Date();
 
         const project = await this.prisma.project.findUnique({
-            where: { id: projectId },
+            where: { id: projectId, },
             include: {
                 tasks: {
+                    where: taskWhere,
                     include: {
                         statusHistory: {
                             orderBy: { changedAt: 'asc' },

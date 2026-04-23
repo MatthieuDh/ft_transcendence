@@ -16,7 +16,7 @@ export class DashboardController {
         @Query('from') from?: string,
         @Query('to') to?: string,
         @Query('memberId') memberId?: string,
-        @Query('status') status?: string,
+        @Query('projectStatus') projectStatus?: string,
 
     ){
         return this.dashboardService.getGlobalMetrics(
@@ -24,14 +24,25 @@ export class DashboardController {
                 from: from ? new Date(from) : undefined,
                 to: to ? new Date(to) : undefined,
                 memberId: memberId ? parseInt(memberId) : undefined,
-                status: status as any || undefined,
+                projectStatus: projectStatus as any || undefined,
             }
         );
     }
 
     @Get('projects/:id')
     @UseGuards(JwtAuthGuard,ProjectLeaderGuard)
-    getProjectMetrics(@Param('id', ParseIntPipe) id: number){
-        return this.dashboardService.getProjectMetrics(id);
+    getProjectMetrics(
+        @Param('id', ParseIntPipe) id: number,
+        @Query('from') from?: string,
+        @Query('to') to?: string,
+        @Query('memberId') memberId?: string,
+        @Query('taskStatus') taskStatus?: string,
+    ){
+        return this.dashboardService.getProjectMetrics(id, {
+            from: from ? new Date(from) : undefined,
+            to: to ? new Date(to) : undefined,
+            memberId: memberId ? parseInt(memberId) : undefined,
+            taskStatus: taskStatus as any || undefined,
+        });
     }
 }
