@@ -1,0 +1,4142 @@
+This file is a merged representation of the entire codebase, combined into a single document by Repomix.
+
+<file_summary>
+This section contains a summary of this file.
+
+<purpose>
+This file contains a packed representation of the entire repository's contents.
+It is designed to be easily consumable by AI systems for analysis, code review,
+or other automated processes.
+</purpose>
+
+<file_format>
+The content is organized as follows:
+1. This summary section
+2. Repository information
+3. Directory structure
+4. Repository files (if enabled)
+5. Multiple file entries, each consisting of:
+  - File path as an attribute
+  - Full contents of the file
+</file_format>
+
+<usage_guidelines>
+- This file should be treated as read-only. Any changes should be made to the
+  original repository files, not this packed version.
+- When processing this file, use the file path to distinguish
+  between different files in the repository.
+- Be aware that this file may contain sensitive information. Handle it with
+  the same level of security as you would the original repository.
+</usage_guidelines>
+
+<notes>
+- Some files may have been excluded based on .gitignore rules and Repomix's configuration
+- Binary files are not included in this packed representation. Please refer to the Repository Structure section for a complete list of file paths, including binary files
+- Files matching patterns in .gitignore are excluded
+- Files matching default ignore patterns are excluded
+- Files are sorted by Git change count (files with more changes are at the bottom)
+</notes>
+
+</file_summary>
+
+<directory_structure>
+srcs/
+  backend/
+    prisma/
+      migrations/
+        20260421111338_init/
+          migration.sql
+        migration_lock.toml
+      schema.prisma
+    src/
+      auth/
+        decorators/
+          roles.decorator.ts
+        dto/
+          register.dto.ts
+          sign-in.dto.ts
+        guards/
+          google.guard.ts
+          jwt-auth.guard.ts
+          roles.guard.ts
+        strategies/
+          google.strategy.ts
+          jwt.strategy.ts
+        auth.controller.spec.ts
+        auth.controller.ts
+        auth.module.ts
+        auth.service.spec.ts
+        auth.service.ts
+      friends/
+        friends.controller.spec.ts
+        friends.controller.ts
+        friends.module.ts
+        friends.service.spec.ts
+        friends.service.ts
+      notifications/
+        dto/
+          create-notification.dto.ts
+        notifications.controller.ts
+        notifications.gateway.spec.ts
+        notifications.gateway.ts
+        notifications.module.ts
+        notifications.service.spec.ts
+        notifications.service.ts
+      prisma/
+        prisma.module.ts
+        prisma.service.ts
+      projects/
+        dto/
+          add-member.dto.ts
+          create-message.dto.ts
+          create-project.dto.ts
+          update-project.dto.ts
+        entities/
+          project.entity.ts
+        project-leader.guard.ts
+        projects.controller.spec.ts
+        projects.controller.ts
+        projects.module.ts
+        projects.service.spec.ts
+        projects.service.ts
+      tasks/
+        dto/
+          create-task.dto.ts
+          update-task.dto.ts
+        entities/
+          task.entity.ts
+        tasks.controller.spec.ts
+        tasks.controller.ts
+        tasks.module.ts
+        tasks.service.spec.ts
+        tasks.service.ts
+      users/
+        dto/
+          create-user.dto.ts
+          update-user.dto.ts
+        users.controller.spec.ts
+        users.controller.ts
+        users.module.ts
+        users.service.spec.ts
+        users.service.ts
+      app.controller.spec.ts
+      app.controller.ts
+      app.module.ts
+      app.service.ts
+      main.ts
+    test/
+      app.e2e-spec.ts
+      jest-e2e.json
+    .gitignore
+    .prettierrc
+    Dockerfile
+    eslint.config.mjs
+    nest-cli.json
+    package.json
+    prisma.config.ts
+    README.md
+    tsconfig.build.json
+    tsconfig.json
+  frontend/
+    Dockerfile
+.gitignore
+admin.html
+chat.html
+docker-compose.yml
+Makefile
+notification.html
+online.html
+package.json
+README.md
+</directory_structure>
+
+<files>
+This section contains the contents of the repository's files.
+
+<file path="srcs/backend/prisma/migrations/20260421111338_init/migration.sql">
+-- CreateEnum
+CREATE TYPE "GlobalRole" AS ENUM ('USER', 'ADMIN');
+
+-- CreateEnum
+CREATE TYPE "ProjectRole" AS ENUM ('GUEST', 'MEMBER', 'PROJECT_LEADER');
+
+-- CreateEnum
+CREATE TYPE "TaskStatus" AS ENUM ('TODO', 'IN_PROGRESS', 'DONE');
+
+-- CreateEnum
+CREATE TYPE "ProjectStatus" AS ENUM ('PLANNING', 'ACTIVE', 'COMPLETED');
+
+-- CreateTable
+CREATE TABLE "User" (
+    "id" SERIAL NOT NULL,
+    "username" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "password" TEXT,
+    "googleId" TEXT,
+    "intraId" TEXT,
+    "githubId" TEXT,
+    "globalRole" "GlobalRole" NOT NULL DEFAULT 'USER',
+    "avatar" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Project" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "deadline" TIMESTAMP(3),
+    "deadlineNotified" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "status" "ProjectStatus" NOT NULL DEFAULT 'PLANNING',
+
+    CONSTRAINT "Project_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ProjectMember" (
+    "id" SERIAL NOT NULL,
+    "role" "ProjectRole" NOT NULL DEFAULT 'MEMBER',
+    "joinedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "userId" INTEGER NOT NULL,
+    "projectId" INTEGER NOT NULL,
+
+    CONSTRAINT "ProjectMember_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Task" (
+    "id" SERIAL NOT NULL,
+    "title" TEXT NOT NULL,
+    "description" TEXT,
+    "status" "TaskStatus" NOT NULL DEFAULT 'TODO',
+    "deadline" TIMESTAMP(3),
+    "deadlineNotified" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "projectId" INTEGER NOT NULL,
+
+    CONSTRAINT "Task_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Notification" (
+    "id" SERIAL NOT NULL,
+    "userId" INTEGER NOT NULL,
+    "type" TEXT NOT NULL,
+    "message" TEXT NOT NULL,
+    "isRead" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Notification_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "_TaskAssignees" (
+    "A" INTEGER NOT NULL,
+    "B" INTEGER NOT NULL,
+
+    CONSTRAINT "_TaskAssignees_AB_pkey" PRIMARY KEY ("A","B")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_googleId_key" ON "User"("googleId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_intraId_key" ON "User"("intraId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_githubId_key" ON "User"("githubId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ProjectMember_userId_projectId_key" ON "ProjectMember"("userId", "projectId");
+
+-- CreateIndex
+CREATE INDEX "_TaskAssignees_B_index" ON "_TaskAssignees"("B");
+
+-- AddForeignKey
+ALTER TABLE "ProjectMember" ADD CONSTRAINT "ProjectMember_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ProjectMember" ADD CONSTRAINT "ProjectMember_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Task" ADD CONSTRAINT "Task_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Notification" ADD CONSTRAINT "Notification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_TaskAssignees" ADD CONSTRAINT "_TaskAssignees_A_fkey" FOREIGN KEY ("A") REFERENCES "Task"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_TaskAssignees" ADD CONSTRAINT "_TaskAssignees_B_fkey" FOREIGN KEY ("B") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+</file>
+
+<file path="srcs/backend/prisma/migrations/migration_lock.toml">
+# Please do not edit this file manually
+# It should be added in your version-control system (e.g., Git)
+provider = "postgresql"
+</file>
+
+<file path="srcs/backend/src/auth/decorators/roles.decorator.ts">
+import { SetMetadata } from '@nestjs/common';
+export const Roles = (...roles: string[]) => SetMetadata('roles', roles);
+</file>
+
+<file path="srcs/backend/src/auth/dto/register.dto.ts">
+import { IsEmail, IsString, MinLength } from 'class-validator';
+
+export class RegisterDto {
+  @IsString()
+  username: string;
+
+  @IsEmail()
+  email: string;
+
+  @IsString()
+  @MinLength(6)
+  password: string;
+}
+</file>
+
+<file path="srcs/backend/src/auth/guards/google.guard.ts">
+import { Injectable } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+
+@Injectable()
+export class GoogleAuthGuard extends AuthGuard('google') {}
+</file>
+
+<file path="srcs/backend/src/auth/guards/jwt-auth.guard.ts">
+import { Injectable } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
+
+@Injectable()
+export class JwtAuthGuard extends AuthGuard('jwt') {}
+</file>
+
+<file path="srcs/backend/src/auth/guards/roles.guard.ts">
+import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import { Reflector } from '@nestjs/core';
+
+@Injectable()
+export class RolesGuard implements CanActivate {
+  constructor(private reflector: Reflector) {}
+
+  canActivate(context: ExecutionContext): boolean {
+    // 1. check which roles are required by the route handler (controller method)
+    const requiredRoles = this.reflector.get<string[]>('roles', context.getHandler());
+    
+    // ik there are no required roles, allow access
+    if (!requiredRoles) {
+      return true;
+    }
+
+    const request = context.switchToHttp().getRequest();
+    const user = request.user;
+
+    // 3. we check for the presence of the user and if their role is included in the required roles
+    if (!user || !requiredRoles.includes(user.role)) {
+      throw new ForbiddenException('Nice try, but you do not have permission to do this!');
+    }
+
+    return true; // we allow access if the user has one of the required roles
+  }
+}
+</file>
+
+<file path="srcs/backend/src/auth/strategies/google.strategy.ts">
+import { Injectable } from '@nestjs/common';
+import { PassportStrategy } from '@nestjs/passport';
+import { Strategy, VerifyCallback } from 'passport-google-oauth20';
+import { AuthService } from '../auth.service';
+
+@Injectable()
+export class GoogleStrategy extends PassportStrategy(Strategy, 'google'){
+      constructor(private authService: AuthService) {
+    super({
+      clientID: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      callbackURL: process.env.GOOGLE_CALLBACK_URL!,
+      scope: ['email', 'profile'],
+    });
+}
+
+  async validate(accessToken: string, refreshToken: string, profile: any, done: VerifyCallback) {
+    const user = await this.authService.validateOAuthUser({
+      email: profile.emails[0].value,
+      googleId: profile.id,
+      username: profile.displayName,
+    });
+    done(null, user);
+  }
+}
+</file>
+
+<file path="srcs/backend/src/auth/auth.controller.spec.ts">
+import { Test, TestingModule } from '@nestjs/testing';
+import { AuthController } from './auth.controller';
+import { AuthService } from './auth.service';
+
+describe('AuthController', () => {
+  let controller: AuthController;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [AuthController],
+      providers: [AuthService],
+    }).compile();
+
+    controller = module.get<AuthController>(AuthController);
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+});
+</file>
+
+<file path="srcs/backend/src/auth/auth.service.spec.ts">
+import { Test, TestingModule } from '@nestjs/testing';
+import { AuthService } from './auth.service';
+
+describe('AuthService', () => {
+  let service: AuthService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [AuthService],
+    }).compile();
+
+    service = module.get<AuthService>(AuthService);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+});
+</file>
+
+<file path="srcs/backend/src/friends/friends.controller.spec.ts">
+import { Test, TestingModule } from '@nestjs/testing';
+import { FriendsController } from './friends.controller';
+
+describe('FriendsController', () => {
+  let controller: FriendsController;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [FriendsController],
+    }).compile();
+
+    controller = module.get<FriendsController>(FriendsController);
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+});
+</file>
+
+<file path="srcs/backend/src/friends/friends.controller.ts">
+import { Controller, Post, Patch, Delete, Get, Param, ParseIntPipe, UseGuards, Request } from '@nestjs/common';
+import { FriendsService } from './friends.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ApiBearerAuth } from '@nestjs/swagger';
+
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
+@Controller('friends')
+export class FriendsController {
+  constructor(private readonly friendsService: FriendsService) {}
+
+  @Get()
+  getMyFriends(@Request() req) {
+    return this.friendsService.getMyFriends(req.user.sub);
+  }
+
+  @Get('requests')
+  getPendingRequests(@Request() req) {
+    return this.friendsService.getFriendRequests(req.user.sub);
+  }
+
+  @Post('request/:userId')
+  sendRequest(@Request() req, @Param('userId', ParseIntPipe) targetUserId: number) {
+    return this.friendsService.sendrequest(req.user.sub, targetUserId);
+  }
+
+  @Patch('accept/:friendshipId')
+  acceptRequest(@Request() req, @Param('friendshipId', ParseIntPipe) friendshipId: number) {
+    return this.friendsService.acceptrequest(req.user.sub, friendshipId);
+  }
+
+  @Patch('reject/:friendshipId')
+  rejectRequest(@Request() req, @Param('friendshipId', ParseIntPipe) friendshipId: number) {
+    return this.friendsService.rejectrequest(req.user.sub, friendshipId);
+  }
+
+  @Delete('remove/:friendshipId')
+  removeFriendship(@Request() req, @Param('friendshipId', ParseIntPipe) friendshipId: number) {
+    return this.friendsService.removefriendship(req.user.sub, friendshipId);
+  }
+}
+</file>
+
+<file path="srcs/backend/src/friends/friends.module.ts">
+import { Module } from '@nestjs/common';
+import { FriendsService } from './friends.service';
+import { FriendsController } from './friends.controller';
+import { PrismaModule } from '../prisma/prisma.module';
+import { NotificationsModule } from '../notifications/notifications.module';
+
+@Module({
+  imports: [PrismaModule, NotificationsModule], 
+  controllers: [FriendsController],
+  providers: [FriendsService],
+})
+export class FriendsModule {}
+</file>
+
+<file path="srcs/backend/src/friends/friends.service.spec.ts">
+import { Test, TestingModule } from '@nestjs/testing';
+import { FriendsService } from './friends.service';
+
+describe('FriendsService', () => {
+  let service: FriendsService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [FriendsService],
+    }).compile();
+
+    service = module.get<FriendsService>(FriendsService);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+});
+</file>
+
+<file path="srcs/backend/src/friends/friends.service.ts">
+import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { IsBtcAddress } from 'class-validator';
+
+@Injectable()
+export class FriendsService {
+constructor(
+    private prisma: PrismaService,
+    private  notificationsService: NotificationsService,
+  ){}
+async sendrequest(requesterId: number, addresseeId: number) {
+    if (requesterId === addresseeId) {
+      throw new BadRequestException('You cannot send a friend request to yourself.');
+    }
+const targetUser = await this.prisma.user.findUnique({ where: { id: addresseeId } });
+    if (!targetUser) {
+      throw new NotFoundException('The user you are trying to send a friend request to does not exist.');
+    }
+    const existingRequest = await this.prisma.friendship.findFirst({
+      where: {
+        OR: [
+          { requesterId, addresseeId },
+          { requesterId: addresseeId, addresseeId: requesterId }
+        ]
+      }
+    });
+    if (existingRequest) {
+      throw new ConflictException('You have already sent a friend request to this user.');
+    }
+    const friendRequest = await this.prisma.friendship.create({
+        data: {
+            requesterId: requesterId,
+            addresseeId: addresseeId,
+            status: 'PENDING',
+        },
+    });
+    const sender = await this.prisma.user.findUnique({ where: { id: requesterId } });
+    if ( sender) {
+    await this.notificationsService.createNotification(
+      addresseeId,
+      'friend_request',
+      `${sender.username} has sent you a friend request!`,
+    );
+    return friendRequest;
+  }
+}
+async acceptrequest(loggedInUserId: number, requesterId: number) {
+    const friendRequest = await this.prisma.friendship.findFirst({
+      where: {
+        requesterId: requesterId,
+        addresseeId: loggedInUserId,
+        status: 'PENDING',
+      },
+    });
+    if (!friendRequest) {
+      throw new NotFoundException('Friend request not found.');
+    }
+    return await this.prisma.friendship.update({
+      where: {
+        id: friendRequest.id,
+      },
+      data: {
+        status: 'ACCEPTED',
+      },
+    });
+  }
+async rejectrequest(loggedInUserId: number, requesterId: number) {
+    const friendRequest = await this.prisma.friendship.findFirst({
+      where: {
+        requesterId: requesterId,
+        addresseeId: loggedInUserId,
+        status: 'PENDING',
+      },
+    });
+    if (!friendRequest) {
+      throw new NotFoundException('Friend request not found.');
+    }
+    return await this.prisma.friendship.update({
+      where: {
+        id: friendRequest.id,
+      },
+      data: {
+        status: 'REJECTED',
+      },
+    });
+  }
+async getfriends(userId: number) {
+    const friendships = await this.prisma.friendship.findMany({
+      where: {
+        OR: [
+          { requesterId: userId, status: 'ACCEPTED' },
+          { addresseeId: userId, status: 'ACCEPTED' }
+        ]
+      },
+      include: {
+        requester: true,
+        addressee: true,
+      },
+    });
+    return friendships.map(friendship => {
+      const friend = friendship.requesterId === userId ? friendship.addressee : friendship.requester;
+      return {
+        id: friend.id,
+        username: friend.username,
+        email: friend.email,
+      };
+    });
+  }
+  async getFriendRequests(userId: number) {
+    return this.prisma.friendship.findMany({
+      where: {
+        addresseeId: userId,
+        status: 'PENDING', },
+        include: {
+            requester: {select: {id: true, username: true, email: true}}
+        }
+    });
+    }
+
+    async getMyFriends(userId: number) {
+    const friendships = await this.prisma.friendship.findMany({
+      where: {
+        status: 'ACCEPTED',
+        OR: [{ requesterId: userId }, { addresseeId: userId }]
+      },
+      include: {
+        requester: { select: { id: true, username: true, avatar: true } },
+        addressee: { select: { id: true, username: true, avatar: true } }
+      }
+    });
+    return friendships.map(f => f.requesterId === userId ? f.addressee : f.requester);
+  }
+  async removefriendship(loggedInUserId: number, friendshipId: number) {
+    const friendship = await this.prisma.friendship.findUnique({
+      where: { id: friendshipId },
+    });
+    if (!friendship) {
+      throw new NotFoundException('Friendship not found.');
+    }
+    if (friendship.requesterId !== loggedInUserId && friendship.addresseeId !== loggedInUserId) {
+      throw new BadRequestException('You can only remove friendships you are part of.');
+    }
+    return await this.prisma.friendship.delete({
+       where: { id: friendshipId },
+     });
+    }
+}
+</file>
+
+<file path="srcs/backend/src/notifications/dto/create-notification.dto.ts">
+import { IsInt, IsNotEmpty, IsString } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+
+export class CreateNotificationDto {
+  @ApiProperty({ description: 'The id of the user who should receive the notification', example: 1 })
+  @IsInt()
+  @IsNotEmpty()
+  userId: number;
+
+  @ApiProperty({ description: 'The type of the notification (e.g., SYSTEM, PROJECT_JOINED)', example: 'SYSTEM' })
+  @IsString()
+  @IsNotEmpty()
+  type: string;
+
+  @ApiProperty({ description: 'The text of the notification', example: 'Hello, this is a test notification via Swagger!' })
+  @IsString()
+  @IsNotEmpty()
+  message: string;
+}
+</file>
+
+<file path="srcs/backend/src/notifications/notifications.gateway.spec.ts">
+import { Test, TestingModule } from '@nestjs/testing';
+import { NotificationsGateway } from './notifications.gateway';
+
+describe('NotificationsGateway', () => {
+  let gateway: NotificationsGateway;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [NotificationsGateway],
+    }).compile();
+
+    gateway = module.get<NotificationsGateway>(NotificationsGateway);
+  });
+
+  it('should be defined', () => {
+    expect(gateway).toBeDefined();
+  });
+});
+</file>
+
+<file path="srcs/backend/src/notifications/notifications.service.spec.ts">
+import { Test, TestingModule } from '@nestjs/testing';
+import { NotificationsService } from './notifications.service';
+
+describe('NotificationsService', () => {
+  let service: NotificationsService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [NotificationsService],
+    }).compile();
+
+    service = module.get<NotificationsService>(NotificationsService);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+});
+</file>
+
+<file path="srcs/backend/src/prisma/prisma.module.ts">
+import { Module } from "@nestjs/common";
+import { PrismaService } from "./prisma.service";
+
+@Module({
+    providers: [PrismaService],
+    exports: [PrismaService],
+})
+export class PrismaModule {}
+</file>
+
+<file path="srcs/backend/src/projects/dto/create-message.dto.ts">
+import { IsInt, IsNotEmpty, IsString } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+
+export class CreateMessageDto {
+  @ApiProperty({ description: 'The ID of the user sending the message', example: 1 })
+  @IsInt()
+  @IsNotEmpty()
+  userId: number;
+
+  @ApiProperty({ description: 'The content of the chat message', example: 'Hello team!' })
+  @IsString()
+  @IsNotEmpty()
+  content: string;
+}
+</file>
+
+<file path="srcs/backend/src/projects/dto/update-project.dto.ts">
+import { PartialType } from '@nestjs/swagger';
+import { CreateProjectDto } from './create-project.dto';
+
+export class UpdateProjectDto extends PartialType(CreateProjectDto) {}
+</file>
+
+<file path="srcs/backend/src/projects/entities/project.entity.ts">
+export class Project {}
+</file>
+
+<file path="srcs/backend/src/projects/projects.controller.spec.ts">
+import { Test, TestingModule } from '@nestjs/testing';
+import { ProjectsController } from './projects.controller';
+import { ProjectsService } from './projects.service';
+
+describe('ProjectsController', () => {
+  let controller: ProjectsController;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [ProjectsController],
+      providers: [ProjectsService],
+    }).compile();
+
+    controller = module.get<ProjectsController>(ProjectsController);
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+});
+</file>
+
+<file path="srcs/backend/src/projects/projects.service.spec.ts">
+import { Test, TestingModule } from '@nestjs/testing';
+import { ProjectsService } from './projects.service';
+
+describe('ProjectsService', () => {
+  let service: ProjectsService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [ProjectsService],
+    }).compile();
+
+    service = module.get<ProjectsService>(ProjectsService);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+});
+</file>
+
+<file path="srcs/backend/src/tasks/dto/update-task.dto.ts">
+import { PartialType } from '@nestjs/swagger';
+import { CreateTaskDto } from './create-task.dto';
+
+export class UpdateTaskDto extends PartialType(CreateTaskDto) {}
+</file>
+
+<file path="srcs/backend/src/tasks/entities/task.entity.ts">
+export class Task {}
+</file>
+
+<file path="srcs/backend/src/tasks/tasks.controller.spec.ts">
+import { Test, TestingModule } from '@nestjs/testing';
+import { TasksController } from './tasks.controller';
+import { TasksService } from './tasks.service';
+
+describe('TasksController', () => {
+  let controller: TasksController;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [TasksController],
+      providers: [TasksService],
+    }).compile();
+
+    controller = module.get<TasksController>(TasksController);
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+});
+</file>
+
+<file path="srcs/backend/src/tasks/tasks.service.spec.ts">
+import { Test, TestingModule } from '@nestjs/testing';
+import { TasksService } from './tasks.service';
+
+describe('TasksService', () => {
+  let service: TasksService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [TasksService],
+    }).compile();
+
+    service = module.get<TasksService>(TasksService);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+});
+</file>
+
+<file path="srcs/backend/src/users/users.controller.spec.ts">
+import { Test, TestingModule } from '@nestjs/testing';
+import { UsersController } from './users.controller';
+import { UsersService } from './users.service';
+
+describe('UsersController', () => {
+  let controller: UsersController;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [UsersController],
+      providers: [UsersService],
+    }).compile();
+
+    controller = module.get<UsersController>(UsersController);
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+});
+</file>
+
+<file path="srcs/backend/src/users/users.service.spec.ts">
+import { Test, TestingModule } from '@nestjs/testing';
+import { UsersService } from './users.service';
+
+describe('UsersService', () => {
+  let service: UsersService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [UsersService],
+    }).compile();
+
+    service = module.get<UsersService>(UsersService);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+});
+</file>
+
+<file path="srcs/backend/src/app.controller.spec.ts">
+import { Test, TestingModule } from '@nestjs/testing';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+
+describe('AppController', () => {
+  let appController: AppController;
+
+  beforeEach(async () => {
+    const app: TestingModule = await Test.createTestingModule({
+      controllers: [AppController],
+      providers: [AppService],
+    }).compile();
+
+    appController = app.get<AppController>(AppController);
+  });
+
+  describe('root', () => {
+    it('should return "Hello World!"', () => {
+      expect(appController.getHello()).toBe('Hello World!');
+    });
+  });
+});
+</file>
+
+<file path="srcs/backend/src/app.controller.ts">
+import { Controller, Get } from '@nestjs/common';
+import { AppService } from './app.service';
+
+@Controller()
+export class AppController {
+  constructor(private readonly appService: AppService) {}
+
+  @Get()
+  getHello(): string {
+    return this.appService.getHello();
+  }
+}
+</file>
+
+<file path="srcs/backend/src/app.service.ts">
+import { Injectable } from '@nestjs/common';
+
+@Injectable()
+export class AppService {
+  getHello(): string {
+    return 'Hello World!';
+  }
+}
+</file>
+
+<file path="srcs/backend/test/app.e2e-spec.ts">
+import { Test, TestingModule } from '@nestjs/testing';
+import { INestApplication } from '@nestjs/common';
+import request from 'supertest';
+import { App } from 'supertest/types';
+import { AppModule } from './../src/app.module';
+
+describe('AppController (e2e)', () => {
+  let app: INestApplication<App>;
+
+  beforeEach(async () => {
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
+
+    app = moduleFixture.createNestApplication();
+    await app.init();
+  });
+
+  it('/ (GET)', () => {
+    return request(app.getHttpServer())
+      .get('/')
+      .expect(200)
+      .expect('Hello World!');
+  });
+});
+</file>
+
+<file path="srcs/backend/test/jest-e2e.json">
+{
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "rootDir": ".",
+  "testEnvironment": "node",
+  "testRegex": ".e2e-spec.ts$",
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  }
+}
+</file>
+
+<file path="srcs/backend/.prettierrc">
+{
+  "singleQuote": true,
+  "trailingComma": "all"
+}
+</file>
+
+<file path="srcs/backend/eslint.config.mjs">
+// @ts-check
+import eslint from '@eslint/js';
+import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
+import globals from 'globals';
+import tseslint from 'typescript-eslint';
+
+export default tseslint.config(
+  {
+    ignores: ['eslint.config.mjs'],
+  },
+  eslint.configs.recommended,
+  ...tseslint.configs.recommendedTypeChecked,
+  eslintPluginPrettierRecommended,
+  {
+    languageOptions: {
+      globals: {
+        ...globals.node,
+        ...globals.jest,
+      },
+      sourceType: 'commonjs',
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+  },
+  {
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-floating-promises': 'warn',
+      '@typescript-eslint/no-unsafe-argument': 'warn',
+      "prettier/prettier": ["error", { endOfLine: "auto" }],
+    },
+  },
+);
+</file>
+
+<file path="srcs/backend/nest-cli.json">
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "src",
+  "compilerOptions": {
+    "deleteOutDir": true
+  }
+}
+</file>
+
+<file path="srcs/backend/README.md">
+<p align="center">
+  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
+</p>
+
+[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
+[circleci-url]: https://circleci.com/gh/nestjs/nest
+
+  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
+    <p align="center">
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
+<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
+<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
+<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
+<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
+<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
+  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
+    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
+  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
+</p>
+  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
+  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+
+## Description
+
+[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+
+## Project setup
+
+```bash
+$ npm install
+```
+
+## Compile and run the project
+
+```bash
+# development
+$ npm run start
+
+# watch mode
+$ npm run start:dev
+
+# production mode
+$ npm run start:prod
+```
+
+## Run tests
+
+```bash
+# unit tests
+$ npm run test
+
+# e2e tests
+$ npm run test:e2e
+
+# test coverage
+$ npm run test:cov
+```
+
+## Deployment
+
+When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+
+If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+
+```bash
+$ npm install -g @nestjs/mau
+$ mau deploy
+```
+
+With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+
+## Resources
+
+Check out a few resources that may come in handy when working with NestJS:
+
+- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
+- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
+- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
+- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
+- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
+- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
+- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
+- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+
+## Support
+
+Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+
+## Stay in touch
+
+- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
+- Website - [https://nestjs.com](https://nestjs.com/)
+- Twitter - [@nestframework](https://twitter.com/nestframework)
+
+## License
+
+Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+</file>
+
+<file path="srcs/backend/tsconfig.build.json">
+{
+  "extends": "./tsconfig.json",
+  "exclude": ["node_modules", "test", "dist", "**/*spec.ts"]
+}
+</file>
+
+<file path="srcs/frontend/Dockerfile">
+
+</file>
+
+<file path=".gitignore">
+# compiled output
+/dist
+node_modules/
+/build
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS
+.DS_Store
+
+# Tests
+/coverage
+/.nyc_output
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# dotenv environment variable files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# temp directory
+.temp
+.tmp
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Diagnostic reports (https://nodejs.org/api/report.html)
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+/generated/prisma
+</file>
+
+<file path="admin.html">
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transcendence God Mode</title>
+    <style>
+        /* --- JOUW ORIGINELE STYLING (ONGEWIJZIGD) --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; color: #333; }
+        .navbar { display: flex; justify-content: space-between; align-items: center; background-color: #1a252f; color: white; padding: 15px 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .navbar-brand { font-size: 20px; font-weight: bold; }
+        .user-switcher { display: flex; gap: 10px; align-items: center; background: rgba(255,255,255,0.1); padding: 5px 15px; border-radius: 20px; }
+        .user-switcher select { padding: 5px; border-radius: 4px; font-weight: bold; border: none; outline: none; cursor: pointer; }
+        .notification-container { position: relative; cursor: pointer; user-select: none; }
+        .bell-icon { font-size: 24px; transition: transform 0.2s; display: inline-block; }
+        .notification-container:hover .bell-icon { transform: scale(1.1); }
+        .badge { position: absolute; top: -5px; right: -8px; background-color: #e74c3c; color: white; border-radius: 50%; padding: 2px 6px; font-size: 12px; font-weight: bold; box-shadow: 0 0 0 2px #1a252f; display: none; }
+        .dropdown { display: none; position: absolute; top: 45px; right: 0; width: 320px; background-color: #ffffff; color: #333; box-shadow: 0 8px 16px rgba(0,0,0,0.15); border-radius: 8px; border: 1px solid #ddd; z-index: 1000; overflow: hidden; }
+        .dropdown-header { background-color: #f8f9fa; padding: 12px 15px; font-weight: bold; border-bottom: 1px solid #eee; color: #2c3e50; }
+        .notification-list { max-height: 300px; overflow-y: auto; }
+        .dropdown-item { padding: 15px; border-bottom: 1px solid #eee; font-size: 14px; display: flex; gap: 10px; }
+        .dropdown-item:hover { background-color: #f1f3f5; }
+        .empty-state { padding: 20px; text-align: center; color: #888; font-style: italic; font-size: 14px;}
+        .mark-read-btn { width: 100%; padding: 12px; background-color: #f8f9fa; color: #0066cc; border: none; border-top: 1px solid #eee; cursor: pointer; font-weight: bold; }
+        .container { max-width: 1200px; margin: 30px auto; padding: 0 20px; display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+        .card { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); margin-bottom: 20px; }
+        .card h3 { border-bottom: 2px solid #f0f2f5; padding-bottom: 10px; margin-bottom: 15px; color: #2c3e50; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .form-section { background: #fafafa; padding: 15px; border-radius: 8px; border: 1px solid #eee; }
+        .form-section h4 { margin-bottom: 15px; color: #444; font-size: 15px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; margin-bottom: 5px; font-size: 13px; font-weight: bold; color: #666;}
+        .form-group input, .form-group select { width: 100%; padding: 8px 10px; border: 1px solid #ccc; border-radius: 5px; font-family: inherit; font-size: 14px; }
+        button.action-btn { background-color: #3498db; color: white; border: none; padding: 10px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 5px; transition: 0.2s; }
+        button.action-btn:hover { background-color: #2980b9; }
+        button.warning-btn { background-color: #e67e22; }
+        button.warning-btn:hover { background-color: #d35400; }
+        .status-badge { display: block; padding: 10px; background: #d4edda; color: #155724; border-radius: 5px; font-size: 14px; font-weight: bold; text-align: center;}
+        .online-user-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #eee;}
+        .green-dot { width: 10px; height: 10px; background-color: #2ecc71; border-radius: 50%; display: inline-block; box-shadow: 0 0 5px rgba(46, 204, 113, 0.5);}
+        #toast { position: fixed; bottom: 20px; right: 20px; background: #333; color: white; padding: 15px 20px; border-radius: 5px; display: none; z-index: 9999; box-shadow: 0 4px 6px rgba(0,0,0,0.2); }
+
+        .auth-bar { background-color: #2c3e50; color: white; padding: 10px 30px; display: flex; gap: 15px; align-items: center; font-size: 14px; border-bottom: 2px solid #34495e; }
+        .auth-bar input { padding: 6px; border-radius: 4px; border: none; width: 140px; }
+        .auth-status { display: flex; align-items: center; gap: 8px; font-weight: bold; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background-color: #e74c3c; }
+        .dot.online { background-color: #2ecc71; box-shadow: 0 0 5px #2ecc71; }
+    </style>
+</head>
+<body>
+
+    <div class="auth-bar">
+        <div class="auth-status">
+            <div id="statusDot" class="dot"></div>
+            <span>API: <span id="statusTxt">Log in voor data</span></span>
+        </div>
+        <input type="text" id="loginUser" placeholder="Username">
+        <input type="password" id="loginPass" placeholder="Wachtwoord">
+        <button onclick="login()" style="width: auto; padding: 5px 15px; margin: 0; background: #34495e; color: white; border: none; cursor: pointer; border-radius: 4px;">Login</button>
+    </div>
+
+    <div class="navbar">
+        <div class="navbar-brand">🚀 Transcendence God Mode</div>
+        <div class="user-switcher">
+            <label for="currentUser" style="font-size: 14px;">Sessie voor:</label>
+            <select id="currentUser" onchange="switchUser()">
+                <option value="">Laden...</option>
+            </select>
+        </div>
+        <div class="notification-container" onclick="toggleDropdown(event)">
+            <span class="bell-icon">🔔</span>
+            <span class="badge" id="badgeCount">0</span>
+            <div class="dropdown" id="notificationMenu" onclick="event.stopPropagation()">
+                <div class="dropdown-header">Recente Meldingen</div>
+                <div class="notification-list" id="notificationList"></div>
+                <button class="mark-read-btn" onclick="markAllAsRead()">Markeer alles als gelezen</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="main-content">
+            <div class="card">
+                <h3>👥 Gebruikers Beheer</h3>
+                <div class="form-grid">
+                    <div class="form-section">
+                        <h4>Nieuwe User Aanmaken</h4>
+                        <div class="form-group"><input type="text" id="newUsername" placeholder="Username"></div>
+                        <div class="form-group"><input type="email" id="newUserEmail" placeholder="E-mailadres"></div>
+                        <div class="form-group"><input type="password" id="newUserPass" placeholder="Wachtwoord"></div>
+                        <button class="action-btn" onclick="createUser()">Aanmaken</button>
+                    </div>
+                    <div class="form-section">
+                        <h4>Rol Wijzigen</h4>
+                        <div class="form-group">
+                            <label>Selecteer User</label>
+                            <select id="roleUserId" class="dynamic-user-select"><option value="">Laden...</option></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Nieuwe Rol</label>
+                            <select id="newRole">
+                                <option value="USER">USER</option>
+                                <option value="ADMIN">ADMIN</option>
+                            </select>
+                        </div>
+                        <button class="action-btn warning-btn" onclick="changeRole()">Rol Updaten</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>📁 Projecten & Leden</h3>
+                <div class="form-grid">
+                    <div class="form-section">
+                        <h4>Nieuw Project</h4>
+                        <div class="form-group"><input type="text" id="projName" placeholder="Project Naam"></div>
+                        <div class="form-group"><input type="text" id="projDesc" placeholder="Beschrijving"></div>
+                        <div class="form-group">
+                            <label>Deadline</label>
+                            <input type="datetime-local" id="projDeadline">
+                        </div>
+                        <button class="action-btn" onclick="createProject()">Project Aanmaken</button>
+                    </div>
+                    <div class="form-section">
+                        <h4>Member Toevoegen</h4>
+                        <div class="form-group">
+                            <label>Kies Project</label>
+                            <select id="memberProjId" class="dynamic-project-select"><option value="">Laden...</option></select>
+                        </div>
+                        <div class="form-group">
+                            <label>Kies User</label>
+                            <select id="memberUserId" class="dynamic-user-select"><option value="">Laden...</option></select>
+                        </div>
+                        <button class="action-btn warning-btn" onclick="addMember()">Toevoegen</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>📋 Taak Aanmaken</h3>
+                <div class="form-grid">
+                    <div class="form-section" style="grid-column: 1 / -1;">
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div class="form-group">
+                                <label>Titel</label>
+                                <input type="text" id="taskTitle" placeholder="Taak omschrijving">
+                            </div>
+                            <div class="form-group">
+                                <label>Deadline</label>
+                                <input type="datetime-local" id="taskDeadline">
+                            </div>
+                            <div class="form-group">
+                                <label>Kies Project</label>
+                                <select id="taskProjId" class="dynamic-project-select"><option value="">Laden...</option></select>
+                            </div>
+                            <div class="form-group">
+                                <label>Assignee</label>
+                                <select id="taskAssignee" class="dynamic-user-select"><option value="">Laden...</option></select>
+                            </div>
+                        </div>
+                        <button class="action-btn" onclick="createTask()">Taak Aanmaken</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="card">
+                <h3>Server Status</h3>
+                <div class="status-badge" id="connStatus">⏳ Verbinden...</div>
+            </div>
+            <div class="card">
+                <h3>🟢 Vrienden Online</h3>
+                <div id="onlineUsersList" style="margin-top: 15px;"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast">Actie uitgevoerd!</div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        const API_URL = 'http://localhost:3000'; 
+        let jwtToken = null; 
+        let currentUserId = null;
+        let unreadNotifications = [];
+        let onlineUsers = new Set(); 
+        let socket;
+
+        async function login() {
+            const username = document.getElementById('loginUser').value;
+            const password = document.getElementById('loginPass').value;
+            try {
+                const response = await fetch(`${API_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    jwtToken = data.access_token;
+                    document.getElementById('statusDot').className = 'dot online';
+                    document.getElementById('statusTxt').innerText = 'Ingelogd';
+                    showToast("✅ Login succes!");
+                    fetchDatabaseData(); 
+                } else { showToast("❌ Login mislukt: " + data.message); }
+            } catch (e) { showToast("❌ Kan auth server niet bereiken"); }
+        }
+
+        async function fetchDatabaseData() {
+            if (!jwtToken) return;
+            const headers = { 'Authorization': `Bearer ${jwtToken}` };
+
+            // 1. Users ophalen (NU MET AUTO-EXTRACT VOOR WRAPPED DATA)
+            try {
+                const userRes = await fetch(`${API_URL}/users`, { headers });
+                let users = await userRes.json();
+                
+                // SLIMME FIX: Als de data in een object zit (zoals { data: [...] }), pakken we de lijst eruit
+                if (!Array.isArray(users) && users.data && Array.isArray(users.data)) {
+                    users = users.data;
+                }
+
+                console.log("DEBUG USERS PROCESSED:", users);
+
+                const userSelects = document.querySelectorAll('.dynamic-user-select, #currentUser');
+                userSelects.forEach(select => {
+                    select.innerHTML = '';
+                    if (Array.isArray(users)) {
+                        users.forEach(user => {
+                            const name = user.username || `User ${user.id}`;
+                            select.innerHTML += `<option value="${user.id}">${name}</option>`;
+                        });
+                    } else {
+                        select.innerHTML = '<option value="">Fout bij laden</option>';
+                    }
+                });
+
+                if (!currentUserId && Array.isArray(users) && users.length > 0) {
+                    currentUserId = users[0].id;
+                    connectSocket();
+                }
+            } catch (err) { console.error("Fout bij laden users:", err); }
+
+            // 2. Projecten ophalen
+            try {
+                const projRes = await fetch(`${API_URL}/projects`, { headers });
+                let projs = await projRes.json();
+                
+                if (!Array.isArray(projs) && projs.data && Array.isArray(projs.data)) {
+                    projs = projs.data;
+                }
+
+                const projSelects = document.querySelectorAll('.dynamic-project-select');
+                projSelects.forEach(select => {
+                    select.innerHTML = '';
+                    if (Array.isArray(projs)) {
+                        projs.forEach(p => {
+                            select.innerHTML += `<option value="${p.id}">${p.name}</option>`;
+                        });
+                    }
+                });
+            } catch (err) { console.error("Fout bij laden projecten:", err); }
+        }
+
+        function connectSocket() {
+            if(!currentUserId || !jwtToken) return;
+            if(socket) socket.disconnect(); 
+            socket = io(API_URL, { auth: { token: jwtToken } });
+            socket.on('connect', () => {
+                document.getElementById('connStatus').innerHTML = `🟢 Live als User ${currentUserId}`;
+                socket.emit('identify', parseInt(currentUserId));
+            });
+            socket.on('new_notification', (data) => { unreadNotifications.unshift(data); updateNotificationsUI(); });
+            socket.on('user_status_change', (data) => {
+                if (data.userId !== parseInt(currentUserId)) { 
+                    data.status === 'ONLINE' ? onlineUsers.add(data.userId) : onlineUsers.delete(data.userId);
+                    updateOnlineUsersUI(); 
+                }
+            });
+        }
+
+        async function apiCall(endpoint, method, bodyData, refreshDataAfter = false) {
+            const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${jwtToken}` };
+            try {
+                const response = await fetch(`${API_URL}${endpoint}`, { method, headers, body: JSON.stringify(bodyData) });
+                if (response.ok) {
+                    showToast('✅ Actie succesvol!');
+                    if (refreshDataAfter) fetchDatabaseData();
+                } else {
+                    const err = await response.json();
+                    showToast('❌ Fout: ' + (err.message || 'Onbekend'));
+                }
+            } catch (e) { showToast('❌ Backend onbereikbaar'); }
+        }
+
+        function createUser() {
+            apiCall('/users', 'POST', {
+                username: document.getElementById('newUsername').value,
+                email: document.getElementById('newUserEmail').value,
+                password: document.getElementById('newUserPass').value
+            }, true);
+        }
+
+        function changeRole() {
+            const id = document.getElementById('roleUserId').value;
+            apiCall(`/users/${id}`, 'PATCH', { globalRole: document.getElementById('newRole').value });
+        }
+
+        function createProject() {
+            let dl = document.getElementById('projDeadline').value;
+            apiCall('/projects', 'POST', {
+                name: document.getElementById('projName').value,
+                description: document.getElementById('projDesc').value,
+                userId: parseInt(currentUserId),
+                ...(dl ? { deadline: new Date(dl).toISOString() } : {})
+            }, true);
+        }
+
+        function addMember() {
+            const projId = document.getElementById('memberProjId').value;
+            apiCall(`/projects/${projId}/members`, 'POST', {
+                userId: parseInt(document.getElementById('memberUserId').value),
+                role: 'MEMBER'
+            });
+        }
+
+        function createTask() {
+            let dl = document.getElementById('taskDeadline').value;
+            apiCall('/tasks', 'POST', {
+                title: document.getElementById('taskTitle').value,
+                projectId: parseInt(document.getElementById('taskProjId').value),
+                assigneeIds: [parseInt(document.getElementById('taskAssignee').value)],
+                ...(dl ? { deadline: new Date(dl).toISOString() } : {})
+            });
+        }
+
+        function updateNotificationsUI() {
+            const badgeCount = document.getElementById('badgeCount');
+            const notificationList = document.getElementById('notificationList');
+            badgeCount.style.display = unreadNotifications.length > 0 ? 'block' : 'none';
+            badgeCount.innerText = unreadNotifications.length;
+            notificationList.innerHTML = unreadNotifications.map(n => `<div class="dropdown-item">🔔 ${n.message}</div>`).join('') || '<div class="empty-state">Geen meldingen.</div>';
+        }
+        function updateOnlineUsersUI() {
+            document.getElementById('onlineUsersList').innerHTML = Array.from(onlineUsers).map(id => `<div class="online-user-item">🟢 User ID: ${id}</div>`).join('') || '<div class="empty-state">Iedereen offline</div>';
+        }
+        function switchUser() { currentUserId = document.getElementById('currentUser').value; connectSocket(); }
+        function toggleDropdown(event) { event.stopPropagation(); const menu = document.getElementById('notificationMenu'); menu.style.display = menu.style.display === 'block' ? 'none' : 'block'; }
+        window.onclick = function() { document.getElementById('notificationMenu').style.display = 'none'; }
+        function showToast(msg) { const toast = document.getElementById('toast'); toast.innerText = msg; toast.style.display = 'block'; setTimeout(() => toast.style.display = 'none', 3000); }
+        async function markAllAsRead() { unreadNotifications = []; updateNotificationsUI(); apiCall(`/notifications/user/${currentUserId}/read`, 'PATCH', {}); }
+    </script>
+</body>
+</html>
+</file>
+
+<file path="chat.html">
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>Transcendence | Project Chat</title>
+    <style>
+        :root { --primary: #3498db; --bg: #f5f7f9; --text: #2c3e50; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; height: 100vh; margin: 0; }
+        
+        /* Header & Auth */
+        header { background: #1a252f; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .setup-bar { background: #fff; padding: 15px 30px; border-bottom: 1px solid #ddd; display: flex; gap: 15px; align-items: center; }
+        input, select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+
+        /* Chat Area */
+        .chat-container { flex: 1; display: flex; flex-direction: column; max-width: 900px; margin: 20px auto; width: 100%; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden; }
+        #chat-window { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; background: #fdfdfd; }
+        
+        /* Messages */
+        .message { max-width: 70%; padding: 10px 15px; border-radius: 18px; position: relative; font-size: 14px; line-height: 1.4; }
+        .message.others { align-self: flex-start; background: #e9ebee; color: black; border-bottom-left-radius: 2px; }
+        .message.mine { align-self: flex-end; background: var(--primary); color: white; border-bottom-right-radius: 2px; }
+        .meta { font-size: 10px; margin-bottom: 4px; display: block; font-weight: bold; }
+        .time { font-size: 9px; opacity: 0.7; display: block; text-align: right; margin-top: 4px; }
+
+        /* Input Area */
+        .input-area { padding: 20px; border-top: 1px solid #eee; display: flex; gap: 10px; }
+        #messageInput { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 25px; outline: none; }
+        button { padding: 10px 25px; background: var(--primary); color: white; border: none; border-radius: 25px; cursor: pointer; font-weight: bold; }
+        button:disabled { background: #ccc; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div><strong>🚀 Transcendence</strong> | Project Messenger</div>
+    <div id="status">🔴 Niet verbonden</div>
+</header>
+
+<div class="setup-bar">
+    <input type="text" id="jwtToken" placeholder="JWT Token (verplicht)">
+    <input type="number" id="userId" placeholder="Mijn User ID">
+    <input type="number" id="projectId" placeholder="Project ID">
+    <button onclick="enterProject()">Project Betreden</button>
+</div>
+
+<div class="chat-container">
+    <div id="chat-window">
+        <div style="text-align:center; color:#999; margin-top:100px;">Join een project om de chatgeschiedenis te laden...</div>
+    </div>
+    <div class="input-area">
+        <input type="text" id="messageInput" placeholder="Typ een bericht..." disabled onkeypress="if(event.key === 'Enter') sendMessage()">
+        <button id="sendBtn" onclick="sendMessage()" disabled>Verstuur</button>
+    </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+    const API_URL = 'http://localhost:3000';
+    let socket;
+    let currentConfig = { token: '', uId: null, pId: null };
+
+    async function enterProject() {
+        currentConfig.token = document.getElementById('jwtToken').value;
+        currentConfig.uId = parseInt(document.getElementById('userId').value);
+        currentConfig.pId = parseInt(document.getElementById('projectId').value);
+
+        if (!currentConfig.token || !currentConfig.uId || !currentConfig.pId) {
+            return alert("Vul alle velden in (Token, User ID, Project ID)");
+        }
+
+        // 1. Laad geschiedenis uit DB
+        await loadHistory();
+
+        // 2. Verbind via Socket
+        connectSocket();
+
+        // 3. UI vrijgeven
+        document.getElementById('messageInput').disabled = false;
+        document.getElementById('sendBtn').disabled = false;
+        document.getElementById('chat-window').innerHTML += `<div style="text-align:center; font-size:12px; color:green;">— Je bent nu live in project ${currentConfig.pId} —</div>`;
+    }
+
+    async function loadHistory() {
+        const chatWindow = document.getElementById('chat-window');
+        try {
+            const res = await fetch(`${API_URL}/projects/${currentConfig.pId}/messages`, {
+                headers: { 'Authorization': `Bearer ${currentConfig.token}` }
+            });
+            const messages = await res.json();
+            chatWindow.innerHTML = ''; // Clear window
+            
+            messages.forEach(msg => appendMessage(msg, false));
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        } catch (e) {
+            console.error("Fout bij laden geschiedenis:", e);
+        }
+    }
+
+    function connectSocket() {
+        if (socket) socket.disconnect();
+        socket = io(API_URL, { auth: { token: currentConfig.token } });
+
+        socket.on('connect', () => {
+            document.getElementById('status').innerText = '🟢 Verbonden';
+            socket.emit('identify', currentConfig.uId);
+            socket.emit('joined project', { username: `User_${currentConfig.uId}`, projectId: currentConfig.pId });
+        });
+
+        socket.on('new_project_notification', (data) => {
+            // Check of het bericht wel bij DIT project hoort
+            if (data.projectId === currentConfig.pId) {
+                appendMessage(data, true);
+            }
+        });
+    }
+
+    function appendMessage(data, isLive) {
+        const chatWindow = document.getElementById('chat-window');
+        const isMine = data.userId === currentConfig.uId;
+        const name = data.user?.username || `User ${data.userId}`;
+        const time = new Date(data.Time || data.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${isMine ? 'mine' : 'others'}`;
+        msgDiv.innerHTML = `
+            <span class="meta">${isMine ? 'Jij' : name}</span>
+            ${data.content}
+            <span class="time">${time}</span>
+        `;
+        chatWindow.appendChild(msgDiv);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    async function sendMessage() {
+        const input = document.getElementById('messageInput');
+        const content = input.value;
+        if (!content) return;
+
+        try {
+            await fetch(`${API_URL}/projects/${currentConfig.pId}/messages`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${currentConfig.token}` 
+                },
+                body: JSON.stringify({ userId: currentConfig.uId, content: content })
+            });
+            input.value = '';
+        } catch (e) {
+            alert("Bericht kon niet worden verzonden.");
+        }
+    }
+</script>
+</body>
+</html>
+</file>
+
+<file path="Makefile">
+
+</file>
+
+<file path="notification.html">
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transcendence Dashboard</title>
+    <style>
+        /* Reset & Basis styling */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; color: #333; }
+
+        /* Navigatiebalk */
+        .navbar {
+            display: flex; justify-content: space-between; align-items: center;
+            background-color: #1a252f; color: white; padding: 15px 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .navbar-brand { font-size: 20px; font-weight: bold; }
+
+        /* Belletje & Badge */
+        .notification-container { position: relative; cursor: pointer; user-select: none; }
+        .bell-icon { font-size: 24px; transition: transform 0.2s; display: inline-block; }
+        .notification-container:hover .bell-icon { transform: scale(1.1); }
+        
+        .badge {
+            position: absolute; top: -5px; right: -8px;
+            background-color: #e74c3c; color: white;
+            border-radius: 50%; padding: 2px 6px;
+            font-size: 12px; font-weight: bold;
+            box-shadow: 0 0 0 2px #1a252f;
+            display: none;
+        }
+
+        /* De Dropdown List */
+        .dropdown {
+            display: none; position: absolute; top: 45px; right: 0;
+            width: 320px; background-color: #ffffff; color: #333;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15); border-radius: 8px;
+            border: 1px solid #ddd; z-index: 1000; overflow: hidden;
+        }
+        
+        .dropdown-header {
+            background-color: #f8f9fa; padding: 12px 15px;
+            font-weight: bold; border-bottom: 1px solid #eee; color: #2c3e50;
+        }
+
+        .notification-list { max-height: 300px; overflow-y: auto; }
+        
+        .dropdown-item {
+            padding: 15px; border-bottom: 1px solid #eee;
+            font-size: 14px; line-height: 1.4; display: flex; gap: 10px;
+        }
+        .dropdown-item:last-child { border-bottom: none; }
+        .dropdown-item:hover { background-color: #f1f3f5; }
+        .dropdown-item .icon { font-size: 18px; }
+
+        .empty-state { padding: 20px; text-align: center; color: #888; font-style: italic; }
+
+        .mark-read-btn {
+            width: 100%; padding: 12px; background-color: #f8f9fa; color: #0066cc;
+            border: none; border-top: 1px solid #eee; cursor: pointer;
+            font-weight: bold; transition: background 0.2s;
+        }
+        .mark-read-btn:hover { background-color: #e9ecef; }
+
+        /* Pagina Content */
+        .container { max-width: 800px; margin: 40px auto; padding: 0 20px; }
+        .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .status-badge { display: inline-block; padding: 5px 10px; background: #d4edda; color: #155724; border-radius: 15px; font-size: 14px; margin-top: 15px;}
+    </style>
+</head>
+<body>
+
+    <div class="navbar">
+        <div class="navbar-brand">🚀 Transcendence</div>
+        
+        <div class="notification-container" onclick="toggleDropdown(event)">
+            <span class="bell-icon">🔔</span>
+            <span class="badge" id="badgeCount">0</span>
+            
+            <div class="dropdown" id="notificationMenu" onclick="event.stopPropagation()">
+                <div class="dropdown-header">Recente Meldingen</div>
+                <div class="notification-list" id="notificationList">
+                    </div>
+                <button class="mark-read-btn" onclick="markAllAsRead()">Markeer alles als gelezen</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2>Welkom op het test-dashboard!</h2>
+            <p style="margin-top: 10px; color: #555; line-height: 1.6;">
+                Dit scherm doet alsof het ingelogd is als <b>User 1</b>. Ga naar je Swagger API en maak een nieuwe taak of voeg User 1 toe aan een project. Het belletje rechtsboven zal dan direct updaten.
+            </p>
+            <div class="status-badge" id="connStatus">⏳ Verbinden met server...</div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        let unreadNotifications = [];
+        const badgeCount = document.getElementById('badgeCount');
+        const notificationMenu = document.getElementById('notificationMenu');
+        const notificationList = document.getElementById('notificationList');
+        const connStatus = document.getElementById('connStatus');
+
+        function updateUI() {
+            if (unreadNotifications.length > 0) {
+                badgeCount.innerText = unreadNotifications.length;
+                badgeCount.style.display = 'block';
+            } else {
+                badgeCount.style.display = 'none';
+            }
+
+            notificationList.innerHTML = '';
+            if (unreadNotifications.length === 0) {
+                notificationList.innerHTML = '<div class="empty-state">Geen nieuwe meldingen.</div>';
+            } else {
+                unreadNotifications.forEach(notif => {
+                    // Update: extra icoontje voor de SYSTEM meldingen (zoals online/offline)
+                    let icon = notif.type === 'PROJECT_JOINED' ? '📁' : (notif.type === 'SYSTEM' ? '🤖' : '📋');
+                    notificationList.innerHTML += `
+                        <div class="dropdown-item">
+                            <span class="icon">${icon}</span>
+                            <span>${notif.message}</span>
+                        </div>`;
+                });
+            }
+        }
+
+        function toggleDropdown(event) {
+            event.stopPropagation();
+            notificationMenu.style.display = notificationMenu.style.display === 'block' ? 'none' : 'block';
+        }
+
+        window.onclick = function() {
+            notificationMenu.style.display = 'none';
+        }
+
+        // GEÜPDATETE FUNCTIE: Roept nu de backend API aan om de database bij te werken!
+        async function markAllAsRead() {
+            unreadNotifications = []; 
+            updateUI();
+            notificationMenu.style.display = 'none';
+
+            try {
+                const response = await fetch('http://localhost:3000/notifications/user/1/read', {
+                    method: 'PATCH',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                if (response.ok) {
+                    console.log('✅ Database succesvol geüpdatet: Alles gemarkeerd als gelezen!');
+                } else {
+                    console.error('❌ Fout bij het updaten van de database');
+                }
+            } catch (error) {
+                console.error('Backend is niet bereikbaar:', error);
+            }
+        }
+
+        // --- WEBSOCKET LOGICA ---
+        const socket = io('http://localhost:3000');
+        
+        socket.on('connect', () => {
+            connStatus.innerHTML = '🟢 Live verbonden met backend (User ID: 1)';
+            connStatus.style.background = '#d4edda';
+            connStatus.style.color = '#155724';
+            socket.emit('identify', 1);
+        });
+
+        socket.on('disconnect', () => {
+            connStatus.innerHTML = '🔴 Verbinding verbroken...';
+            connStatus.style.background = '#f8d7da';
+            connStatus.style.color = '#721c24';
+        });
+
+        // Luisteren naar normale meldingen (Taken / Projecten)
+        socket.on('new_notification', (data) => {
+            unreadNotifications.unshift(data); 
+            updateUI(); 
+        });
+
+        // NIEUW: Luisteren naar statusveranderingen van anderen
+        socket.on('user_status_change', (data) => {
+            console.log('Status update ontvangen:', data);
+            
+            // Controleer of de status update niet over onszelf (User 1) gaat
+            if (data.userId !== 1) {
+                if (data.status === 'ONLINE') {
+                    unreadNotifications.unshift({ message: `User ${data.userId} is nu online! 🟢`, type: 'SYSTEM' });
+                    updateUI();
+                } else if (data.status === 'OFFLINE') {
+                    unreadNotifications.unshift({ message: `User ${data.userId} is nu offline. 🔴`, type: 'SYSTEM' });
+                    updateUI();
+                }
+            }
+        });
+
+        updateUI();
+    </script>
+</body>
+</html>
+</file>
+
+<file path="online.html">
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transcendence Dashboard</title>
+    <style>
+        /* Reset & Basis styling */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; color: #333; }
+
+        /* Navigatiebalk */
+        .navbar {
+            display: flex; justify-content: space-between; align-items: center;
+            background-color: #1a252f; color: white; padding: 15px 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .navbar-brand { font-size: 20px; font-weight: bold; }
+
+        /* Belletje & Badge */
+        .notification-container { position: relative; cursor: pointer; user-select: none; }
+        .bell-icon { font-size: 24px; transition: transform 0.2s; display: inline-block; }
+        .notification-container:hover .bell-icon { transform: scale(1.1); }
+        
+        .badge {
+            position: absolute; top: -5px; right: -8px;
+            background-color: #e74c3c; color: white;
+            border-radius: 50%; padding: 2px 6px;
+            font-size: 12px; font-weight: bold;
+            box-shadow: 0 0 0 2px #1a252f;
+            display: none;
+        }
+
+        /* De Dropdown List */
+        .dropdown {
+            display: none; position: absolute; top: 45px; right: 0;
+            width: 320px; background-color: #ffffff; color: #333;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.15); border-radius: 8px;
+            border: 1px solid #ddd; z-index: 1000; overflow: hidden;
+        }
+        
+        .dropdown-header {
+            background-color: #f8f9fa; padding: 12px 15px;
+            font-weight: bold; border-bottom: 1px solid #eee; color: #2c3e50;
+        }
+
+        .notification-list { max-height: 300px; overflow-y: auto; }
+        
+        .dropdown-item {
+            padding: 15px; border-bottom: 1px solid #eee;
+            font-size: 14px; line-height: 1.4; display: flex; gap: 10px;
+        }
+        .dropdown-item:last-child { border-bottom: none; }
+        .dropdown-item:hover { background-color: #f1f3f5; }
+        .dropdown-item .icon { font-size: 18px; }
+
+        .empty-state { padding: 20px; text-align: center; color: #888; font-style: italic; font-size: 14px;}
+
+        .mark-read-btn {
+            width: 100%; padding: 12px; background-color: #f8f9fa; color: #0066cc;
+            border: none; border-top: 1px solid #eee; cursor: pointer;
+            font-weight: bold; transition: background 0.2s;
+        }
+        .mark-read-btn:hover { background-color: #e9ecef; }
+
+        /* Pagina Content Grid */
+        .container { max-width: 1000px; margin: 40px auto; padding: 0 20px; display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+        .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .status-badge { display: inline-block; padding: 5px 10px; background: #d4edda; color: #155724; border-radius: 15px; font-size: 14px; margin-top: 15px;}
+        
+        /* Online Users Lijstje */
+        .online-user-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #eee;}
+        .online-user-item:last-child { border-bottom: none; }
+        .green-dot { width: 10px; height: 10px; background-color: #2ecc71; border-radius: 50%; display: inline-block; box-shadow: 0 0 5px rgba(46, 204, 113, 0.5);}
+    </style>
+</head>
+<body>
+
+    <div class="navbar">
+        <div class="navbar-brand">🚀 Transcendence</div>
+        
+        <div class="notification-container" onclick="toggleDropdown(event)">
+            <span class="bell-icon">🔔</span>
+            <span class="badge" id="badgeCount">0</span>
+            
+            <div class="dropdown" id="notificationMenu" onclick="event.stopPropagation()">
+                <div class="dropdown-header">Recente Meldingen</div>
+                <div class="notification-list" id="notificationList"></div>
+                <button class="mark-read-btn" onclick="markAllAsRead()">Markeer alles als gelezen</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <h2>Welkom op het test-dashboard!</h2>
+            <p style="margin-top: 10px; color: #555; line-height: 1.6;">
+                Dit is je hoofdwerkruimte. Ga naar Swagger API om acties uit te voeren die notificaties genereren.
+            </p>
+            <div class="status-badge" id="connStatus">⏳ Verbinden met server...</div>
+        </div>
+
+        <div class="card">
+            <h3>🟢 Vrienden Online</h3>
+            <div id="onlineUsersList" style="margin-top: 15px;">
+                </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        // --- 1. VARIABELEN ---
+        let unreadNotifications = [];
+        // We gebruiken een Set() voor online users, dat is handig want dan kun je nooit per ongeluk 2x dezelfde user toevoegen!
+        let onlineUsers = new Set(); 
+
+        const badgeCount = document.getElementById('badgeCount');
+        const notificationMenu = document.getElementById('notificationMenu');
+        const notificationList = document.getElementById('notificationList');
+        const connStatus = document.getElementById('connStatus');
+        const onlineUsersList = document.getElementById('onlineUsersList');
+
+        // --- 2. UI FUNCTIES ---
+
+        // Functie 1: Update het Belletje
+        function updateNotificationsUI() {
+            if (unreadNotifications.length > 0) {
+                badgeCount.innerText = unreadNotifications.length;
+                badgeCount.style.display = 'block';
+            } else {
+                badgeCount.style.display = 'none';
+            }
+
+            notificationList.innerHTML = '';
+            if (unreadNotifications.length === 0) {
+                notificationList.innerHTML = '<div class="empty-state">Geen nieuwe meldingen.</div>';
+            } else {
+                unreadNotifications.forEach(notif => {
+                    let icon = notif.type === 'PROJECT_JOINED' ? '📁' : '📋';
+                    notificationList.innerHTML += `
+                        <div class="dropdown-item">
+                            <span class="icon">${icon}</span>
+                            <span>${notif.message}</span>
+                        </div>`;
+                });
+            }
+        }
+
+        // Functie 2: Update het Zijbalkje
+        function updateOnlineUsersUI() {
+            onlineUsersList.innerHTML = '';
+            if (onlineUsers.size === 0) {
+                onlineUsersList.innerHTML = '<div class="empty-state">Iedereen is offline 😴</div>';
+            } else {
+                onlineUsers.forEach(userId => {
+                    onlineUsersList.innerHTML += `
+                        <div class="online-user-item">
+                            <span class="green-dot"></span>
+                            <span>User ${userId}</span>
+                        </div>`;
+                });
+            }
+        }
+
+        // Klik-gedrag voor de dropdown
+        function toggleDropdown(event) {
+            event.stopPropagation();
+            notificationMenu.style.display = notificationMenu.style.display === 'block' ? 'none' : 'block';
+        }
+        window.onclick = function() { notificationMenu.style.display = 'none'; }
+
+        // Knop om database te updaten
+        async function markAllAsRead() {
+            unreadNotifications = []; 
+            updateNotificationsUI();
+            notificationMenu.style.display = 'none';
+
+            try {
+                const response = await fetch('http://localhost:3000/notifications/user/1/read', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (response.ok) console.log('✅ Database succesvol geüpdatet');
+            } catch (error) {
+                console.error('Backend is niet bereikbaar:', error);
+            }
+        }
+
+        // --- 3. WEBSOCKET LOGICA ---
+        const socket = io('http://localhost:3000');
+        
+        socket.on('connect', () => {
+            connStatus.innerHTML = '🟢 Live verbonden met backend (User ID: 1)';
+            socket.emit('identify', 1);
+        });
+
+        socket.on('disconnect', () => {
+            connStatus.innerHTML = '🔴 Verbinding verbroken...';
+        });
+
+        // HIER LUISTEREN WE NAAR TAKEN & PROJECTEN (Gaan naar het belletje)
+        socket.on('new_notification', (data) => {
+            unreadNotifications.unshift(data); 
+            updateNotificationsUI(); 
+        });
+
+        // HIER LUISTEREN WE NAAR ONLINE/OFFLINE (Gaan naar de zijbalk)
+        socket.on('user_status_change', (data) => {
+            if (data.userId !== 1) { // We tonen onszelf niet in het lijstje
+                if (data.status === 'ONLINE') {
+                    onlineUsers.add(data.userId); // Zet in de lijst
+                } else if (data.status === 'OFFLINE') {
+                    onlineUsers.delete(data.userId); // Verwijder uit de lijst
+                }
+                updateOnlineUsersUI(); // Teken het lijstje opnieuw
+            }
+        });
+
+        // Eerste keer tekenen
+        updateNotificationsUI();
+        updateOnlineUsersUI();
+    </script>
+</body>
+</html>
+</file>
+
+<file path="README.md">
+
+</file>
+
+<file path="srcs/backend/src/auth/strategies/jwt.strategy.ts">
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { PassportStrategy } from '@nestjs/passport';
+import { ExtractJwt, Strategy } from 'passport-jwt';
+import { UsersService } from 'src/users/users.service';
+
+@Injectable()
+export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
+  constructor(private usersService: UsersService) {
+    super({
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ignoreExpiration: false,
+      secretOrKey: process.env.JWT_SECRET ?? (() => { throw new Error('JWT_SECRET not set') })(),
+    });
+  }
+
+  async validate(payload: any) {
+    const user = await this.usersService.findOne(payload.sub);
+    if (!user) throw new UnauthorizedException();
+    return { sub: payload.sub, id: payload.sub, username: payload.username, role: payload.role };
+  }
+}
+</file>
+
+<file path="srcs/backend/src/notifications/notifications.controller.ts">
+import { Controller, Patch, Get, Param, ParseIntPipe, Post, Body } from '@nestjs/common';
+import { NotificationsService } from './notifications.service';
+import { CreateNotificationDto } from './dto/create-notification.dto';
+
+@Controller('notifications')
+export class NotificationsController {
+  constructor(private readonly notificationsService: NotificationsService) {}
+
+  @Post()
+  async createNotification(@Body() createNotificationDto: CreateNotificationDto) {
+    return this.notificationsService.createNotification(
+      createNotificationDto.userId,
+      createNotificationDto.type,
+      createNotificationDto.message
+    );
+  }
+
+  @Get('user/:id')
+  async getNotifications(@Param('id', ParseIntPipe) userId: number) {
+    return this.notificationsService.getUserNotifications(userId);
+  }
+
+  @Patch('user/:id/read')
+  async markAsRead(@Param('id', ParseIntPipe) userId: number) {
+    return this.notificationsService.markAllAsRead(userId);
+  }
+}
+</file>
+
+<file path="srcs/backend/src/notifications/notifications.gateway.ts">
+import {
+  WebSocketGateway,
+  WebSocketServer,
+  OnGatewayConnection,
+  OnGatewayDisconnect,
+  SubscribeMessage,
+  ConnectedSocket,
+  MessageBody,
+} from '@nestjs/websockets';
+import { Server, Socket } from 'socket.io';
+import { Logger } from '@nestjs/common';
+
+@WebSocketGateway({ cors: { origin: '*' } })
+export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  @WebSocketServer()
+  server: Server;
+
+  private readonly logger = new Logger(NotificationsGateway.name);
+  private connectedUsers = new Map<number, string[]>();
+
+  handleConnection(client: Socket) {
+    this.logger.log(`🟢 Client connected: ${client.id}`);
+  }
+
+  handleDisconnect(client: Socket) {
+    this.removeSocketId(client.id);
+    this.logger.log(`🔴 Client disconnected: ${client.id}`);
+  }
+
+  @SubscribeMessage('identify')
+  handleIdentify(@ConnectedSocket() client: Socket, @MessageBody() userId: number) {
+    const userSockets = this.connectedUsers.get(userId) || [];
+    
+    const isNewlyOnline = userSockets.length === 0;
+
+    userSockets.push(client.id);
+    this.connectedUsers.set(userId, userSockets);
+    client.emit('identified', { status: 'success' });
+
+    if (isNewlyOnline) {
+      this.server.emit('user_status_change', { userId: userId, status: 'ONLINE' });
+      this.logger.log(`User ${userId} is nu zichtbaar als ONLINE.`);
+    }
+  }
+
+  sendNotificationToUser(userId: number, payload: any) {
+    const userSockets = this.connectedUsers.get(userId);
+    if (userSockets) {
+      userSockets.forEach((socketId) => {
+        this.server.to(socketId).emit('new_notification', payload);
+      });
+    }
+  }
+
+  private removeSocketId(socketId: string) {
+    for (const [userId, sockets] of this.connectedUsers.entries()) {
+      const updatedSockets = sockets.filter((id) => id !== socketId);
+      
+      if (updatedSockets.length === 0) {
+        this.connectedUsers.delete(userId);
+        
+        this.server.emit('user_status_change', { userId: userId, status: 'OFFLINE' });
+        this.logger.log(`User ${userId} is nu zichtbaar als OFFLINE.`);
+      } else {
+        this.connectedUsers.set(userId, updatedSockets);
+      }
+    }
+  }
+  @SubscribeMessage('joined project')
+  handleJoinedProject(@ConnectedSocket() client: Socket, @MessageBody() data: { username: string; projectId: number }) {
+    const room = `project_${data.projectId}`;
+    client.join(room);
+    this.logger.log(`User ${data.username} joined room: ${room}`);
+  }
+
+  @SubscribeMessage('left project')
+  handleLeftProject(@ConnectedSocket() client: Socket, @MessageBody() data: { username: string; projectId: number }) {
+    const room = `project_${data.projectId}`;
+    client.leave(room);
+    this.logger.log(`User ${data.username} left room: ${room}`);
+  }
+
+  sendProjectNotification(projectId: number, message: any) {
+    const room = `project_${projectId}`;
+    this.server.to(room).emit('new_project_notification', message);
+  }
+}
+</file>
+
+<file path="srcs/backend/src/notifications/notifications.module.ts">
+import { Module } from '@nestjs/common';
+import { MailerModule } from '@nestjs-modules/mailer';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { NotificationsService } from './notifications.service';
+import { PrismaModule } from '../prisma/prisma.module';
+import { NotificationsGateway } from './notifications.gateway';
+import { NotificationsController } from './notifications.controller';
+
+
+@Module({
+  imports: [
+    PrismaModule,
+
+    MailerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        transport: {
+          host: configService.get<string>('SMTP_HOST'),
+          port: configService.get<number>('SMTP_PORT'),
+          secure: true,
+          auth: {
+            user: configService.get<string>('SMTP_USER'),
+            pass: configService.get<string>('SMTP_PASS'),
+          },
+        },
+        defaults: {
+          from: `"Transcendence Bot" <${configService.get<string>('SMTP_USER')}>`,
+        },
+      }),
+    }),
+  ],
+  controllers: [NotificationsController],
+  exports: [NotificationsGateway, NotificationsService],
+  providers: [NotificationsService, NotificationsGateway],
+})
+export class NotificationsModule {}
+</file>
+
+<file path="srcs/backend/src/projects/project-leader.guard.ts">
+import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+
+@Injectable()
+export class ProjectLeaderGuard implements CanActivate {
+  constructor(private prisma: PrismaService) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const request = context.switchToHttp().getRequest();
+    const userId = request.user.sub;
+    const globalRole = request.user.globalRole;
+
+    if (globalRole === 'ADMIN') { //for now admin has all permissions, we can change this later if we want to
+      return true;
+    }
+
+    let projectId: number;
+    const path = request.route.path;
+
+    if (path.includes('/tasks')) {
+      const taskId = parseInt(request.params.id);
+      if (isNaN(taskId)) throw new ForbiddenException('Invalid task ID provided');
+
+      const task = await this.prisma.task.findUnique({
+        where: { id: taskId },
+        select: { projectId: true }
+      });
+
+      if (!task) throw new ForbiddenException('Task not found');
+      projectId = task.projectId;
+    } else {
+      projectId = parseInt(request.params.id);
+    }
+
+    if (isNaN(projectId)) {
+      throw new ForbiddenException('Invalid project ID provided');
+    }
+
+    const member = await this.prisma.projectMember.findUnique({
+      where: {
+        userId_projectId: {
+          userId: userId,
+          projectId: projectId,
+        },
+      },
+    });
+
+    if (!member || member.role !== 'PROJECT_LEADER') {
+      throw new ForbiddenException('You do not have permission to modify this project');
+    }
+
+    return true;
+  }
+}
+</file>
+
+<file path="srcs/backend/src/projects/projects.module.ts">
+import { Module } from '@nestjs/common';
+import { ProjectsService } from './projects.service';
+import { ProjectsController } from './projects.controller';
+import { PrismaModule } from '../prisma/prisma.module';
+import { NotificationsModule } from '../notifications/notifications.module';
+
+@Module({
+  imports: [PrismaModule, NotificationsModule],
+  controllers: [ProjectsController],
+  providers: [ProjectsService],
+})
+export class ProjectsModule {}
+</file>
+
+<file path="srcs/backend/src/users/dto/update-user.dto.ts">
+import { PartialType } from '@nestjs/mapped-types';
+import { CreateUserDto } from './create-user.dto';
+import { User } from '@prisma/client';
+
+export class UpdateUserDto extends PartialType(CreateUserDto) {}
+</file>
+
+<file path="srcs/backend/.gitignore">
+# compiled output
+/dist
+node_modules/
+/build
+
+# Logs
+logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# OS
+.DS_Store
+
+# Tests
+/coverage
+/.nyc_output
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# dotenv environment variable files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# temp directory
+.temp
+.tmp
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Diagnostic reports (https://nodejs.org/api/report.html)
+report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+
+/generated/prisma
+</file>
+
+<file path="srcs/backend/prisma.config.ts">
+import "dotenv/config";
+import { defineConfig } from "prisma/config";
+
+export default defineConfig({
+  schema: "prisma/schema.prisma",
+  migrations: {
+    path: "prisma/migrations",
+    seed: "npx ts-node prisma/seed.ts", // <-- Hier staat jouw toevoeging!
+  },
+  datasource: {
+    url: process.env["DATABASE_URL"],
+  },
+});
+</file>
+
+<file path="srcs/backend/src/notifications/notifications.service.ts">
+import { Injectable, Logger } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
+import { MailerService } from '@nestjs-modules/mailer';
+import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsGateway } from './notifications.gateway';
+
+@Injectable()
+export class NotificationsService {
+  private readonly logger = new Logger(NotificationsService.name);
+
+  constructor(
+    private prisma: PrismaService,
+    private mailerService: MailerService,
+    private readonly notificationsGateway: NotificationsGateway,
+  ) {}
+
+async createNotification(userId: number, type: string, message: string) {
+    // 1. Persist in database
+    const notification = await this.prisma.notification.create({
+      data: {
+        userId,
+        type,
+        message,
+      },
+    });
+
+    // 2. Send real-time via WebSocket
+    this.notificationsGateway.sendNotificationToUser(userId, notification);
+
+    return notification;
+  }
+
+@Cron('0 */10 9-17 * * 1-5')
+  async handleCron() {
+    this.logger.debug('Running automated deadline check for both Tasks and Projects...');
+
+    const now = new Date();
+
+   
+    const overdueTasks = await this.prisma.task.findMany({
+      where: {
+        deadline: { lt: now },
+        status: { notIn: ['DONE'] }, 
+        deadlineNotified: false,
+      },
+      include: {
+        assignees: true,
+        project: {
+          include: {
+            members: {
+              where: { role: 'PROJECT_LEADER' },
+              include: { user: true },
+            },
+          },
+        },
+      },
+    });
+
+    for (const task of overdueTasks) {
+      const projectLeader = task.project?.members[0]?.user;
+      const recipients = new Set<string>();
+
+      if (projectLeader?.email) {
+        recipients.add(projectLeader.email);
+      }
+
+      task.assignees.forEach((user) => {
+        if (user.email) recipients.add(user.email);
+      });
+
+      for (const email of recipients) {
+        await this.sendTaskEmail(email, task, projectLeader?.username);
+      }
+
+      await this.prisma.task.update({
+        where: { id: task.id },
+        data: { deadlineNotified: true },
+      });
+    }
+
+
+    const overdueProjects = await this.prisma.project.findMany({
+      
+      where: { 
+        deadline: { lt: now },
+        deadlineNotified: false,
+        status: { notIn: ['COMPLETED'] }, 
+      },
+      
+      include: { 
+        members: {
+          where: { role: 'PROJECT_LEADER' },
+          include: { user: true },
+        },
+      },
+      
+    });
+    for (const project of overdueProjects) {
+      const projectLeader = project.members[0]?.user;
+
+      if (projectLeader?.email) {
+        await this.sendProjectEmail(projectLeader.email, project, projectLeader.username);
+      }
+
+      await this.prisma.project.update({
+        where: { id: project.id },
+        data: { deadlineNotified: true },
+      });
+    }
+  }
+
+  private async sendTaskEmail(email: string, task: any, leaderName: string) {
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject: `⚠️ URGENT: Task Deadline Missed - ${task.title}`,
+        text: `The deadline for task "${task.title}" has passed.`,
+        html: `
+          <div style="font-family: Arial, sans-serif; border: 1px solid #e0e0e0; padding: 20px; border-radius: 10px; max-width: 600px;">
+            <h2 style="color: #d32f2f;">🚨 Task Deadline Notification</h2>
+            <p>This is an automated alert regarding the project: <strong>${task.project?.name || 'Unknown'}</strong>.</p>
+            <p>The following task has exceeded its deadline without being marked as <b>DONE</b>:</p>
+            <div style="background-color: #f8f9fa; padding: 15px; border-left: 5px solid #d32f2f; margin: 20px 0;">
+              <strong>Task Name:</strong> ${task.title}<br>
+              <strong>Deadline:</strong> ${task.deadline.toLocaleDateString('en-GB')}<br>
+              <strong>Status:</strong> <span style="color: #d32f2f;">${task.status}</span><br>
+              <strong>Project Manager:</strong> ${leaderName || 'Not assigned'}
+            </div>
+            <p>Please take immediate action to update the status.</p>
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+            <p style="font-size: 12px; color: #777;">This is a system-generated message from the Transcendence Platform.</p>
+          </div>
+        `,
+      });
+      this.logger.log(`Task email sent to ${email} for task ${task.id}`);
+    } catch (error) {
+      this.logger.error(`Error sending task email to ${email}: ${error.message}`);
+    }
+  }
+
+  private async sendProjectEmail(email: string, project: any, leaderName: string) {
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject: `⚠️ CRITICAL: Project Deadline Missed - ${project.name}`,
+        text: `The deadline for the entire project "${project.name}" has passed.`,
+        html: `
+          <div style="font-family: Arial, sans-serif; border: 1px solid #e0e0e0; padding: 20px; border-radius: 10px; max-width: 600px;">
+            <h2 style="color: #B71C1C;">🛑 CRITICAL: Project Deadline Missed</h2>
+            <p>Dear <strong>${leaderName}</strong>,</p>
+            <p>This is an automated alert to inform you that an entire project you are managing has exceeded its final deadline:</p>
+            <div style="background-color: #ffebee; padding: 15px; border-left: 5px solid #B71C1C; margin: 20px 0;">
+              <strong>Project Name:</strong> ${project.name}<br>
+              <strong>Final Deadline:</strong> ${project.deadline.toLocaleDateString('en-GB')}<br>
+            </div>
+            <p>Please review the project status and outstanding tasks immediately.</p>
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;">
+            <p style="font-size: 12px; color: #777;">This is a system-generated message from the Transcendence Platform.</p>
+          </div>
+        `,
+      });
+      this.logger.log(`Project email sent to ${email} for project ${project.id}`);
+    } catch (error) {
+      this.logger.error(`Error sending project email to ${email}: ${error.message}`);
+    }
+  }
+  async markAllAsRead(userId: number) {
+    return this.prisma.notification.updateMany({
+      where: { 
+        userId: userId,
+        isRead: false 
+      },
+      data: { 
+        isRead: true 
+      },
+    });
+  }
+
+  async getUserNotifications(userId: number) {
+    return this.prisma.notification.findMany({
+      where: { userId: userId },
+      orderBy: { createdAt: 'desc' },
+      take: 20, // we need to decide how many we want to save
+    });
+  }
+}
+</file>
+
+<file path="srcs/backend/src/prisma/prisma.service.ts">
+import { Injectable, OnModuleInit } from '@nestjs/common';
+import { PrismaClient } from '@prisma/client';
+import { Pool } from 'pg';
+import { PrismaPg } from '@prisma/adapter-pg';
+
+@Injectable()
+export class PrismaService extends PrismaClient implements OnModuleInit {
+  constructor() {
+    // 1. Haal de URL op uit je omgeving
+    const connectionString = process.env.DATABASE_URL;
+    
+    // 2. Bouw de nieuwe, supersnelle Prisma 7 Adapter
+    const pool = new Pool({ connectionString });
+    const adapter = new PrismaPg(pool);
+    
+    // 3. Geef de adapter door aan Prisma
+    super({ adapter });
+  }
+
+  async onModuleInit() {
+    await this.$connect()
+  }
+}
+</file>
+
+<file path="srcs/backend/src/projects/dto/add-member.dto.ts">
+import { IsInt, IsString, IsIn } from 'class-validator';
+
+export class AddMemberDto {
+  @IsInt()
+  userId: number;
+
+  @IsString()
+  @IsIn(['GUEST', 'MEMBER', 'PROJECT_LEADER'])
+  role: string;
+}
+</file>
+
+<file path="srcs/backend/src/tasks/tasks.module.ts">
+import { Module } from '@nestjs/common';
+import { TasksService } from './tasks.service';
+import { TasksController } from './tasks.controller';
+import { PrismaModule } from '../prisma/prisma.module';
+import { NotificationsModule } from '../notifications/notifications.module';
+
+@Module({
+  imports: [PrismaModule, NotificationsModule],
+  controllers: [TasksController],
+  providers: [TasksService],
+})
+export class TasksModule {}
+</file>
+
+<file path="srcs/backend/src/users/users.module.ts">
+import { Module } from '@nestjs/common';
+import { UsersService } from './users.service';
+import { UsersController } from './users.controller';
+import { PrismaModule } from '../prisma/prisma.module';
+
+@Module({
+  imports: [PrismaModule],
+  controllers: [UsersController],
+  providers: [UsersService],
+  exports: [UsersService],
+})
+export class UsersModule {}
+</file>
+
+<file path="srcs/backend/Dockerfile">
+FROM node:22-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+RUN npx prisma generate
+
+EXPOSE 3000
+
+CMD ["npm", "run", "dev"]
+</file>
+
+<file path="srcs/backend/tsconfig.json">
+{
+  "compilerOptions": {
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "resolvePackageJsonExports": true,
+    "esModuleInterop": true,
+    "isolatedModules": true,
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2023",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "incremental": true,
+    "skipLibCheck": true,
+    "strictNullChecks": true,
+    "forceConsistentCasingInFileNames": true,
+    "noImplicitAny": false,
+    "strictBindCallApply": false,
+    "noFallthroughCasesInSwitch": false
+  }
+}
+</file>
+
+<file path="srcs/backend/src/auth/dto/sign-in.dto.ts">
+import { IsString, MinLength } from 'class-validator';
+
+export class SignInDto {
+    @IsString()
+    username: string;
+
+    @IsString()
+    @MinLength(8)
+    password!: string;
+}
+</file>
+
+<file path="srcs/backend/src/projects/dto/create-project.dto.ts">
+import { IsString, IsOptional, MinLength, IsDateString } from 'class-validator';
+
+export class CreateProjectDto {
+  @IsString()
+  @MinLength(3)
+  name: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsOptional()
+  @IsDateString()
+  deadline?: string;
+}
+</file>
+
+<file path="srcs/backend/src/auth/auth.controller.ts">
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, UseGuards, Request } from '@nestjs/common';
+import { AuthService } from './auth.service';
+import { SignInDto } from './dto/sign-in.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { GoogleAuthGuard } from './guards/google.guard';
+
+@Controller('auth')
+export class AuthController {
+  constructor(private readonly authService: AuthService) {}
+
+  @HttpCode(HttpStatus.OK)
+  @Post('login')
+  signIn(@Body() signInDto: SignInDto){
+    return this.authService.signIn(signInDto.username, signInDto.password);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @Get('profile')
+  getProfile(@Request() req) {
+    return req.user;
+  }
+
+  @Post('refresh')
+  refresh(@Body() body: { refresh_token: string }) {
+    return this.authService.refresh(body.refresh_token);
+  }
+
+  @Get('google')
+  @UseGuards(GoogleAuthGuard)
+  googleAuth(){
+  }
+
+  @Get('google/callback')
+  @UseGuards(GoogleAuthGuard)
+  async googleAuthCallback(@Request() req){
+    return this.authService.signInOAuth(req.user);
+  }
+}
+</file>
+
+<file path="srcs/backend/src/main.ts">
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+import { ValidationPipe } from '@nestjs/common';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  
+  app.enableCors({ origin: '*' });
+
+  app.useGlobalPipes(new ValidationPipe());
+
+ 
+
+  const config = new DocumentBuilder()
+    .setTitle('Transcendence API')
+    .setDescription('De API documentatie voor ons Transcendence project')
+    .setVersion('1.0')
+    .addBearerAuth() 
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  
+  SwaggerModule.setup('api', app, document);
+
+  await app.listen(process.env.PORT ?? 3000);
+}
+bootstrap();
+</file>
+
+<file path="srcs/backend/src/auth/auth.module.ts">
+import { Module } from '@nestjs/common';
+import { AuthService } from './auth.service';
+import { AuthController } from './auth.controller';
+import { UsersModule } from 'src/users/users.module';
+import { JwtModule, JwtService } from '@nestjs/jwt';
+import { PassportModule } from '@nestjs/passport';
+import { GoogleStrategy } from './strategies/google.strategy';
+import { JwtStrategy } from './strategies/jwt.strategy';
+
+@Module({
+  imports: [
+    UsersModule, 
+    JwtModule.registerAsync({
+  useFactory: () => ({
+    global: true,
+    secret: process.env.JWT_SECRET,
+    signOptions: { expiresIn: '15m' },
+  }),
+}),
+  PassportModule
+],
+  controllers: [AuthController],
+  providers: [AuthService, GoogleStrategy, JwtStrategy],
+  exports: [AuthService],
+})
+export class AuthModule {}
+</file>
+
+<file path="srcs/backend/src/tasks/dto/create-task.dto.ts">
+import { TaskStatus } from '@prisma/client';
+import { IsString, IsNotEmpty, IsInt, IsOptional, IsArray, IsDateString, IsEnum  } from 'class-validator';
+
+export class CreateTaskDto {
+  @IsString()
+  @IsNotEmpty()
+  title: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsInt()
+  @IsNotEmpty()
+  projectId: number;
+
+@IsOptional()
+  @IsEnum(TaskStatus) 
+  status?: TaskStatus;
+
+  @IsOptional()
+  @IsDateString()
+  deadline?: string;
+
+  @IsArray()
+  @IsOptional()
+  @IsInt({ each: true })
+  assigneeIds?: number[]; 
+}
+</file>
+
+<file path="srcs/backend/src/tasks/tasks.service.ts">
+import { Injectable, BadRequestException, NotFoundException, assignMetadata } from '@nestjs/common';
+import { CreateTaskDto } from './dto/create-task.dto';
+import { UpdateTaskDto } from './dto/update-task.dto';
+import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
+
+@Injectable()
+export class TasksService {
+  constructor(
+    private prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
+
+  async create(createTaskDto: CreateTaskDto, deadline: Date | null) {
+    const { assigneeIds, ...taskData } = createTaskDto;
+
+    if (assigneeIds && assigneeIds.length > 0) {
+      const validMembers = await this.prisma.projectMember.findMany({
+        where: {
+          projectId: taskData.projectId,
+          userId: { in: assigneeIds },
+        },
+      });
+
+      if (validMembers.length !== assigneeIds.length) {
+        throw new BadRequestException('Make sure all assignees are members of the project');
+      } 
+    }
+
+    const newTask = await this.prisma.task.create({
+      data: {
+        ...taskData,
+        deadline: deadline,
+        assignees: assigneeIds && assigneeIds.length > 0 ? {
+          connect: assigneeIds.map((id) => ({ id: id })),
+        } : undefined,
+      },
+      include: { assignees: { select: { id: true, username: true } } },
+    });
+
+    if (assigneeIds && assigneeIds.length > 0) {
+      for (const userId of assigneeIds) {
+        await this.notificationsService.createNotification(
+          userId,
+          'TASK_ASSIGNED',
+          `You have been assigned to: ${newTask.title}`,
+        );
+      }
+    }
+
+    return newTask;
+  }
+
+  // in tasks.service.ts
+
+  // Wordt alleen door Admins aangeroepen via de Controller
+  async findAll() {
+    return this.prisma.task.findMany({
+      include: {
+        assignees: { select: { username: true } },
+        project: { select: { name: true } },
+      },
+    });
+  }
+
+  // Wordt door normale users aangeroepen
+  async findMyTasks(userId: number) {
+    return this.prisma.task.findMany({
+      where: {
+        project: {
+          members: {
+            some: { userId: userId },
+          },
+        },
+      },
+      include: {
+        assignees: { select: { username: true } },
+        project: { select: { name: true } },
+      },
+    });
+  }
+
+  async findOne(id: number) {
+    return this.prisma.task.findUnique({
+      where: { id },
+      include: {
+        assignees: { select: { username: true } },
+        project: { select: { name: true } },
+      },
+    });
+  }
+
+  async update(id: number, updateTaskDto: UpdateTaskDto) {
+    const { assigneeIds, ...taskData } = updateTaskDto;
+    
+    const currentTask = await this.prisma.task.findUnique({ where: { id } });
+    if (!currentTask) throw new NotFoundException('Task not found');
+
+    if (assigneeIds && assigneeIds.length > 0) {
+      const validMembers = await this.prisma.projectMember.findMany({
+        where: {
+          projectId: currentTask.projectId,
+          userId: { in: assigneeIds },
+        },
+      });
+
+      if (validMembers.length !== assigneeIds.length) {
+        throw new BadRequestException('Make sure all new assignees are members of the project');
+      }
+    }
+    
+    const updatedTask = await this.prisma.task.update({
+      where: { id },
+      data: {
+        ...taskData,
+        assignees: assigneeIds ? {
+          set: assigneeIds.map((userId) => ({ id: userId })),
+        } : undefined,
+      },
+      include: { 
+        assignees: true,
+        project: {
+          include: { members: { where: { role: 'PROJECT_LEADER' } } }
+        }
+      },
+    });
+
+    if (updateTaskDto.status === 'PENDING_EVALUATION') {
+      const leaderId = updatedTask.project.members[0]?.userId;
+      if (leaderId) {
+        await this.notificationsService.createNotification(
+          leaderId,
+          'TASK_PENDING_EVALUATION',
+          `Task is pending evaluation: ${updatedTask.title}`
+        );
+      }
+    }
+
+    return updatedTask;
+  }
+
+  async remove(id: number) {
+    const task = await this.prisma.task.findUnique({
+      where: { id },
+      include: { assignees: true },
+    });
+
+    if (task && task.assignees.length > 0) {
+      for (const assignee of task.assignees) {
+        await this.notificationsService.createNotification(
+          assignee.id,
+          'TASK_DELETED',
+          `Task has been deleted: ${task.title}`
+        );
+      }
+    }
+
+    return this.prisma.task.delete({
+      where: { id },
+    });
+  }
+}
+</file>
+
+<file path="srcs/backend/src/app.module.ts">
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config'; // <--- Import staat hier goed
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module';
+import { ProjectsModule } from './projects/projects.module';
+import { TasksModule } from './tasks/tasks.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { NotificationsModule } from './notifications/notifications.module';
+import { FriendsModule } from './friends/friends.module';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    UsersModule, 
+    AuthModule, 
+    ProjectsModule, 
+    TasksModule, 
+    ScheduleModule.forRoot(), 
+    NotificationsModule, FriendsModule
+  ],
+  controllers: [AppController],
+  providers: [AppService],
+})
+export class AppModule {}
+</file>
+
+<file path="docker-compose.yml">
+services:
+  postgres:
+    image: postgres:17
+    container_name: transcendence_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./srcs/backend
+    container_name: transcendence_backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      TZ: Europe/Brussels
+      DATABASE_URL: ${DATABASE_URL}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./srcs/backend:/app
+      - /app/node_modules
+    command: sh -c "npx prisma migrate deploy && npm run start:dev"
+
+volumes:
+  postgres_data:
+</file>
+
+<file path="srcs/backend/src/projects/projects.controller.ts">
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
+import { ProjectsService } from './projects.service';
+import { CreateProjectDto } from './dto/create-project.dto';
+import { UpdateProjectDto } from './dto/update-project.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ProjectLeaderGuard } from './project-leader.guard';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { AddMemberDto } from './dto/add-member.dto';
+import { CreateMessageDto } from './dto/create-message.dto';
+
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard) // you need to be logged in before you can do ANYTHING with projects
+@Controller('projects')
+export class ProjectsController {
+  constructor(private readonly projectsService: ProjectsService) {}
+
+  @Post()
+  create(@Body() createProjectDto: CreateProjectDto, @Request() req) {
+    const userId = req.user.sub; 
+    const deadlineDate = createProjectDto.deadline ? new Date(createProjectDto.deadline) : null;
+    return this.projectsService.create(createProjectDto, userId, deadlineDate);
+  }
+
+  @Get()
+  findAll() {
+    return this.projectsService.findAll();
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.projectsService.findOne(+id);
+  }
+
+  @UseGuards(ProjectLeaderGuard) 
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() updateProjectDto: UpdateProjectDto) {
+    return this.projectsService.update(+id, updateProjectDto);
+  }
+
+  @UseGuards(ProjectLeaderGuard) 
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.projectsService.remove(+id);
+  }
+
+  @UseGuards(ProjectLeaderGuard) 
+  @Post(':id/members')
+  addMember(
+    @Param('id') id: string, 
+    @Body() addMemberDto: AddMemberDto
+  ) {
+    return this.projectsService.addMember(+id, addMemberDto.userId, addMemberDto.role);
+  }
+
+  @Post(':id/messages')
+  createMessage(
+    @Param('id') projectid: string,
+    @Body() createMessageDto: CreateMessageDto
+  ) {
+    return this.projectsService.createmessage(+projectid, createMessageDto.userId, createMessageDto.content);
+  }
+
+  @Get(':id/messages')
+  getMessages(@Param('id') projectId: string) {
+    return this.projectsService.getProjectMessages(+projectId);
+  }
+}
+</file>
+
+<file path="srcs/backend/src/tasks/tasks.controller.ts">
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { TasksService } from './tasks.service';
+import { CreateTaskDto } from './dto/create-task.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { Request } from '@nestjs/common';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { ProjectLeaderGuard } from 'src/projects/project-leader.guard';
+
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
+@Controller('tasks')
+export class TasksController {
+  constructor(private readonly tasksService: TasksService) {}
+
+  @Post()
+  create(@Body() createTaskDto: CreateTaskDto) {
+    const deadlineDate = createTaskDto.deadline ? new Date(createTaskDto.deadline) : null;
+    return this.tasksService.create(createTaskDto, deadlineDate);
+  }
+@ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Get('all')
+  findAllAdmins() {
+    return this.tasksService.findAll(); 
+  }
+
+@ApiBearerAuth()
+  @UseGuards(JwtAuthGuard) 
+  @Get()
+  findMyTasks(@Request() req) {
+    return this.tasksService.findMyTasks(req.user.sub);
+  }
+
+
+  @Get()
+  findAll(@Request() req) {
+    return this.tasksService.findAll();
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.tasksService.findOne(+id);
+  }
+
+  @UseGuards(RolesGuard, ProjectLeaderGuard)
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.tasksService.remove(+id);
+  }
+}
+</file>
+
+<file path="srcs/backend/src/auth/auth.service.ts">
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { UsersService } from '../users/users.service'
+import * as bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
+import { User } from '@prisma/client';
+import { GlobalRole } from '@prisma/client';
+
+interface JwtPayload {
+  sub: number;
+  username: string;
+}
+
+export type SafeUser = {
+  id: number;
+  username: string;
+  email: string | null;
+  globalRole: GlobalRole;
+  avatar: string | null;
+  createdAt: Date;
+};
+
+@Injectable()
+export class AuthService {
+  constructor(
+    private usersService: UsersService, 
+    private jwtService: JwtService
+  ){}
+
+  async signIn(username: string, pass:string): Promise<{access_token: string, refresh_token: string}> {
+    const user = await this.usersService.findByName(username);
+    if (!user) {
+      throw new UnauthorizedException();
+    }
+    if (!user.password) {
+      throw new UnauthorizedException('Please sign in with Google');
+}
+    const isPasswordValid = await bcrypt.compare(pass, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException();
+    }
+    const payload = { sub: user.id, username: user.username, role: user.globalRole };
+    return {
+      access_token: await this.jwtService.signAsync(payload, {expiresIn: '15m'}),
+      refresh_token: await this.jwtService.signAsync(payload, {expiresIn: '7d'}),
+    };
+  }
+
+  // In auth.service.ts
+async signInOAuth(user: SafeUser) {
+  const payload = { sub: user.id, username: user.username, role: user.globalRole };
+  return {
+    access_token: await this.jwtService.signAsync(payload),
+  };
+}
+
+async refresh(refreshToken: string): Promise<{access_token: string}> {
+   try {
+     const payload = await this.jwtService.verifyAsync<JwtPayload>(refreshToken, {secret: process.env.JWT_SECRET});
+     return {
+             access_token: await this.jwtService.signAsync(payload, {expiresIn: '15m'}),
+     }
+   } catch {
+     throw new UnauthorizedException();
+    }
+ }
+
+ async signUp(username: string, email: string, avatar: string, pass: string): Promise<any> {
+  const salt = await bcrypt.genSalt();
+  const hashedPassword = await bcrypt.hash(pass, salt);
+
+ 
+  const newUser = await this.usersService.create({
+    username,
+    email,
+    avatar,
+    password: hashedPassword,
+
+  });
+
+  return this.signIn(newUser.username, pass); 
+}
+
+async validateOAuthUser(data: {email: string, googleId: string, username:string}): Promise <SafeUser>{
+   let user = await this.usersService.findByGoogleId(data.googleId);
+   if (user) return user;
+
+   user = await this.usersService.findByEmail(data.email);
+   if (user) {
+     return this.usersService.updateGoogleId(user.id, data.googleId);
+   }
+
+    return this.usersService.createOAuthUser({
+      email: data.email,
+      googleId: data.googleId,
+      username: data.email.split('@')[0],
+
+    });
+  }
+}
+</file>
+
+<file path="srcs/backend/src/projects/projects.service.ts">
+import { Injectable, ConflictException } from '@nestjs/common';
+import { CreateProjectDto } from './dto/create-project.dto';
+import { UpdateProjectDto } from './dto/update-project.dto';
+import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationsGateway } from 'src/notifications/notifications.gateway';
+
+@Injectable()
+export class ProjectsService {
+  constructor(
+    private prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+    private readonly notificationsGateway: NotificationsGateway,
+  ) {}
+
+  async createmessage(projectId: number, userId: number, content: string) {
+  const newMessage = await this.prisma.message.create({
+    data: {
+      content: content,
+      projectId: projectId, 
+      userId: userId,
+    },
+    include: {
+      user: {
+        select: { username: true, avatar: true }
+      }
+    }
+  });
+  this.notificationsGateway.sendProjectNotification(projectId, {
+    ...newMessage,
+    projectId: projectId 
+  });
+
+  return newMessage;
+}
+
+  async getProjectMessages(projectId: number) {
+    return this.prisma.message.findMany({
+      where: { projectId: projectId },
+      orderBy: { Time : 'asc' },
+      include: {
+        user: {
+          select: { username: true, avatar: true }
+        }
+      }
+    });
+  }
+
+  async create(createProjectDto: CreateProjectDto, userId: number, deadline: Date | null) {
+    const newProject = await this.prisma.project.create({
+      data: {
+        name: createProjectDto.name,
+        description: createProjectDto.description,
+        deadline: deadline,
+        members: {
+          create: {
+            userId: userId,
+            role: 'PROJECT_LEADER',
+          },
+        },
+      },
+      include: {
+        members: {
+          include: {
+            user: {
+              select: { username: true, globalRole: true, email: true }
+            }
+          }
+        }
+      }
+    });
+
+    for (const member of newProject.members) {
+      await this.notificationsService.createNotification(
+        member.userId,
+        'PROJECT_CREATED',
+        `Project successfully created: ${newProject.name}`
+      );
+    }
+    return newProject;
+  }
+
+  async addMember(projectId: number, userId: number, role: any) {
+    const existingMember = await this.prisma.projectMember.findUnique({
+      where: {
+        userId_projectId: {
+          userId: userId,
+          projectId: projectId,
+        },
+      },
+    });
+
+    if (existingMember) {
+      throw new ConflictException('This user is already a member of the project.');
+    }
+    const newMember = await this.prisma.projectMember.create({
+      data: {
+        projectId: projectId,
+        userId: userId,
+        role: role,
+      },
+      include: {
+        user: { select: { username: true } },
+        project: { select: { name: true } } 
+      }
+    });
+
+    await this.notificationsService.createNotification(
+      userId,
+      'PROJECT_JOINED',
+      `You have been added to the project: ${newMember.project.name} as ${role}`
+    );
+    return newMember;
+  }
+
+  async findAll() {
+    return this.prisma.project.findMany();
+  }
+
+  async findOne(id: number) {
+    return this.prisma.project.findUnique({
+      where: { id },
+      include: { members: true } 
+    });
+  }
+
+  async update(id: number, updateProjectDto: UpdateProjectDto) {
+    return this.prisma.project.update({
+      where: { id },
+      data: updateProjectDto,
+    });
+  }
+
+  async remove(id: number) {
+    return this.prisma.project.delete({
+      where: { id }
+    });
+  }
+
+  
+}
+</file>
+
+<file path="srcs/backend/src/users/dto/create-user.dto.ts">
+import { IsString, MinLength, IsEmail, IsOptional
+    
+ } from 'class-validator';
+
+export class CreateUserDto {
+    @IsString()
+    username: string;
+
+    @IsString()
+    @IsEmail()
+    email: string;
+
+    @IsString()
+    @MinLength(8)
+    password: string;
+
+    @IsString()
+    @IsOptional()
+    avatar: string;
+}
+
+export class UpdateUserDto{
+    username?: string;
+    avatar?: string;
+}
+</file>
+
+<file path="package.json">
+{
+  "dependencies": {
+    "typescript": "^5.9.3"
+  }
+}
+</file>
+
+<file path="srcs/backend/src/users/users.controller.ts">
+import { 
+  Controller, 
+  Get, 
+  Post, 
+  Body, 
+  Patch, 
+  Param, 
+  Delete, 
+  UseGuards, 
+  Request 
+} from '@nestjs/common';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { UsersService } from './users.service';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+
+@Controller('users')
+export class UsersController {
+  constructor(private readonly usersService: UsersService) {}
+
+  @Post()
+  create(@Body() createUserDto: CreateUserDto) {
+    return this.usersService.create(createUserDto);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'USER')
+  @Get()
+  findAll() {
+    return this.usersService.findAll();
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.usersService.findOne(+id);
+  }
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Patch('me')
+  update( @Request() req, @Body() updateUserDto: UpdateUserDto,) {
+    return this.usersService.update(req.user.id, updateUserDto);
+  }
+  
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN') // only admins can delete users
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.usersService.remove(+id);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard) // <-- Check if the user is logged in first, THEN check their role
+  @Roles('ADMIN')                   // <-- The magic tag! Only ADMINs can access this route
+  @Patch('promote/:username')
+  promote(@Param('username') username: string) {
+    // If the execution reaches this point, we are 100% sure the user is an ADMIN.
+    return this.usersService.promote(username);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Patch('demote/:username')
+  demote(@Param('username') username: string, @Request() req) {
+    // to the service (e.g., to prevent an admin from demoting themselves).
+    return this.usersService.demote(username, req.user.username);
+  }
+}
+</file>
+
+<file path="srcs/backend/src/users/users.service.ts">
+import { ForbiddenException, Injectable } from '@nestjs/common';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { PrismaService} from '../prisma/prisma.service'
+import * as bcrypt from 'bcrypt';
+import { GlobalRole } from '@prisma/client';
+
+const userSelect = {
+  id: true,
+  username: true,
+  email: true,
+  globalRole: true,
+  avatar: true,
+  createdAt: true,
+};
+
+export type SafeUser = {
+  id: number;
+  username: string;
+  email: string | null;
+  globalRole: GlobalRole;
+  avatar: string | null;
+  createdAt: Date;
+};
+
+@Injectable()
+export class UsersService {
+  constructor(private prisma: PrismaService) {}
+
+
+  async create(createUserDto: CreateUserDto) {
+    if (!createUserDto.password) throw new Error('Password is required');
+    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+    const userCount = await this.prisma.user.count();
+      const globalRole = userCount === 0 ? 'ADMIN' : 'USER'; 
+    return this.prisma.user.create({
+      data: {
+        ...createUserDto,
+        password: hashedPassword,
+        globalRole: globalRole,
+      },
+      select: userSelect,
+    });
+  }
+
+  async createOAuthUser(data: { email: string; googleId: string; username: string }) {
+    return this.prisma.user.create({
+      data: {
+        email: data.email,
+        googleId: data.googleId,
+        username: data.username,
+      },
+    select: userSelect,
+  });
+}
+
+  async findAll() {
+    return this.prisma.user.findMany({
+      select: userSelect,
+    });
+  }
+
+  async findOne(id: number) {
+    return this.prisma.user.findUnique({
+      where: { id },
+      select: userSelect,
+    });
+  }
+
+  async findByName(username: string){
+    return this.prisma.user.findUnique({
+      where: { username }
+    });
+  }
+  async findByGoogleId(googleId: string){
+    return this.prisma.user.findUnique({
+      where: { googleId }
+    })
+  }
+
+  async findByEmail(email: string){
+    return this.prisma.user.findUnique({
+      where: { email }
+    })
+  }
+
+  async update(id: number, updateUserDto: UpdateUserDto) {
+    const { username, password, avatar, email} = updateUserDto;
+    const hashedpassword = password ? await bcrypt.hash(password, 10) : undefined;
+    return this.prisma.user.update({
+      where: { id },
+      data: { username, password: hashedpassword, avatar, email} ,
+      select: userSelect,
+    });
+  }
+
+  async updateByName(username: string, updateUserDto: UpdateUserDto) {
+    return this.prisma.user.update({
+      where: { username },
+      data: updateUserDto,
+      select: userSelect,
+    });
+  }
+
+  async updateGoogleId(id: number, googleId: string){
+    return this.prisma.user.update({
+      where: { id },
+      data: { googleId },
+    })
+  }
+
+  async remove(id: number) {
+    return this.prisma.user.delete({
+      where: { id }
+    });
+  }
+
+  async removeByName(username: string) {
+    return this.prisma.user.delete({
+      where: { username }
+    });
+  }
+
+  async promote(username: string) {
+    return this.prisma.user.update({
+      where: { username },
+      data: { globalRole: 'ADMIN'}, 
+      select: {
+        id: true,
+        username: true,
+        globalRole: true,   
+      }
+    });
+  }
+
+
+  async demote(username: string, adminName: string) {
+    if (username == adminName) {
+      throw new ForbiddenException('You cannot demote yourself');
+    }
+    const adminCount = await this.prisma.user.count({
+      where: {globalRole: 'ADMIN'}
+    });
+    if (adminCount <= 1){
+      throw new ForbiddenException('Cannot demote the last admin');
+    }
+    return this.prisma.user.update({
+      where: { username },
+      data: { globalRole: 'USER' },
+      select: {
+        id: true,
+        username: true,
+        globalRole: true,
+      }
+    });
+  }
+}
+</file>
+
+<file path="srcs/backend/package.json">
+{
+  "name": "backend",
+  "version": "0.0.1",
+  "description": "",
+  "author": "",
+  "private": true,
+  "license": "UNLICENSED",
+  "scripts": {
+    "build": "nest build",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "start": "nest start",
+    "start:dev": "nest start --watch",
+    "start:debug": "nest start --debug --watch",
+    "start:prod": "node dist/main",
+    "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:cov": "jest --coverage",
+    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
+    "test:e2e": "jest --config ./test/jest-e2e.json"
+  },
+  "dependencies": {
+    "@nestjs-modules/mailer": "^2.3.4",
+    "@nestjs/common": "^11.0.1",
+    "@nestjs/config": "^4.0.4",
+    "@nestjs/core": "^11.0.1",
+    "@nestjs/jwt": "^11.0.2",
+    "@nestjs/mapped-types": "*",
+    "@nestjs/passport": "^11.0.5",
+    "@nestjs/platform-express": "^11.0.1",
+    "@nestjs/platform-socket.io": "^11.1.19",
+    "@nestjs/schedule": "^6.1.3",
+    "@nestjs/swagger": "^11.2.7",
+    "@nestjs/websockets": "^11.1.19",
+    "@prisma/adapter-pg": "^7.7.0",
+    "@prisma/client": "^7.6.0",
+    "bcrypt": "^6.0.0",
+    "class-transformer": "^0.5.1",
+    "class-validator": "^0.14.4",
+    "nodemailer": "^8.0.5",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
+    "passport-jwt": "^4.0.1",
+    "pg": "^8.20.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.1"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3.2.0",
+    "@eslint/js": "^9.18.0",
+    "@nestjs/cli": "^11.0.0",
+    "@nestjs/schematics": "^11.0.0",
+    "@nestjs/testing": "^11.0.1",
+    "@types/bcrypt": "^6.0.0",
+    "@types/express": "^5.0.0",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^22.10.7",
+    "@types/nodemailer": "^8.0.0",
+    "@types/passport-google-oauth20": "^2.0.17",
+    "@types/passport-jwt": "^4.0.1",
+    "@types/pg": "^8.20.0",
+    "@types/supertest": "^6.0.2",
+    "eslint": "^9.18.0",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-prettier": "^5.2.2",
+    "globals": "^16.0.0",
+    "jest": "^30.0.0",
+    "prettier": "^3.4.2",
+    "prisma": "^7.6.0",
+    "source-map-support": "^0.5.21",
+    "supertest": "^7.0.0",
+    "ts-jest": "^29.2.5",
+    "ts-loader": "^9.5.2",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.20.0"
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
+    "rootDir": "src",
+    "testRegex": ".*\\.spec\\.ts$",
+    "transform": {
+      "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "collectCoverageFrom": [
+      "**/*.(t|j)s"
+    ],
+    "coverageDirectory": "../coverage",
+    "testEnvironment": "node"
+  },
+  "prisma": {
+    "seed": "ts-node prisma/seed.ts"
+  }
+}
+</file>
+
+<file path="srcs/backend/prisma/schema.prisma">
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum GlobalRole {
+  USER
+  ADMIN
+}
+
+enum ProjectRole {
+  GUEST
+  MEMBER
+  PROJECT_LEADER
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  PENDING_EVALUATION
+  DONE
+}
+
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  COMPLETED
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model User {
+  id                 Int             @id @default(autoincrement())
+  username           String          @unique
+  email              String         @unique
+  password           String?
+  googleId           String?         @unique
+  intraId            String?         @unique
+  githubId           String?         @unique
+  globalRole         GlobalRole      @default(USER)
+  avatar             String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  sentRequests       Friendship[]    @relation("SentRequests")
+  receivedRequests   Friendship[]    @relation("ReceivedRequests")
+  projectMemberships ProjectMember[]
+  tasks              Task[]          @relation("TaskAssignees")
+  notifications Notification[]
+  messages           Message[]
+}
+
+model Project {
+  id          Int             @id @default(autoincrement())
+  name        String
+  description String?
+  deadline    DateTime?
+  deadlineNotified Boolean   @default(false)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  status      ProjectStatus   @default(PLANNING)
+  members     ProjectMember[]
+  tasks       Task[]
+  messages  Message[]
+}
+
+model ProjectMember {
+  id        Int         @id @default(autoincrement())
+  role      ProjectRole @default(MEMBER)
+  joinedAt  DateTime    @default(now())
+  userId    Int
+  projectId Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  @@unique([userId, projectId])
+}
+
+model Task {
+  id          Int        @id @default(autoincrement())
+  title       String
+  description String?
+  status      TaskStatus @default(TODO)
+  deadline    DateTime?
+  deadlineNotified Boolean   @default(false)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  projectId   Int
+  project     Project    @relation(fields: [projectId], references: [id])
+  assignees   User[]     @relation("TaskAssignees")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  content   String
+  Time      DateTime @default(now())
+  userId    Int
+  projectId Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Friendship {
+  id          Int              @id @default(autoincrement())
+  requesterId Int
+  addresseeId Int
+  status      FriendshipStatus @default(PENDING) // Nu is het een strakke Enum!
+  createdAt   DateTime         @default(now())
+
+  requester   User             @relation("SentRequests", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee   User             @relation("ReceivedRequests", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, addresseeId])
+}
+</file>
+
+</files>
