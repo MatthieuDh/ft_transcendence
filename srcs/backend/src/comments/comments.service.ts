@@ -1,12 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateCommentDto } from './dto/create-command.dto';
+import { NotificationsGateway } from 'src/notifications/notifications.gateway';
 import { find } from 'rxjs';
 import { assign } from 'nodemailer/lib/shared';
+import { privateDecrypt } from 'crypto';
 
 @Injectable()
 export class CommentsService {
-    constructor(private prisma: PrismaService) {}
+    constructor(private prisma: PrismaService,
+        private notificationGateway: NotificationsGateway) {}
 
     async createcomment(taskid: number, userId: number, createCommentDto: CreateCommentDto, files: string[] = []) {
         const task = await this.prisma.task.findUnique({
@@ -28,6 +31,25 @@ export class CommentsService {
                 attachments: files,
                 parentId: createCommentDto.parentId,
             },
+        });
+        let notificationTargets: number[] = [];
+        if (isLeader) {
+            notificationTargets = task.assignees.map(a => a.id);
+        }
+        else if (isAssignee) {
+            const leaderIds = task.project.members.map(m => m.userId);
+            const otherAssignees = task.assignees
+                .map(a => a.id)
+                .filter(id => id !== userId);
+            notificationTargets = [...leaderIds, ...otherAssignees];
+        }
+        const uniqueTargets = [...new Set(notificationTargets)].filter(id => id !== userId);
+        uniqueTargets.forEach(targetId => {
+            this.notificationGateway.server.to(`user_${targetId}`).emit('new_notification', {
+                type: 'NEW_COMMENT',
+                taskId: taskid,
+                message: 'a new comment has been added to a task you are involved in.',
+            });
         });
         return comment;
     }
