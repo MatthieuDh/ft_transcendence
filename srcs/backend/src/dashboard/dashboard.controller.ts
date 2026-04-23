@@ -4,45 +4,41 @@ import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
 import { Roles } from 'src/auth/decorators/roles.decorator';
 import { ProjectLeaderGuard } from 'src/projects/project-leader.guard';
+import { DashboardFiltersDto } from './dto/dashboard-filters.dto';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 @Controller('dashboard')
 export class DashboardController {
     constructor(private readonly dashboardService: DashboardService) {}
 
     @Get()
+    @ApiBearerAuth()
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles('ADMIN')
     getGlobalMetrics(
-        @Query('from') from?: string,
-        @Query('to') to?: string,
-        @Query('memberId') memberId?: string,
-        @Query('projectStatus') projectStatus?: string,
-
-    ){
+        @Query() filters: DashboardFiltersDto){
         return this.dashboardService.getGlobalMetrics(
             {
-                from: from ? new Date(from) : undefined,
-                to: to ? new Date(to) : undefined,
-                memberId: memberId ? parseInt(memberId) : undefined,
-                projectStatus: projectStatus as any || undefined,
+                from: filters.from ? new Date(filters.from) : undefined,
+                to: filters.to ? new Date(filters.to) : undefined,
+                memberId: filters.memberId,
+                projectStatus: filters.projectStatus,
             }
         );
     }
 
     @Get('projects/:id')
+    @ApiBearerAuth()
     @UseGuards(JwtAuthGuard,ProjectLeaderGuard)
     getProjectMetrics(
         @Param('id', ParseIntPipe) id: number,
-        @Query('from') from?: string,
-        @Query('to') to?: string,
-        @Query('memberId') memberId?: string,
-        @Query('taskStatus') taskStatus?: string,
+        @Query() filters: DashboardFiltersDto
     ){
         return this.dashboardService.getProjectMetrics(id, {
-            from: from ? new Date(from) : undefined,
-            to: to ? new Date(to) : undefined,
-            memberId: memberId ? parseInt(memberId) : undefined,
-            taskStatus: taskStatus as any || undefined,
+            from: filters.from ? new Date(filters.from) : undefined,
+            to: filters.to ? new Date(filters.to) : undefined,
+            memberId: filters.memberId,
+            taskStatus: filters.taskStatus,
         });
     }
 }
