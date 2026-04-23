@@ -21,57 +21,104 @@ export class DashboardService {
                 include: { statusHistory: { orderBy: { changedAt: 'asc'}}},
             }),
         ]);
-        //count the number of tasks that are past their deadline
-        const overdueCount = tasks.filter(
-            (t) => t.status !== 'DONE' && t.deadline && t.deadline < now,
-        ).length;
 
-        //filter on pending evaluation and count the ones that have been like that for more than 7 days
-        const pendingTasks= tasks.filter((t) => t.status === 'PENDING_EVALUATION');
-        const pendingOverLimit = pendingTasks.filter((t) => {
-            const entry = t.statusHistory.findLast((h) => h.status === 'PENDING_EVALUATION')
-            if (!entry) return false;
-            const days = (now.getTime() - entry.changedAt.getTime()) / (1000 * 60 *60 *24);
-            return days > 7;
-        }).length;
-        //get the amount of completed tasks and projects
-        const completedTasks = tasks.filter((t) => t.status === 'DONE').length;
+        const totalProjects = projects.length;
         const completedProjects = projects.filter((p) => p.status === 'COMPLETED').length;
-
+        const totalTasks = tasks.length;
+        const pendingCount = tasks.filter((t) => t.status === 'PENDING_EVALUATION').length;
+        const pendingOverLimit = tasks.filter((t) => this.isPendingTooLong(t, now)).length;
+        const completedTasks = tasks.filter((t => t.status === 'DONE')).length;
+        const overdueTasks = tasks.filter((t) => this.isOverdue(t, now)).length;
         const avgTimePerStage = this.computeAvgTimePerStage(tasks);
-
-        const projectHealthList = projects.map((p) =>{
-            const totalTasks = p.tasks.length;
-            const doneTasks = p.tasks.filter((t) => t.status === 'DONE').length;
-            const overdue = p.tasks.filter(
-                (t) => t.status !== 'DONE' && t.deadline && t.deadline < now,
-            ).length;
-            const longPending = p.tasks.filter((t) => {
-                if (t.status !== 'PENDING_EVALUATION') return false;
-                const entry = t.statusHistory.findLast((h) => h.status === 'PENDING_EVALUATION');
-                if (!entry) return false;
-                const days = (now.getTime() - entry.changedAt.getTime()) / (1000 * 60 * 60 * 24);
-                return days > 7;
-            }).length;
-
-            const risk =
-                overdue >= 5 || longPending >= 3 ? 'CRITICAL' :
-                overdue >= 2 || longPending >= 1 ? 'AT_RISK' :
-                overdue >= 1 ? 'WATCH' : 'HEALTHY';
-
-            return { id: p.id, name: p.name, status: p.status, overdue, longPending, risk };
-            
+        const projectHealthList = projects.map((p) => {
+            const overdue = p.tasks.filter((t) => this.isOverdue(t, now)).length;
+            const pendingLong = p.tasks.filter((t) => this.isPendingTooLong(t, now)). length;
+            const risk = this.computeRisk(overdue, pendingLong);
+            return{
+                id: p.id,
+                name: p.name,
+                status: p.status,
+                overdue,
+                pendingLong,
+                risk,
+            }
         });
-        
-        return {
-            overdueCount,
-            pendingCount: pendingTasks.length,
+
+        return{
+            totalProjects,
+            completedProjects,
+            totalTasks,
+            pendingCount,
             pendingOverLimit,
             completedTasks,
-            completedProjects,
+            overdueTasks,
             avgTimePerStage,
             projectHealthList,
         };
+    }
+
+    async getProjectMetrics(projectId: number) {
+        const now = new Date();
+
+        const project = await this.prisma.project.findUnique({
+            where: { id: projectId },
+            include: {
+                tasks: {
+                    include: {
+                        statusHistory: {
+                            orderBy: { changedAt: 'asc' },
+                        },
+                    },
+                },
+            },
+        });
+
+        if (!project) {
+            throw new Error('Project not found');
+        }
+
+        const tasks = project.tasks;
+        const totalTasks = tasks.length;
+
+        return {
+            totalTasks,
+            completedTasks: tasks.filter((t) => t.status === 'DONE').length,
+            overdueTasks: tasks.filter((t) => this.isOverdue(t, now)).length,
+            pendingOverlimit: tasks.filter((t) => this.isPendingTooLong(t, now)).length,
+            averageCompletionTime: this.compouteCompletionTime(tasks),
+            avgTimePerStage: this.computeAvgTimePerStage(tasks),
+        };
+
+    }
+
+    private isOverdue(task: any, now: Date): boolean{
+        return task.status !== 'DONE' && task.deadline && task.deadline < now;
+    }
+
+    private isPendingTooLong(task: any, now: Date, treshHoldDays = 7){
+        if (task.status !== 'PENDING_EVALUATION') return false;
+        const lastStatus = task.changeHistory(-1);
+        if (!lastStatus) return false;
+        const timediff = (now.getTime() - lastStatus.changedAt.getTime()) / (1000 * 60 * 60 *24);
+        return timediff > treshHoldDays;
+    }
+
+    private compouteCompletionTime(tasks: any[]): number{
+        const completedWithHistory = tasks.filter((t) => t.status === 'DONE' && t.statusHistory.length > 0);
+        if (completedWithHistory.length === 0) return 0;
+        const totalTime = completedWithHistory.reduce((acc, task) => {
+            const start = new Date(task.statusHistoy[0].changedAt).getTime();
+            const end = new Date(task.statusHistory.at(-1).changedAt).getTime();
+            return acc + (end - start);
+        }, 0);
+        return totalTime / completedWithHistory.length;        
+    }
+
+        private computeRisk(overdue: number, pendingTooLong: number): string {
+        if (overdue >= 5 || pendingTooLong >= 3) return 'CRITICAL';
+        if (overdue >= 3 || pendingTooLong >= 1) return 'AT_RISK';
+        if (overdue >= 1 || pendingTooLong >= 0) return 'WATCH';
+        return 'HEALTHY';
     }
 
     private computeAvgTimePerStage(tasks: any[]){
@@ -102,84 +149,7 @@ export class DashboardService {
             ]),
         );
     }
-
-    async getProjectMetrics(projectId: number) {
-    const now = new Date();
-
-    const project = await this.prisma.project.findUnique({
-        where: { id: projectId },
-        include: {
-            tasks: {
-                include: {
-                    statusHistory: {
-                        orderBy: { changedAt: 'asc' },
-                    },
-                },
-            },
-        },
-    });
-
-    if (!project) {
-        throw new Error('Project not found');
-    }
-
-    const tasks = project.tasks;
-
-    // Total tasks
-    const totalTasks = tasks.length;
-
-    // Completed tasks
-    const completedTasks = tasks.filter(
-        (t) => t.status === 'DONE'
-    ).length;
-
-    // Overdue tasks
-    const overdueTasks = tasks.filter(
-        (t) =>
-            t.status !== 'DONE' &&
-            t.deadline &&
-            new Date(t.deadline) < now
-    ).length;
-
-    // Tasks pending evaluation for too long
-    const pendingEvaluationTasks = tasks.filter((t) => {
-        if (t.status !== 'PENDING_EVALUATION') return false;
-
-        const lastStatus = t.statusHistory.at(-1);
-        if (!lastStatus) return false;
-
-        const timeDiff = now.getTime() - new Date(lastStatus.changedAt).getTime();
-
-        return timeDiff > 1000 * 60 * 60 * 24 * 7;
-    }).length;
-
-    // Average completion time (only completed tasks)
-    const completedWithHistory = tasks.filter(
-        (t) => t.status === 'DONE' && t.statusHistory.length > 0
-    );
-
-    let averageCompletionTime = 0;
-
-    if (completedWithHistory.length > 0) {
-        const totalTime = completedWithHistory.reduce((acc, task) => {
-            const start = new Date(task.statusHistory[0].changedAt).getTime();
-            const end =
-                new Date(task.statusHistory.at(-1)!.changedAt).getTime();
-
-            return acc + (end - start);
-        }, 0);
-
-        averageCompletionTime =
-            totalTime / completedWithHistory.length;
-    }
-
-    return {
-        totalTasks,
-        completedTasks,
-        overdueTasks,
-        pendingEvaluationTasks,
-        averageCompletionTime,
-    };
 }
-}
+    
+
 
