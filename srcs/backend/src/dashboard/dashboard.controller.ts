@@ -1,4 +1,4 @@
-import { Controller, Get, ParseIntPipe, UseGuards, Param } from '@nestjs/common';
+import { Controller, Get, Query, ParseIntPipe, UseGuards, Param } from '@nestjs/common';
 import { DashboardService } from './dashboard.service';
 import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/guards/roles.guard';
@@ -12,8 +12,21 @@ export class DashboardController {
     @Get()
     @UseGuards(JwtAuthGuard, RolesGuard)
     @Roles('ADMIN')
-    getGlobalMetrics(){
-        return this.dashboardService.getGlobalMetrics();
+    getGlobalMetrics(
+        @Query('from') from?: string,
+        @Query('to') to?: string,
+        @Query('memberId') memberId?: string,
+        @Query('status') status?: string,
+
+    ){
+        return this.dashboardService.getGlobalMetrics(
+            {
+                from: from ? new Date(from) : undefined,
+                to: to ? new Date(to) : undefined,
+                memberId: memberId ? parseInt(memberId) : undefined,
+                status: status as any || undefined,
+            }
+        );
     }
 
     @Get('projects/:id')

@@ -1,16 +1,39 @@
 import { Injectable } from '@nestjs/common';
+import { ProjectStatus, TaskStatus } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 
+interface DashboardFilters{
+    from?: Date;
+    to?: Date;
+    memberId?: number;
+    status?: ProjectStatus;
+}
 
 @Injectable()
 export class DashboardService {
     constructor(private prisma: PrismaService) {}
 
-    async getGlobalMetrics() {
+
+    async getGlobalMetrics(filters: DashboardFilters = {}) {
+        const {from, to, memberId, status } = filters;
+        const projectWhere = {
+            ...(from || to ? {
+                createdAt:{
+                    ...(from ? { gte: from } : {}),
+                    ...(to ? { lte: to } : {}),
+                },
+            } : {}),
+            ...(memberId ? { 
+                members : { some: { userId: memberId}},
+            }: {}),
+            ...(status ? { status } : {}),
+        };
+
         const now = new Date();
 
         const [projects, tasks] = await Promise.all([
             this.prisma.project.findMany({
+                where: projectWhere,
                 include: {
                     tasks: {
                         include: { statusHistory: { orderBy: { changedAt: 'asc'}}},
@@ -114,7 +137,7 @@ export class DashboardService {
         return totalTime / completedWithHistory.length;        
     }
 
-        private computeRisk(overdue: number, pendingTooLong: number): string {
+    private computeRisk(overdue: number, pendingTooLong: number): string {
         if (overdue >= 5 || pendingTooLong >= 3) return 'CRITICAL';
         if (overdue >= 3 || pendingTooLong >= 1) return 'AT_RISK';
         if (overdue >= 1 || pendingTooLong >= 0) return 'WATCH';
