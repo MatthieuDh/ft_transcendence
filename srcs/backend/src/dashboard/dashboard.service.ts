@@ -173,7 +173,7 @@ export class DashboardService {
                 const current = history[i];
                 const next = history[i + 1];
                 const end = next ? next.changedAt : new Date();
-                const days = end.getTime() - current.changedAt.getTime() / (1000 * 60 * 60 * 24);
+                const days = (end.getTime() - current.changedAt.getTime()) / (1000 * 60 * 60 * 24);
                 if (stageTotals[current.status]) {
                     stageTotals[current.status].total += days;
                     stageTotals[current.status].count += 1;

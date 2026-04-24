@@ -9,6 +9,7 @@ import { TasksModule } from './tasks/tasks.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { NotificationsModule } from './notifications/notifications.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { ExportModule } from './export/export.module';
 
 @Module({
   imports: [
@@ -20,7 +21,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     ProjectsModule, 
     TasksModule, 
     ScheduleModule.forRoot(), 
-    NotificationsModule, DashboardModule
+    NotificationsModule, DashboardModule, ExportModule
   ],
   controllers: [AppController],
   providers: [AppService],
