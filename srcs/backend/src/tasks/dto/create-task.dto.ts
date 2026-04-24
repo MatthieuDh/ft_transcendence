@@ -4,7 +4,7 @@ import { IsString, IsNotEmpty, IsInt, IsOptional, IsArray, IsDateString, IsEnum 
 export class CreateTaskDto {
   @IsString()
   @IsNotEmpty()
-  title: string;
+  title!: string;
 
   @IsString()
   @IsOptional()
@@ -12,9 +12,9 @@ export class CreateTaskDto {
 
   @IsInt()
   @IsNotEmpty()
-  projectId: number;
+  projectId!: number;
 
-@IsOptional()
+  @IsOptional()
   @IsEnum(TaskStatus) 
   status?: TaskStatus;
 

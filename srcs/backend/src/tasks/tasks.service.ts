@@ -3,6 +3,7 @@ import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { TaskStatus } from '@prisma/client';
 
 @Injectable()
 export class TasksService {
@@ -34,9 +35,14 @@ export class TasksService {
         assignees: assigneeIds && assigneeIds.length > 0 ? {
           connect: assigneeIds.map((id) => ({ id: id })),
         } : undefined,
+        statusHistory: {
+          create: { status: TaskStatus.TODO }
+        },
       },
       include: { assignees: { select: { id: true, username: true } } },
     });
+
+
 
     if (assigneeIds && assigneeIds.length > 0) {
       for (const userId of assigneeIds) {
@@ -90,54 +96,67 @@ export class TasksService {
     });
   }
 
-  async update(id: number, updateTaskDto: UpdateTaskDto) {
-    const { assigneeIds, ...taskData } = updateTaskDto;
-    
-    const currentTask = await this.prisma.task.findUnique({ where: { id } });
-    if (!currentTask) throw new NotFoundException('Task not found');
+  async update(id: number, updateTaskDto: UpdateTaskDto, userId?: number) {
+  const { assigneeIds, ...taskData } = updateTaskDto;
 
-    if (assigneeIds && assigneeIds.length > 0) {
-      const validMembers = await this.prisma.projectMember.findMany({
-        where: {
-          projectId: currentTask.projectId,
-          userId: { in: assigneeIds },
-        },
-      });
+  const currentTask = await this.prisma.task.findUnique({ where: { id } });
+  if (!currentTask) throw new NotFoundException('Task not found');
 
-      if (validMembers.length !== assigneeIds.length) {
-        throw new BadRequestException('Make sure all new assignees are members of the project');
-      }
+  if (assigneeIds?.length) {
+    const validMembers = await this.prisma.projectMember.findMany({
+      where: {
+        projectId: currentTask.projectId,
+        userId: { in: assigneeIds },
+      },
+    });
+    if (validMembers.length !== assigneeIds.length) {
+      throw new BadRequestException('Make sure all new assignees are members of the project');
     }
-    
-    const updatedTask = await this.prisma.task.update({
+  }
+
+  const statusChanged = taskData.status && taskData.status !== currentTask.status;
+
+  const updatedTask = await this.prisma.$transaction(async (tx) => {
+    const task = await tx.task.update({
       where: { id },
       data: {
         ...taskData,
         assignees: assigneeIds ? {
-          set: assigneeIds.map((userId) => ({ id: userId })),
+          set: assigneeIds.map((uid) => ({ id: uid })),
         } : undefined,
       },
-      include: { 
+      include: {
         assignees: true,
         project: {
-          include: { members: { where: { role: 'PROJECT_LEADER' } } }
-        }
+          include: { members: { where: { role: 'PROJECT_LEADER' } } },
+        },
       },
     });
 
-    if (updateTaskDto.status === 'PENDING_EVALUATION') {
-      const leaderId = updatedTask.project.members[0]?.userId;
-      if (leaderId) {
-        await this.notificationsService.createNotification(
-          leaderId,
-          'TASK_PENDING_EVALUATION',
-          `Task is pending evaluation: ${updatedTask.title}`
-        );
-      }
+    if (statusChanged) {
+      await tx.taskStatusHistory.create({
+        data: {
+          taskId: id,
+          status: taskData.status!,
+          changedBy: userId ?? null,
+        },
+      });
     }
 
-    return updatedTask;
+    return task;
+  });
+
+  if (updateTaskDto.status === 'PENDING_EVALUATION') {
+    const leaderId = updatedTask.project.members[0]?.userId;
+    if (leaderId) {
+      await this.notificationsService.createNotification(
+        leaderId,
+        'TASK_PENDING_EVALUATION',
+        `Task is pending evaluation: ${updatedTask.title}`,
+      );
+    }
   }
+}
 
   async remove(id: number) {
     const task = await this.prisma.task.findUnique({
