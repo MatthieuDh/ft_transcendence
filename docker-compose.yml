@@ -39,6 +39,13 @@ services:
       - ./srcs/backend:/app
       - /app/node_modules
     command: sh -c "npx prisma migrate deploy && npm run start:dev"
-
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "5173:5173"
+    restart: unless-stopped
+    depends_on:
+      - backend
 volumes:
   postgres_data:
