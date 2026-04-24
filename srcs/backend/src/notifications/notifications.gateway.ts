@@ -30,16 +30,18 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
   @SubscribeMessage('identify')
   handleIdentify(@ConnectedSocket() client: Socket, @MessageBody() userId: number) {
     const userSockets = this.connectedUsers.get(userId) || [];
-    
     const isNewlyOnline = userSockets.length === 0;
 
     userSockets.push(client.id);
     this.connectedUsers.set(userId, userSockets);
     client.emit('identified', { status: 'success' });
 
+    const currentlyOnline = Array.from(this.connectedUsers.keys());
+    client.emit('initial_online_users', currentlyOnline);
+
     if (isNewlyOnline) {
       this.server.emit('user_status_change', { userId: userId, status: 'ONLINE' });
-      this.logger.log(`User ${userId} is nu zichtbaar als ONLINE.`);
+      this.logger.log(`User ${userId} is nu ONLINE.`);
     }
   }
 
@@ -65,5 +67,23 @@ export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisco
         this.connectedUsers.set(userId, updatedSockets);
       }
     }
+  }
+  @SubscribeMessage('joined project')
+  handleJoinedProject(@ConnectedSocket() client: Socket, @MessageBody() data: { username: string; projectId: number }) {
+    const room = `project_${data.projectId}`;
+    client.join(room);
+    this.logger.log(`User ${data.username} joined room: ${room}`);
+  }
+
+  @SubscribeMessage('left project')
+  handleLeftProject(@ConnectedSocket() client: Socket, @MessageBody() data: { username: string; projectId: number }) {
+    const room = `project_${data.projectId}`;
+    client.leave(room);
+    this.logger.log(`User ${data.username} left room: ${room}`);
+  }
+
+  sendProjectNotification(projectId: number, message: any) {
+    const room = `project_${projectId}`;
+    this.server.to(room).emit('new_project_notification', message);
   }
 }

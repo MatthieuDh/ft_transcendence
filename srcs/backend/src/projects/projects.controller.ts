@@ -6,6 +6,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ProjectLeaderGuard } from './project-leader.guard';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { AddMemberDto } from './dto/add-member.dto';
+import { CreateMessageDto } from './dto/create-message.dto';
 
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard) // you need to be logged in before you can do ANYTHING with projects
@@ -38,8 +39,10 @@ export class ProjectsController {
 
   @UseGuards(ProjectLeaderGuard) 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.projectsService.remove(+id);
+  remove(@Param('id') id: string,
+         @Request() req) {
+    const currentUserId = req.user.sub;
+    return this.projectsService.remove(+id, currentUserId);
   }
 
   @UseGuards(ProjectLeaderGuard) 
@@ -49,5 +52,18 @@ export class ProjectsController {
     @Body() addMemberDto: AddMemberDto
   ) {
     return this.projectsService.addMember(+id, addMemberDto.userId, addMemberDto.role);
+  }
+
+  @Post(':id/messages')
+  createMessage(
+    @Param('id') projectid: string,
+    @Body() createMessageDto: CreateMessageDto
+  ) {
+    return this.projectsService.createmessage(+projectid, createMessageDto.userId, createMessageDto.content);
+  }
+
+  @Get(':id/messages')
+  getMessages(@Param('id') projectId: string) {
+    return this.projectsService.getProjectMessages(+projectId);
   }
 }

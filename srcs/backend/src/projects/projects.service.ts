@@ -3,13 +3,48 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationsGateway } from 'src/notifications/notifications.gateway';
 
 @Injectable()
 export class ProjectsService {
   constructor(
     private prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
+    private readonly notificationsGateway: NotificationsGateway,
   ) {}
+
+  async createmessage(projectId: number, userId: number, content: string) {
+  const newMessage = await this.prisma.message.create({
+    data: {
+      content: content,
+      projectId: projectId, 
+      userId: userId,
+    },
+    include: {
+      user: {
+        select: { username: true, avatar: true }
+      }
+    }
+  });
+  this.notificationsGateway.sendProjectNotification(projectId, {
+    ...newMessage,
+    projectId: projectId 
+  });
+
+  return newMessage;
+}
+
+  async getProjectMessages(projectId: number) {
+    return this.prisma.message.findMany({
+      where: { projectId: projectId },
+      orderBy: { Time : 'asc' },
+      include: {
+        user: {
+          select: { username: true, avatar: true }
+        }
+      }
+    });
+  }
 
   async create(createProjectDto: CreateProjectDto, userId: number, deadline: Date | null) {
     const newProject = await this.prisma.project.create({
@@ -96,9 +131,25 @@ export class ProjectsService {
     });
   }
 
-  async remove(id: number) {
-    return this.prisma.project.delete({
-      where: { id }
+  async remove(id: number, currentUserId: number) {
+    const project = await this.prisma.project.findUnique({
+        where: { id: id },
+        include: { members: true }
     });
+        if (!project) {
+            throw new Error('Project not found'); 
+          }
+    await this.prisma.projectMember.delete({
+        where: { id: id },
+    });
+        const target = project.members.map(member => member.userId).filter(userid => userid !== currentUserId);
+        target.forEach(async userId => {
+            this.notificationsGateway.server.to(`user_${userId}`).emit('new_notification', {
+                type: 'PROJECT_DELETED',
+                projectId: id,
+                message: `The project ${project.name} has been deleted.`,
+            });
+        });
+        return { message: 'Project successfully deleted' };
   }
 }

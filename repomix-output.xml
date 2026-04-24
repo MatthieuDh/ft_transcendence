@@ -43,6 +43,10 @@ The content is organized as follows:
 srcs/
   backend/
     prisma/
+      migrations/
+        20260421111338_init/
+          migration.sql
+        migration_lock.toml
       schema.prisma
     src/
       auth/
@@ -63,7 +67,23 @@ srcs/
         auth.module.ts
         auth.service.spec.ts
         auth.service.ts
+      comments/
+        dto/
+          create-command.dto.ts
+        comments.controller.spec.ts
+        comments.controller.ts
+        comments.module.ts
+        comments.service.spec.ts
+        comments.service.ts
+      friends/
+        friends.controller.spec.ts
+        friends.controller.ts
+        friends.module.ts
+        friends.service.spec.ts
+        friends.service.ts
       notifications/
+        dto/
+          create-notification.dto.ts
         notifications.controller.ts
         notifications.gateway.spec.ts
         notifications.gateway.ts
@@ -76,6 +96,7 @@ srcs/
       projects/
         dto/
           add-member.dto.ts
+          create-message.dto.ts
           create-project.dto.ts
           update-project.dto.ts
         entities/
@@ -114,6 +135,9 @@ srcs/
     test/
       app.e2e-spec.ts
       jest-e2e.json
+    uploads/
+      comments/
+        1776952194439-670323513-chat.html
     .gitignore
     .prettierrc
     Dockerfile
@@ -131,13 +155,148 @@ admin.html
 docker-compose.yml
 Makefile
 notification.html
-online.html
 package.json
 README.md
 </directory_structure>
 
 <files>
 This section contains the contents of the repository's files.
+
+<file path="srcs/backend/prisma/migrations/20260421111338_init/migration.sql">
+-- CreateEnum
+CREATE TYPE "GlobalRole" AS ENUM ('USER', 'ADMIN');
+
+-- CreateEnum
+CREATE TYPE "ProjectRole" AS ENUM ('GUEST', 'MEMBER', 'PROJECT_LEADER');
+
+-- CreateEnum
+CREATE TYPE "TaskStatus" AS ENUM ('TODO', 'IN_PROGRESS', 'DONE');
+
+-- CreateEnum
+CREATE TYPE "ProjectStatus" AS ENUM ('PLANNING', 'ACTIVE', 'COMPLETED');
+
+-- CreateTable
+CREATE TABLE "User" (
+    "id" SERIAL NOT NULL,
+    "username" TEXT NOT NULL,
+    "email" TEXT NOT NULL,
+    "password" TEXT,
+    "googleId" TEXT,
+    "intraId" TEXT,
+    "githubId" TEXT,
+    "globalRole" "GlobalRole" NOT NULL DEFAULT 'USER',
+    "avatar" TEXT,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+
+    CONSTRAINT "User_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Project" (
+    "id" SERIAL NOT NULL,
+    "name" TEXT NOT NULL,
+    "description" TEXT,
+    "deadline" TIMESTAMP(3),
+    "deadlineNotified" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "status" "ProjectStatus" NOT NULL DEFAULT 'PLANNING',
+
+    CONSTRAINT "Project_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "ProjectMember" (
+    "id" SERIAL NOT NULL,
+    "role" "ProjectRole" NOT NULL DEFAULT 'MEMBER',
+    "joinedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "userId" INTEGER NOT NULL,
+    "projectId" INTEGER NOT NULL,
+
+    CONSTRAINT "ProjectMember_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Task" (
+    "id" SERIAL NOT NULL,
+    "title" TEXT NOT NULL,
+    "description" TEXT,
+    "status" "TaskStatus" NOT NULL DEFAULT 'TODO',
+    "deadline" TIMESTAMP(3),
+    "deadlineNotified" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "projectId" INTEGER NOT NULL,
+
+    CONSTRAINT "Task_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Notification" (
+    "id" SERIAL NOT NULL,
+    "userId" INTEGER NOT NULL,
+    "type" TEXT NOT NULL,
+    "message" TEXT NOT NULL,
+    "isRead" BOOLEAN NOT NULL DEFAULT false,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Notification_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "_TaskAssignees" (
+    "A" INTEGER NOT NULL,
+    "B" INTEGER NOT NULL,
+
+    CONSTRAINT "_TaskAssignees_AB_pkey" PRIMARY KEY ("A","B")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_username_key" ON "User"("username");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_googleId_key" ON "User"("googleId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_intraId_key" ON "User"("intraId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "User_githubId_key" ON "User"("githubId");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "ProjectMember_userId_projectId_key" ON "ProjectMember"("userId", "projectId");
+
+-- CreateIndex
+CREATE INDEX "_TaskAssignees_B_index" ON "_TaskAssignees"("B");
+
+-- AddForeignKey
+ALTER TABLE "ProjectMember" ADD CONSTRAINT "ProjectMember_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "ProjectMember" ADD CONSTRAINT "ProjectMember_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Task" ADD CONSTRAINT "Task_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Notification" ADD CONSTRAINT "Notification_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_TaskAssignees" ADD CONSTRAINT "_TaskAssignees_A_fkey" FOREIGN KEY ("A") REFERENCES "Task"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "_TaskAssignees" ADD CONSTRAINT "_TaskAssignees_B_fkey" FOREIGN KEY ("B") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+</file>
+
+<file path="srcs/backend/prisma/migrations/migration_lock.toml">
+# Please do not edit this file manually
+# It should be added in your version-control system (e.g., Git)
+provider = "postgresql"
+</file>
 
 <file path="srcs/backend/src/auth/decorators/roles.decorator.ts">
 import { SetMetadata } from '@nestjs/common';
@@ -234,30 +393,6 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google'){
 }
 </file>
 
-<file path="srcs/backend/src/auth/strategies/jwt.strategy.ts">
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { PassportStrategy } from '@nestjs/passport';
-import { ExtractJwt, Strategy } from 'passport-jwt';
-import { UsersService } from 'src/users/users.service';
-
-@Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
-  constructor(private usersService: UsersService) {
-    super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET ?? (() => { throw new Error('JWT_SECRET not set') })(),
-    });
-  }
-
-  async validate(payload: any) {
-    const user = await this.usersService.findOne(payload.sub);
-    if (!user) throw new UnauthorizedException();
-    return { id: payload.sub, username: payload.username, role: payload.role };
-  }
-}
-</file>
-
 <file path="srcs/backend/src/auth/auth.controller.spec.ts">
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
@@ -302,23 +437,401 @@ describe('AuthService', () => {
 });
 </file>
 
-<file path="srcs/backend/src/notifications/notifications.controller.ts">
-import { Controller, Patch, Get, Param, ParseIntPipe } from '@nestjs/common';
-import { NotificationsService } from './notifications.service';
+<file path="srcs/backend/src/comments/dto/create-command.dto.ts">
+import { IsString, IsNotEmpty } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
-@Controller('notifications')
-export class NotificationsController {
-  constructor(private readonly notificationsService: NotificationsService) {}
+export class CreateCommentDto {
+    @IsString()
+    content: string;
 
-  @Get('user/:id')
-  async getNotifications(@Param('id', ParseIntPipe) userId: number) {
-    return this.notificationsService.getUserNotifications(userId);
+    @ApiProperty({ description: 'the text of the comment', example: 'here is the document you needed.' })
+    @IsString()
+    @IsNotEmpty()
+    parentId?: number;
+}
+</file>
+
+<file path="srcs/backend/src/comments/comments.controller.spec.ts">
+import { Test, TestingModule } from '@nestjs/testing';
+import { CommentsController } from './comments.controller';
+
+describe('CommentsController', () => {
+  let controller: CommentsController;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [CommentsController],
+    }).compile();
+
+    controller = module.get<CommentsController>(CommentsController);
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+});
+</file>
+
+<file path="srcs/backend/src/comments/comments.controller.ts">
+import { Controller, Param, ParseIntPipe, UploadedFiles, UseGuards, UseInterceptors, Post, Body, Request, Get,  } from '@nestjs/common';
+import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation } from '@nestjs/swagger';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { CommentsService } from './comments.service';
+import { use } from 'passport';
+import { FilesInterceptor } from '@nestjs/platform-express/multer/interceptors/files.interceptor';
+import { CreateCommentDto } from './dto/create-command.dto';
+import { diskStorage } from 'multer';
+import { Express } from 'express';
+import 'multer';
+
+
+
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
+@Controller('tasks/:taskId/comments')
+export class CommentsController {
+    constructor(private readonly commentsService: CommentsService) {}
+
+    @Post()
+    @ApiConsumes('multipart/form-data')
+    @ApiBody({
+        schema: {
+            type: 'object',
+            properties: {
+                content: { type: 'string', example: 'Here is the document you needed.' },
+                files: {
+                    type: 'array',
+                    items: { type: 'string', format: 'binary' },
+                    description: 'Optional attachments for the comment',
+                },
+            },
+        },
+    })
+    @UseInterceptors(FilesInterceptor('files', 10, { storage: diskStorage({ destination: './uploads/comments', filename: (req, file, cb) => { const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9); cb(null, `${uniqueSuffix}-${file.originalname}`); }, }), }))
+    
+    async createComment(@Request() req, @Param('taskId', ParseIntPipe) taskId: number, @Body() createCommentDto: CreateCommentDto, @UploadedFiles() files: Express.Multer.File[]) {
+        const filePaths = files ? files.map(file => file.filename) : [];
+        return this.commentsService.createcomment(taskId, req.user.sub, createCommentDto, filePaths);
+    }
+
+
+ @Get()
+    @ApiOperation({ summary: 'Get all comments for a specific task' })
+    async getComments(
+        @Param('taskId', ParseIntPipe) taskId: number,
+        @Request() req
+    ) {
+        const comments = await this.commentsService.findallcomments(taskId);
+        
+        return comments.map(comment => ({ 
+            ...comment, 
+            attachments: comment.attachments.map(fileName => 
+                `http://localhost:3000/uploads/comments/${fileName}`
+            ),
+            replies: comment.replies ? comment.replies.map(reply => ({
+                ...reply,
+                attachments: reply.attachments.map(fileName => 
+                    `http://localhost:3000/uploads/comments/${fileName}`
+                )
+            })) : []
+        }));
+    }
+}
+</file>
+
+<file path="srcs/backend/src/comments/comments.service.spec.ts">
+import { Test, TestingModule } from '@nestjs/testing';
+import { CommentsService } from './comments.service';
+
+describe('CommentsService', () => {
+  let service: CommentsService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [CommentsService],
+    }).compile();
+
+    service = module.get<CommentsService>(CommentsService);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+});
+</file>
+
+<file path="srcs/backend/src/friends/friends.controller.spec.ts">
+import { Test, TestingModule } from '@nestjs/testing';
+import { FriendsController } from './friends.controller';
+
+describe('FriendsController', () => {
+  let controller: FriendsController;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [FriendsController],
+    }).compile();
+
+    controller = module.get<FriendsController>(FriendsController);
+  });
+
+  it('should be defined', () => {
+    expect(controller).toBeDefined();
+  });
+});
+</file>
+
+<file path="srcs/backend/src/friends/friends.controller.ts">
+import { Controller, Post, Patch, Delete, Get, Param, ParseIntPipe, UseGuards, Request } from '@nestjs/common';
+import { FriendsService } from './friends.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ApiBearerAuth } from '@nestjs/swagger';
+
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
+@Controller('friends')
+export class FriendsController {
+  constructor(private readonly friendsService: FriendsService) {}
+
+  @Get()
+  getMyFriends(@Request() req) {
+    return this.friendsService.getMyFriends(req.user.sub);
   }
 
-  @Patch('user/:id/read')
-  async markAsRead(@Param('id', ParseIntPipe) userId: number) {
-    return this.notificationsService.markAllAsRead(userId);
+  @Get('requests')
+  getPendingRequests(@Request() req) {
+    return this.friendsService.getFriendRequests(req.user.sub);
   }
+
+  @Post('request/:userId')
+  sendRequest(@Request() req, @Param('userId', ParseIntPipe) targetUserId: number) {
+    return this.friendsService.sendrequest(req.user.sub, targetUserId);
+  }
+
+  @Patch('accept/:friendshipId')
+  acceptRequest(@Request() req, @Param('friendshipId', ParseIntPipe) friendshipId: number) {
+    return this.friendsService.acceptrequest(req.user.sub, friendshipId);
+  }
+
+  @Patch('reject/:friendshipId')
+  rejectRequest(@Request() req, @Param('friendshipId', ParseIntPipe) friendshipId: number) {
+    return this.friendsService.rejectrequest(req.user.sub, friendshipId);
+  }
+
+  @Delete('remove/:friendshipId')
+  removeFriendship(@Request() req, @Param('friendshipId', ParseIntPipe) friendshipId: number) {
+    return this.friendsService.removefriendship(req.user.sub, friendshipId);
+  }
+}
+</file>
+
+<file path="srcs/backend/src/friends/friends.module.ts">
+import { Module } from '@nestjs/common';
+import { FriendsService } from './friends.service';
+import { FriendsController } from './friends.controller';
+import { PrismaModule } from '../prisma/prisma.module';
+import { NotificationsModule } from '../notifications/notifications.module';
+
+@Module({
+  imports: [PrismaModule, NotificationsModule], 
+  controllers: [FriendsController],
+  providers: [FriendsService],
+})
+export class FriendsModule {}
+</file>
+
+<file path="srcs/backend/src/friends/friends.service.spec.ts">
+import { Test, TestingModule } from '@nestjs/testing';
+import { FriendsService } from './friends.service';
+
+describe('FriendsService', () => {
+  let service: FriendsService;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [FriendsService],
+    }).compile();
+
+    service = module.get<FriendsService>(FriendsService);
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+});
+</file>
+
+<file path="srcs/backend/src/friends/friends.service.ts">
+import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { IsBtcAddress } from 'class-validator';
+
+@Injectable()
+export class FriendsService {
+constructor(
+    private prisma: PrismaService,
+    private  notificationsService: NotificationsService,
+  ){}
+async sendrequest(requesterId: number, addresseeId: number) {
+    if (requesterId === addresseeId) {
+      throw new BadRequestException('You cannot send a friend request to yourself.');
+    }
+const targetUser = await this.prisma.user.findUnique({ where: { id: addresseeId } });
+    if (!targetUser) {
+      throw new NotFoundException('The user you are trying to send a friend request to does not exist.');
+    }
+    const existingRequest = await this.prisma.friendship.findFirst({
+      where: {
+        OR: [
+          { requesterId, addresseeId },
+          { requesterId: addresseeId, addresseeId: requesterId }
+        ]
+      }
+    });
+    if (existingRequest) {
+      throw new ConflictException('You have already sent a friend request to this user.');
+    }
+    const friendRequest = await this.prisma.friendship.create({
+        data: {
+            requesterId: requesterId,
+            addresseeId: addresseeId,
+            status: 'PENDING',
+        },
+    });
+    const sender = await this.prisma.user.findUnique({ where: { id: requesterId } });
+    if ( sender) {
+    await this.notificationsService.createNotification(
+      addresseeId,
+      'friend_request',
+      `${sender.username} has sent you a friend request!`,
+    );
+    return friendRequest;
+  }
+}
+async acceptrequest(loggedInUserId: number, requesterId: number) {
+    const friendRequest = await this.prisma.friendship.findFirst({
+      where: {
+        requesterId: requesterId,
+        addresseeId: loggedInUserId,
+        status: 'PENDING',
+      },
+    });
+    if (!friendRequest) {
+      throw new NotFoundException('Friend request not found.');
+    }
+    return await this.prisma.friendship.update({
+      where: {
+        id: friendRequest.id,
+      },
+      data: {
+        status: 'ACCEPTED',
+      },
+    });
+  }
+async rejectrequest(loggedInUserId: number, requesterId: number) {
+    const friendRequest = await this.prisma.friendship.findFirst({
+      where: {
+        requesterId: requesterId,
+        addresseeId: loggedInUserId,
+        status: 'PENDING',
+      },
+    });
+    if (!friendRequest) {
+      throw new NotFoundException('Friend request not found.');
+    }
+    return await this.prisma.friendship.update({
+      where: {
+        id: friendRequest.id,
+      },
+      data: {
+        status: 'REJECTED',
+      },
+    });
+  }
+async getfriends(userId: number) {
+    const friendships = await this.prisma.friendship.findMany({
+      where: {
+        OR: [
+          { requesterId: userId, status: 'ACCEPTED' },
+          { addresseeId: userId, status: 'ACCEPTED' }
+        ]
+      },
+      include: {
+        requester: true,
+        addressee: true,
+      },
+    });
+    return friendships.map(friendship => {
+      const friend = friendship.requesterId === userId ? friendship.addressee : friendship.requester;
+      return {
+        id: friend.id,
+        username: friend.username,
+        email: friend.email,
+      };
+    });
+  }
+  async getFriendRequests(userId: number) {
+    return this.prisma.friendship.findMany({
+      where: {
+        addresseeId: userId,
+        status: 'PENDING', },
+        include: {
+            requester: {select: {id: true, username: true, email: true}}
+        }
+    });
+    }
+
+    async getMyFriends(userId: number) {
+    const friendships = await this.prisma.friendship.findMany({
+      where: {
+        status: 'ACCEPTED',
+        OR: [{ requesterId: userId }, { addresseeId: userId }]
+      },
+      include: {
+        requester: { select: { id: true, username: true, avatar: true } },
+        addressee: { select: { id: true, username: true, avatar: true } }
+      }
+    });
+    return friendships.map(f => f.requesterId === userId ? f.addressee : f.requester);
+  }
+  async removefriendship(loggedInUserId: number, friendshipId: number) {
+    const friendship = await this.prisma.friendship.findUnique({
+      where: { id: friendshipId },
+    });
+    if (!friendship) {
+      throw new NotFoundException('Friendship not found.');
+    }
+    if (friendship.requesterId !== loggedInUserId && friendship.addresseeId !== loggedInUserId) {
+      throw new BadRequestException('You can only remove friendships you are part of.');
+    }
+    return await this.prisma.friendship.delete({
+       where: { id: friendshipId },
+     });
+    }
+}
+</file>
+
+<file path="srcs/backend/src/notifications/dto/create-notification.dto.ts">
+import { IsInt, IsNotEmpty, IsString } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+
+export class CreateNotificationDto {
+  @ApiProperty({ description: 'The id of the user who should receive the notification', example: 1 })
+  @IsInt()
+  @IsNotEmpty()
+  userId: number;
+
+  @ApiProperty({ description: 'The type of the notification (e.g., SYSTEM, PROJECT_JOINED)', example: 'SYSTEM' })
+  @IsString()
+  @IsNotEmpty()
+  type: string;
+
+  @ApiProperty({ description: 'The text of the notification', example: 'Hello, this is a test notification via Swagger!' })
+  @IsString()
+  @IsNotEmpty()
+  message: string;
 }
 </file>
 
@@ -341,78 +854,6 @@ describe('NotificationsGateway', () => {
     expect(gateway).toBeDefined();
   });
 });
-</file>
-
-<file path="srcs/backend/src/notifications/notifications.gateway.ts">
-import {
-  WebSocketGateway,
-  WebSocketServer,
-  OnGatewayConnection,
-  OnGatewayDisconnect,
-  SubscribeMessage,
-  ConnectedSocket,
-  MessageBody,
-} from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
-import { Logger } from '@nestjs/common';
-
-@WebSocketGateway({ cors: { origin: '*' } })
-export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisconnect {
-  @WebSocketServer()
-  server: Server;
-
-  private readonly logger = new Logger(NotificationsGateway.name);
-  private connectedUsers = new Map<number, string[]>();
-
-  handleConnection(client: Socket) {
-    this.logger.log(`🟢 Client connected: ${client.id}`);
-  }
-
-  handleDisconnect(client: Socket) {
-    this.removeSocketId(client.id);
-    this.logger.log(`🔴 Client disconnected: ${client.id}`);
-  }
-
-  @SubscribeMessage('identify')
-  handleIdentify(@ConnectedSocket() client: Socket, @MessageBody() userId: number) {
-    const userSockets = this.connectedUsers.get(userId) || [];
-    
-    const isNewlyOnline = userSockets.length === 0;
-
-    userSockets.push(client.id);
-    this.connectedUsers.set(userId, userSockets);
-    client.emit('identified', { status: 'success' });
-
-    if (isNewlyOnline) {
-      this.server.emit('user_status_change', { userId: userId, status: 'ONLINE' });
-      this.logger.log(`User ${userId} is nu zichtbaar als ONLINE.`);
-    }
-  }
-
-  sendNotificationToUser(userId: number, payload: any) {
-    const userSockets = this.connectedUsers.get(userId);
-    if (userSockets) {
-      userSockets.forEach((socketId) => {
-        this.server.to(socketId).emit('new_notification', payload);
-      });
-    }
-  }
-
-  private removeSocketId(socketId: string) {
-    for (const [userId, sockets] of this.connectedUsers.entries()) {
-      const updatedSockets = sockets.filter((id) => id !== socketId);
-      
-      if (updatedSockets.length === 0) {
-        this.connectedUsers.delete(userId);
-        
-        this.server.emit('user_status_change', { userId: userId, status: 'OFFLINE' });
-        this.logger.log(`User ${userId} is nu zichtbaar als OFFLINE.`);
-      } else {
-        this.connectedUsers.set(userId, updatedSockets);
-      }
-    }
-  }
-}
 </file>
 
 <file path="srcs/backend/src/notifications/notifications.service.spec.ts">
@@ -445,6 +886,23 @@ import { PrismaService } from "./prisma.service";
     exports: [PrismaService],
 })
 export class PrismaModule {}
+</file>
+
+<file path="srcs/backend/src/projects/dto/create-message.dto.ts">
+import { IsInt, IsNotEmpty, IsString } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+
+export class CreateMessageDto {
+  @ApiProperty({ description: 'The ID of the user sending the message', example: 1 })
+  @IsInt()
+  @IsNotEmpty()
+  userId: number;
+
+  @ApiProperty({ description: 'The content of the chat message', example: 'Hello team!' })
+  @IsString()
+  @IsNotEmpty()
+  content: string;
+}
 </file>
 
 <file path="srcs/backend/src/projects/dto/update-project.dto.ts">
@@ -555,13 +1013,6 @@ describe('TasksService', () => {
     expect(service).toBeDefined();
   });
 });
-</file>
-
-<file path="srcs/backend/src/users/dto/update-user.dto.ts">
-import { PartialType } from '@nestjs/mapped-types';
-import { CreateUserDto } from './create-user.dto';
-
-export class UpdateUserDto extends PartialType(CreateUserDto) {}
 </file>
 
 <file path="srcs/backend/src/users/users.controller.spec.ts">
@@ -697,6 +1148,165 @@ describe('AppController (e2e)', () => {
     "^.+\\.(t|j)s$": "ts-jest"
   }
 }
+</file>
+
+<file path="srcs/backend/uploads/comments/1776952194439-670323513-chat.html">
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+    <meta charset="UTF-8">
+    <title>Transcendence | Project Chat</title>
+    <style>
+        :root { --primary: #3498db; --bg: #f5f7f9; --text: #2c3e50; }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; height: 100vh; margin: 0; }
+        
+        /* Header & Auth */
+        header { background: #1a252f; color: white; padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; }
+        .setup-bar { background: #fff; padding: 15px 30px; border-bottom: 1px solid #ddd; display: flex; gap: 15px; align-items: center; }
+        input, select { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+
+        /* Chat Area */
+        .chat-container { flex: 1; display: flex; flex-direction: column; max-width: 900px; margin: 20px auto; width: 100%; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); overflow: hidden; }
+        #chat-window { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; background: #fdfdfd; }
+        
+        /* Messages */
+        .message { max-width: 70%; padding: 10px 15px; border-radius: 18px; position: relative; font-size: 14px; line-height: 1.4; }
+        .message.others { align-self: flex-start; background: #e9ebee; color: black; border-bottom-left-radius: 2px; }
+        .message.mine { align-self: flex-end; background: var(--primary); color: white; border-bottom-right-radius: 2px; }
+        .meta { font-size: 10px; margin-bottom: 4px; display: block; font-weight: bold; }
+        .time { font-size: 9px; opacity: 0.7; display: block; text-align: right; margin-top: 4px; }
+
+        /* Input Area */
+        .input-area { padding: 20px; border-top: 1px solid #eee; display: flex; gap: 10px; }
+        #messageInput { flex: 1; padding: 12px; border: 1px solid #ddd; border-radius: 25px; outline: none; }
+        button { padding: 10px 25px; background: var(--primary); color: white; border: none; border-radius: 25px; cursor: pointer; font-weight: bold; }
+        button:disabled { background: #ccc; }
+    </style>
+</head>
+<body>
+
+<header>
+    <div><strong>🚀 Transcendence</strong> | Project Messenger</div>
+    <div id="status">🔴 Niet verbonden</div>
+</header>
+
+<div class="setup-bar">
+    <input type="text" id="jwtToken" placeholder="JWT Token (verplicht)">
+    <input type="number" id="userId" placeholder="Mijn User ID">
+    <input type="number" id="projectId" placeholder="Project ID">
+    <button onclick="enterProject()">Project Betreden</button>
+</div>
+
+<div class="chat-container">
+    <div id="chat-window">
+        <div style="text-align:center; color:#999; margin-top:100px;">Join een project om de chatgeschiedenis te laden...</div>
+    </div>
+    <div class="input-area">
+        <input type="text" id="messageInput" placeholder="Typ een bericht..." disabled onkeypress="if(event.key === 'Enter') sendMessage()">
+        <button id="sendBtn" onclick="sendMessage()" disabled>Verstuur</button>
+    </div>
+</div>
+
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<script>
+    const API_URL = 'http://localhost:3000';
+    let socket;
+    let currentConfig = { token: '', uId: null, pId: null };
+
+    async function enterProject() {
+        currentConfig.token = document.getElementById('jwtToken').value;
+        currentConfig.uId = parseInt(document.getElementById('userId').value);
+        currentConfig.pId = parseInt(document.getElementById('projectId').value);
+
+        if (!currentConfig.token || !currentConfig.uId || !currentConfig.pId) {
+            return alert("Vul alle velden in (Token, User ID, Project ID)");
+        }
+
+        // 1. Laad geschiedenis uit DB
+        await loadHistory();
+
+        // 2. Verbind via Socket
+        connectSocket();
+
+        // 3. UI vrijgeven
+        document.getElementById('messageInput').disabled = false;
+        document.getElementById('sendBtn').disabled = false;
+        document.getElementById('chat-window').innerHTML += `<div style="text-align:center; font-size:12px; color:green;">— Je bent nu live in project ${currentConfig.pId} —</div>`;
+    }
+
+    async function loadHistory() {
+        const chatWindow = document.getElementById('chat-window');
+        try {
+            const res = await fetch(`${API_URL}/projects/${currentConfig.pId}/messages`, {
+                headers: { 'Authorization': `Bearer ${currentConfig.token}` }
+            });
+            const messages = await res.json();
+            chatWindow.innerHTML = ''; // Clear window
+            
+            messages.forEach(msg => appendMessage(msg, false));
+            chatWindow.scrollTop = chatWindow.scrollHeight;
+        } catch (e) {
+            console.error("Fout bij laden geschiedenis:", e);
+        }
+    }
+
+    function connectSocket() {
+        if (socket) socket.disconnect();
+        socket = io(API_URL, { auth: { token: currentConfig.token } });
+
+        socket.on('connect', () => {
+            document.getElementById('status').innerText = '🟢 Verbonden';
+            socket.emit('identify', currentConfig.uId);
+            socket.emit('joined project', { username: `User_${currentConfig.uId}`, projectId: currentConfig.pId });
+        });
+
+        socket.on('new_project_notification', (data) => {
+            // Check of het bericht wel bij DIT project hoort
+            if (data.projectId === currentConfig.pId) {
+                appendMessage(data, true);
+            }
+        });
+    }
+
+    function appendMessage(data, isLive) {
+        const chatWindow = document.getElementById('chat-window');
+        const isMine = data.userId === currentConfig.uId;
+        const name = data.user?.username || `User ${data.userId}`;
+        const time = new Date(data.Time || data.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+        const msgDiv = document.createElement('div');
+        msgDiv.className = `message ${isMine ? 'mine' : 'others'}`;
+        msgDiv.innerHTML = `
+            <span class="meta">${isMine ? 'Jij' : name}</span>
+            ${data.content}
+            <span class="time">${time}</span>
+        `;
+        chatWindow.appendChild(msgDiv);
+        chatWindow.scrollTop = chatWindow.scrollHeight;
+    }
+
+    async function sendMessage() {
+        const input = document.getElementById('messageInput');
+        const content = input.value;
+        if (!content) return;
+
+        try {
+            await fetch(`${API_URL}/projects/${currentConfig.pId}/messages`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${currentConfig.token}` 
+                },
+                body: JSON.stringify({ userId: currentConfig.uId, content: content })
+            });
+            input.value = '';
+        } catch (e) {
+            alert("Bericht kon niet worden verzonden.");
+        }
+    }
+</script>
+</body>
+</html>
 </file>
 
 <file path="srcs/backend/.prettierrc">
@@ -1500,235 +2110,146 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 </html>
 </file>
 
-<file path="online.html">
-<!DOCTYPE html>
-<html lang="nl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transcendence Dashboard</title>
-    <style>
-        /* Reset & Basis styling */
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; color: #333; }
-
-        /* Navigatiebalk */
-        .navbar {
-            display: flex; justify-content: space-between; align-items: center;
-            background-color: #1a252f; color: white; padding: 15px 30px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-        .navbar-brand { font-size: 20px; font-weight: bold; }
-
-        /* Belletje & Badge */
-        .notification-container { position: relative; cursor: pointer; user-select: none; }
-        .bell-icon { font-size: 24px; transition: transform 0.2s; display: inline-block; }
-        .notification-container:hover .bell-icon { transform: scale(1.1); }
-        
-        .badge {
-            position: absolute; top: -5px; right: -8px;
-            background-color: #e74c3c; color: white;
-            border-radius: 50%; padding: 2px 6px;
-            font-size: 12px; font-weight: bold;
-            box-shadow: 0 0 0 2px #1a252f;
-            display: none;
-        }
-
-        /* De Dropdown List */
-        .dropdown {
-            display: none; position: absolute; top: 45px; right: 0;
-            width: 320px; background-color: #ffffff; color: #333;
-            box-shadow: 0 8px 16px rgba(0,0,0,0.15); border-radius: 8px;
-            border: 1px solid #ddd; z-index: 1000; overflow: hidden;
-        }
-        
-        .dropdown-header {
-            background-color: #f8f9fa; padding: 12px 15px;
-            font-weight: bold; border-bottom: 1px solid #eee; color: #2c3e50;
-        }
-
-        .notification-list { max-height: 300px; overflow-y: auto; }
-        
-        .dropdown-item {
-            padding: 15px; border-bottom: 1px solid #eee;
-            font-size: 14px; line-height: 1.4; display: flex; gap: 10px;
-        }
-        .dropdown-item:last-child { border-bottom: none; }
-        .dropdown-item:hover { background-color: #f1f3f5; }
-        .dropdown-item .icon { font-size: 18px; }
-
-        .empty-state { padding: 20px; text-align: center; color: #888; font-style: italic; font-size: 14px;}
-
-        .mark-read-btn {
-            width: 100%; padding: 12px; background-color: #f8f9fa; color: #0066cc;
-            border: none; border-top: 1px solid #eee; cursor: pointer;
-            font-weight: bold; transition: background 0.2s;
-        }
-        .mark-read-btn:hover { background-color: #e9ecef; }
-
-        /* Pagina Content Grid */
-        .container { max-width: 1000px; margin: 40px auto; padding: 0 20px; display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
-        .card { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-        .status-badge { display: inline-block; padding: 5px 10px; background: #d4edda; color: #155724; border-radius: 15px; font-size: 14px; margin-top: 15px;}
-        
-        /* Online Users Lijstje */
-        .online-user-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #eee;}
-        .online-user-item:last-child { border-bottom: none; }
-        .green-dot { width: 10px; height: 10px; background-color: #2ecc71; border-radius: 50%; display: inline-block; box-shadow: 0 0 5px rgba(46, 204, 113, 0.5);}
-    </style>
-</head>
-<body>
-
-    <div class="navbar">
-        <div class="navbar-brand">🚀 Transcendence</div>
-        
-        <div class="notification-container" onclick="toggleDropdown(event)">
-            <span class="bell-icon">🔔</span>
-            <span class="badge" id="badgeCount">0</span>
-            
-            <div class="dropdown" id="notificationMenu" onclick="event.stopPropagation()">
-                <div class="dropdown-header">Recente Meldingen</div>
-                <div class="notification-list" id="notificationList"></div>
-                <button class="mark-read-btn" onclick="markAllAsRead()">Markeer alles als gelezen</button>
-            </div>
-        </div>
-    </div>
-
-    <div class="container">
-        <div class="card">
-            <h2>Welkom op het test-dashboard!</h2>
-            <p style="margin-top: 10px; color: #555; line-height: 1.6;">
-                Dit is je hoofdwerkruimte. Ga naar Swagger API om acties uit te voeren die notificaties genereren.
-            </p>
-            <div class="status-badge" id="connStatus">⏳ Verbinden met server...</div>
-        </div>
-
-        <div class="card">
-            <h3>🟢 Vrienden Online</h3>
-            <div id="onlineUsersList" style="margin-top: 15px;">
-                </div>
-        </div>
-    </div>
-
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
-    <script>
-        // --- 1. VARIABELEN ---
-        let unreadNotifications = [];
-        // We gebruiken een Set() voor online users, dat is handig want dan kun je nooit per ongeluk 2x dezelfde user toevoegen!
-        let onlineUsers = new Set(); 
-
-        const badgeCount = document.getElementById('badgeCount');
-        const notificationMenu = document.getElementById('notificationMenu');
-        const notificationList = document.getElementById('notificationList');
-        const connStatus = document.getElementById('connStatus');
-        const onlineUsersList = document.getElementById('onlineUsersList');
-
-        // --- 2. UI FUNCTIES ---
-
-        // Functie 1: Update het Belletje
-        function updateNotificationsUI() {
-            if (unreadNotifications.length > 0) {
-                badgeCount.innerText = unreadNotifications.length;
-                badgeCount.style.display = 'block';
-            } else {
-                badgeCount.style.display = 'none';
-            }
-
-            notificationList.innerHTML = '';
-            if (unreadNotifications.length === 0) {
-                notificationList.innerHTML = '<div class="empty-state">Geen nieuwe meldingen.</div>';
-            } else {
-                unreadNotifications.forEach(notif => {
-                    let icon = notif.type === 'PROJECT_JOINED' ? '📁' : '📋';
-                    notificationList.innerHTML += `
-                        <div class="dropdown-item">
-                            <span class="icon">${icon}</span>
-                            <span>${notif.message}</span>
-                        </div>`;
-                });
-            }
-        }
-
-        // Functie 2: Update het Zijbalkje
-        function updateOnlineUsersUI() {
-            onlineUsersList.innerHTML = '';
-            if (onlineUsers.size === 0) {
-                onlineUsersList.innerHTML = '<div class="empty-state">Iedereen is offline 😴</div>';
-            } else {
-                onlineUsers.forEach(userId => {
-                    onlineUsersList.innerHTML += `
-                        <div class="online-user-item">
-                            <span class="green-dot"></span>
-                            <span>User ${userId}</span>
-                        </div>`;
-                });
-            }
-        }
-
-        // Klik-gedrag voor de dropdown
-        function toggleDropdown(event) {
-            event.stopPropagation();
-            notificationMenu.style.display = notificationMenu.style.display === 'block' ? 'none' : 'block';
-        }
-        window.onclick = function() { notificationMenu.style.display = 'none'; }
-
-        // Knop om database te updaten
-        async function markAllAsRead() {
-            unreadNotifications = []; 
-            updateNotificationsUI();
-            notificationMenu.style.display = 'none';
-
-            try {
-                const response = await fetch('http://localhost:3000/notifications/user/1/read', {
-                    method: 'PATCH',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                if (response.ok) console.log('✅ Database succesvol geüpdatet');
-            } catch (error) {
-                console.error('Backend is niet bereikbaar:', error);
-            }
-        }
-
-        // --- 3. WEBSOCKET LOGICA ---
-        const socket = io('http://localhost:3000');
-        
-        socket.on('connect', () => {
-            connStatus.innerHTML = '🟢 Live verbonden met backend (User ID: 1)';
-            socket.emit('identify', 1);
-        });
-
-        socket.on('disconnect', () => {
-            connStatus.innerHTML = '🔴 Verbinding verbroken...';
-        });
-
-        // HIER LUISTEREN WE NAAR TAKEN & PROJECTEN (Gaan naar het belletje)
-        socket.on('new_notification', (data) => {
-            unreadNotifications.unshift(data); 
-            updateNotificationsUI(); 
-        });
-
-        // HIER LUISTEREN WE NAAR ONLINE/OFFLINE (Gaan naar de zijbalk)
-        socket.on('user_status_change', (data) => {
-            if (data.userId !== 1) { // We tonen onszelf niet in het lijstje
-                if (data.status === 'ONLINE') {
-                    onlineUsers.add(data.userId); // Zet in de lijst
-                } else if (data.status === 'OFFLINE') {
-                    onlineUsers.delete(data.userId); // Verwijder uit de lijst
-                }
-                updateOnlineUsersUI(); // Teken het lijstje opnieuw
-            }
-        });
-
-        // Eerste keer tekenen
-        updateNotificationsUI();
-        updateOnlineUsersUI();
-    </script>
-</body>
-</html>
-</file>
-
 <file path="README.md">
 
+</file>
+
+<file path="srcs/backend/src/auth/strategies/jwt.strategy.ts">
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { PassportStrategy } from '@nestjs/passport';
+import { ExtractJwt, Strategy } from 'passport-jwt';
+import { UsersService } from 'src/users/users.service';
+
+@Injectable()
+export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
+  constructor(private usersService: UsersService) {
+    super({
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ignoreExpiration: false,
+      secretOrKey: process.env.JWT_SECRET ?? (() => { throw new Error('JWT_SECRET not set') })(),
+    });
+  }
+
+  async validate(payload: any) {
+    const user = await this.usersService.findOne(payload.sub);
+    if (!user) throw new UnauthorizedException();
+    return { sub: payload.sub, id: payload.sub, username: payload.username, role: payload.role };
+  }
+}
+</file>
+
+<file path="srcs/backend/src/comments/comments.module.ts">
+import { Module } from '@nestjs/common';
+import { CommentsService } from './comments.service';
+import { CommentsController } from './comments.controller';
+import { PrismaModule } from '../prisma/prisma.module';
+import { NotificationsModule } from '../notifications/notifications.module';
+
+@Module({
+  providers: [CommentsService],
+  controllers: [CommentsController],
+  imports: [PrismaModule, NotificationsModule]
+})
+export class CommentsModule {}
+</file>
+
+<file path="srcs/backend/src/comments/comments.service.ts">
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { CreateCommentDto } from './dto/create-command.dto';
+import { NotificationsGateway } from 'src/notifications/notifications.gateway';
+import { find } from 'rxjs';
+import { assign } from 'nodemailer/lib/shared';
+import { privateDecrypt } from 'crypto';
+
+@Injectable()
+export class CommentsService {
+    constructor(private prisma: PrismaService,
+        private notificationGateway: NotificationsGateway) {}
+
+    async createcomment(taskid: number, userId: number, createCommentDto: CreateCommentDto, files: string[] = []) {
+        const task = await this.prisma.task.findUnique({
+            where: { id: taskid },
+            include: { assignees: true ,
+            project: { include: { members: { where: { role : 'PROJECT_LEADER' } } } } },
+        });
+        if (!task)
+            throw new Error('Task not found');
+        const isAssignee = task.assignees.some(a => a.id === userId);
+        const isLeader = task.project.members.some(m => m.userId === userId);
+        if (!isAssignee && !isLeader)
+            throw new Error('You are not authorized to comment on this task');
+        const comment = await this.prisma.comment.create({
+            data: {
+                content: createCommentDto.content,
+                userId: userId,
+                taskId: taskid,
+                attachments: files,
+                parentId: createCommentDto.parentId,
+            },
+        });
+        let notificationTargets: number[] = [];
+        if (isLeader) {
+            notificationTargets = task.assignees.map(a => a.id);
+        }
+        else if (isAssignee) {
+            const leaderIds = task.project.members.map(m => m.userId);
+            const otherAssignees = task.assignees
+                .map(a => a.id)
+                .filter(id => id !== userId);
+            notificationTargets = [...leaderIds, ...otherAssignees];
+        }
+        const uniqueTargets = [...new Set(notificationTargets)].filter(id => id !== userId);
+        uniqueTargets.forEach(targetId => {
+            this.notificationGateway.server.to(`user_${targetId}`).emit('new_notification', {
+                type: 'NEW_COMMENT',
+                taskId: taskid,
+                message: 'a new comment has been added to a task you are involved in.',
+            });
+        });
+        return comment;
+    }
+    async findallcomments(taskid: number) {
+        const comments = await this.prisma.comment.findMany({
+            where: { taskId: taskid, parentId: null },
+            include: { user: { select: { id: true, username: true, avatar: true } },
+            replies: { include: { user: { select: { id: true, username: true, avatar: true } } } },
+                },
+            orderBy: { createdAt: 'asc' },
+        });
+        return comments;
+    }
+}
+</file>
+
+<file path="srcs/backend/src/notifications/notifications.controller.ts">
+import { Controller, Patch, Get, Param, ParseIntPipe, Post, Body } from '@nestjs/common';
+import { NotificationsService } from './notifications.service';
+import { CreateNotificationDto } from './dto/create-notification.dto';
+
+@Controller('notifications')
+export class NotificationsController {
+  constructor(private readonly notificationsService: NotificationsService) {}
+
+  @Post()
+  async createNotification(@Body() createNotificationDto: CreateNotificationDto) {
+    return this.notificationsService.createNotification(
+      createNotificationDto.userId,
+      createNotificationDto.type,
+      createNotificationDto.message
+    );
+  }
+
+  @Get('user/:id')
+  async getNotifications(@Param('id', ParseIntPipe) userId: number) {
+    return this.notificationsService.getUserNotifications(userId);
+  }
+
+  @Patch('user/:id/read')
+  async markAsRead(@Param('id', ParseIntPipe) userId: number) {
+    return this.notificationsService.markAllAsRead(userId);
+  }
+}
 </file>
 
 <file path="srcs/backend/src/notifications/notifications.module.ts">
@@ -1843,6 +2364,14 @@ import { NotificationsModule } from '../notifications/notifications.module';
 export class ProjectsModule {}
 </file>
 
+<file path="srcs/backend/src/users/dto/update-user.dto.ts">
+import { PartialType } from '@nestjs/mapped-types';
+import { CreateUserDto } from './create-user.dto';
+import { User } from '@prisma/client';
+
+export class UpdateUserDto extends PartialType(CreateUserDto) {}
+</file>
+
 <file path="srcs/backend/.gitignore">
 # compiled output
 /dist
@@ -1918,6 +2447,98 @@ export default defineConfig({
     url: process.env["DATABASE_URL"],
   },
 });
+</file>
+
+<file path="srcs/backend/src/notifications/notifications.gateway.ts">
+import {
+  WebSocketGateway,
+  WebSocketServer,
+  OnGatewayConnection,
+  OnGatewayDisconnect,
+  SubscribeMessage,
+  ConnectedSocket,
+  MessageBody,
+} from '@nestjs/websockets';
+import { Server, Socket } from 'socket.io';
+import { Logger } from '@nestjs/common';
+
+@WebSocketGateway({ cors: { origin: '*' } })
+export class NotificationsGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  @WebSocketServer()
+  server: Server;
+
+  private readonly logger = new Logger(NotificationsGateway.name);
+  private connectedUsers = new Map<number, string[]>();
+
+  handleConnection(client: Socket) {
+    this.logger.log(`🟢 Client connected: ${client.id}`);
+  }
+
+  handleDisconnect(client: Socket) {
+    this.removeSocketId(client.id);
+    this.logger.log(`🔴 Client disconnected: ${client.id}`);
+  }
+
+  @SubscribeMessage('identify')
+  handleIdentify(@ConnectedSocket() client: Socket, @MessageBody() userId: number) {
+    const userSockets = this.connectedUsers.get(userId) || [];
+    const isNewlyOnline = userSockets.length === 0;
+
+    userSockets.push(client.id);
+    this.connectedUsers.set(userId, userSockets);
+    client.emit('identified', { status: 'success' });
+
+    const currentlyOnline = Array.from(this.connectedUsers.keys());
+    client.emit('initial_online_users', currentlyOnline);
+
+    if (isNewlyOnline) {
+      this.server.emit('user_status_change', { userId: userId, status: 'ONLINE' });
+      this.logger.log(`User ${userId} is nu ONLINE.`);
+    }
+  }
+
+  sendNotificationToUser(userId: number, payload: any) {
+    const userSockets = this.connectedUsers.get(userId);
+    if (userSockets) {
+      userSockets.forEach((socketId) => {
+        this.server.to(socketId).emit('new_notification', payload);
+      });
+    }
+  }
+
+  private removeSocketId(socketId: string) {
+    for (const [userId, sockets] of this.connectedUsers.entries()) {
+      const updatedSockets = sockets.filter((id) => id !== socketId);
+      
+      if (updatedSockets.length === 0) {
+        this.connectedUsers.delete(userId);
+        
+        this.server.emit('user_status_change', { userId: userId, status: 'OFFLINE' });
+        this.logger.log(`User ${userId} is nu zichtbaar als OFFLINE.`);
+      } else {
+        this.connectedUsers.set(userId, updatedSockets);
+      }
+    }
+  }
+  @SubscribeMessage('joined project')
+  handleJoinedProject(@ConnectedSocket() client: Socket, @MessageBody() data: { username: string; projectId: number }) {
+    const room = `project_${data.projectId}`;
+    client.join(room);
+    this.logger.log(`User ${data.username} joined room: ${room}`);
+  }
+
+  @SubscribeMessage('left project')
+  handleLeftProject(@ConnectedSocket() client: Socket, @MessageBody() data: { username: string; projectId: number }) {
+    const room = `project_${data.projectId}`;
+    client.leave(room);
+    this.logger.log(`User ${data.username} left room: ${room}`);
+  }
+
+  sendProjectNotification(projectId: number, message: any) {
+    const room = `project_${projectId}`;
+    this.server.to(room).emit('new_project_notification', message);
+  }
+}
 </file>
 
 <file path="srcs/backend/src/notifications/notifications.service.ts">
@@ -2306,6 +2927,7 @@ import { UsersModule } from 'src/users/users.module';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { GoogleStrategy } from './strategies/google.strategy';
+import { JwtStrategy } from './strategies/jwt.strategy';
 
 @Module({
   imports: [
@@ -2320,14 +2942,46 @@ import { GoogleStrategy } from './strategies/google.strategy';
   PassportModule
 ],
   controllers: [AuthController],
-  providers: [AuthService, GoogleStrategy],
+  providers: [AuthService, GoogleStrategy, JwtStrategy],
   exports: [AuthService],
 })
 export class AuthModule {}
 </file>
 
+<file path="srcs/backend/src/tasks/dto/create-task.dto.ts">
+import { TaskStatus } from '@prisma/client';
+import { IsString, IsNotEmpty, IsInt, IsOptional, IsArray, IsDateString, IsEnum  } from 'class-validator';
+
+export class CreateTaskDto {
+  @IsString()
+  @IsNotEmpty()
+  title: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsInt()
+  @IsNotEmpty()
+  projectId: number;
+
+@IsOptional()
+  @IsEnum(TaskStatus) 
+  status?: TaskStatus;
+
+  @IsOptional()
+  @IsDateString()
+  deadline?: string;
+
+  @IsArray()
+  @IsOptional()
+  @IsInt({ each: true })
+  assigneeIds?: number[]; 
+}
+</file>
+
 <file path="srcs/backend/src/tasks/tasks.service.ts">
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, assignMetadata } from '@nestjs/common';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { PrismaService } from '../prisma/prisma.service';
@@ -2422,11 +3076,9 @@ export class TasksService {
   async update(id: number, updateTaskDto: UpdateTaskDto) {
     const { assigneeIds, ...taskData } = updateTaskDto;
     
-    // Ophalen van de huidige taak om te weten bij welk project hij hoort
     const currentTask = await this.prisma.task.findUnique({ where: { id } });
     if (!currentTask) throw new NotFoundException('Task not found');
 
-    // --- SPOOK MEDEWERKER CHECK (VOOR DE ACHTERDEUR) ---
     if (assigneeIds && assigneeIds.length > 0) {
       const validMembers = await this.prisma.projectMember.findMany({
         where: {
@@ -2445,7 +3097,7 @@ export class TasksService {
       data: {
         ...taskData,
         assignees: assigneeIds ? {
-          set: assigneeIds.map((userId) => ({ id: userId })), // set: overschrijft de hele lijst met assignees
+          set: assigneeIds.map((userId) => ({ id: userId })),
         } : undefined,
       },
       include: { 
@@ -2456,14 +3108,13 @@ export class TasksService {
       },
     });
 
-    // Notify project leader if status is changed to DONE
-    if (updateTaskDto.status === 'DONE') {
+    if (updateTaskDto.status === 'PENDING_EVALUATION') {
       const leaderId = updatedTask.project.members[0]?.userId;
       if (leaderId) {
         await this.notificationsService.createNotification(
           leaderId,
-          'TASK_DONE',
-          `Task completed: ${updatedTask.title}`
+          'TASK_PENDING_EVALUATION',
+          `Task is pending evaluation: ${updatedTask.title}`
         );
       }
     }
@@ -2472,6 +3123,21 @@ export class TasksService {
   }
 
   async remove(id: number) {
+    const task = await this.prisma.task.findUnique({
+      where: { id },
+      include: { assignees: true },
+    });
+
+    if (task && task.assignees.length > 0) {
+      for (const assignee of task.assignees) {
+        await this.notificationsService.createNotification(
+          assignee.id,
+          'TASK_DELETED',
+          `Task has been deleted: ${task.title}`
+        );
+      }
+    }
+
     return this.prisma.task.delete({
       where: { id },
     });
@@ -2479,41 +3145,13 @@ export class TasksService {
 }
 </file>
 
-<file path="srcs/backend/src/app.module.ts">
-import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config'; // <--- Import staat hier goed
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { UsersModule } from './users/users.module';
-import { AuthModule } from './auth/auth.module';
-import { ProjectsModule } from './projects/projects.module';
-import { TasksModule } from './tasks/tasks.module';
-import { ScheduleModule } from '@nestjs/schedule';
-import { NotificationsModule } from './notifications/notifications.module';
-
-@Module({
-  imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-    }),
-    UsersModule, 
-    AuthModule, 
-    ProjectsModule, 
-    TasksModule, 
-    ScheduleModule.forRoot(), 
-    NotificationsModule
-  ],
-  controllers: [AppController],
-  providers: [AppService],
-})
-export class AppModule {}
-</file>
-
 <file path="srcs/backend/src/main.ts">
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { join } from 'path';
+import * as express from 'express';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -2522,7 +3160,7 @@ async function bootstrap() {
 
   app.useGlobalPipes(new ValidationPipe());
 
- 
+  app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
 
   const config = new DocumentBuilder()
     .setTitle('Transcendence API')
@@ -2539,6 +3177,53 @@ async function bootstrap() {
 bootstrap();
 </file>
 
+<file path="docker-compose.yml">
+services:
+  postgres:
+    image: postgres:17
+    container_name: transcendence_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: ./srcs/backend
+    container_name: transcendence_backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      TZ: Europe/Brussels
+      DATABASE_URL: ${DATABASE_URL}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./srcs/backend:/app
+      - /app/node_modules
+    command: sh -c "npx prisma migrate deploy && npm run start:dev"
+
+volumes:
+  postgres_data:
+</file>
+
 <file path="srcs/backend/src/projects/projects.controller.ts">
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
@@ -2548,6 +3233,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ProjectLeaderGuard } from './project-leader.guard';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { AddMemberDto } from './dto/add-member.dto';
+import { CreateMessageDto } from './dto/create-message.dto';
 
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard) // you need to be logged in before you can do ANYTHING with projects
@@ -2580,8 +3266,10 @@ export class ProjectsController {
 
   @UseGuards(ProjectLeaderGuard) 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.projectsService.remove(+id);
+  remove(@Param('id') id: string,
+         @Request() req) {
+    const currentUserId = req.user.sub;
+    return this.projectsService.remove(+id, currentUserId);
   }
 
   @UseGuards(ProjectLeaderGuard) 
@@ -2592,6 +3280,209 @@ export class ProjectsController {
   ) {
     return this.projectsService.addMember(+id, addMemberDto.userId, addMemberDto.role);
   }
+
+  @Post(':id/messages')
+  createMessage(
+    @Param('id') projectid: string,
+    @Body() createMessageDto: CreateMessageDto
+  ) {
+    return this.projectsService.createmessage(+projectid, createMessageDto.userId, createMessageDto.content);
+  }
+
+  @Get(':id/messages')
+  getMessages(@Param('id') projectId: string) {
+    return this.projectsService.getProjectMessages(+projectId);
+  }
+}
+</file>
+
+<file path="srcs/backend/src/tasks/tasks.controller.ts">
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { TasksService } from './tasks.service';
+import { CreateTaskDto } from './dto/create-task.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { Request } from '@nestjs/common';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { ProjectLeaderGuard } from 'src/projects/project-leader.guard';
+
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
+@Controller('tasks')
+export class TasksController {
+  constructor(private readonly tasksService: TasksService) {}
+
+  @Post()
+  create(@Body() createTaskDto: CreateTaskDto) {
+    const deadlineDate = createTaskDto.deadline ? new Date(createTaskDto.deadline) : null;
+    return this.tasksService.create(createTaskDto, deadlineDate);
+  }
+@ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Get('all')
+  findAllAdmins() {
+    return this.tasksService.findAll(); 
+  }
+
+@ApiBearerAuth()
+  @UseGuards(JwtAuthGuard) 
+  @Get()
+  findMyTasks(@Request() req) {
+    return this.tasksService.findMyTasks(req.user.sub);
+  }
+
+
+  @Get()
+  findAll(@Request() req) {
+    return this.tasksService.findAll();
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.tasksService.findOne(+id);
+  }
+
+  @UseGuards(RolesGuard, ProjectLeaderGuard)
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.tasksService.remove(+id);
+  }
+}
+</file>
+
+<file path="srcs/backend/src/app.module.ts">
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config'; // <--- Import staat hier goed
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module';
+import { ProjectsModule } from './projects/projects.module';
+import { TasksModule } from './tasks/tasks.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { NotificationsModule } from './notifications/notifications.module';
+import { FriendsModule } from './friends/friends.module';
+import { CommentsModule } from './comments/comments.module';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    UsersModule, 
+    AuthModule, 
+    ProjectsModule, 
+    TasksModule, 
+    ScheduleModule.forRoot(), 
+    NotificationsModule, FriendsModule, CommentsModule
+  ],
+  controllers: [AppController],
+  providers: [AppService],
+})
+export class AppModule {}
+</file>
+
+<file path="srcs/backend/src/auth/auth.service.ts">
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { UsersService } from '../users/users.service'
+import * as bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
+import { User } from '@prisma/client';
+import { GlobalRole } from '@prisma/client';
+
+interface JwtPayload {
+  sub: number;
+  username: string;
+}
+
+export type SafeUser = {
+  id: number;
+  username: string;
+  email: string | null;
+  globalRole: GlobalRole;
+  avatar: string | null;
+  createdAt: Date;
+};
+
+@Injectable()
+export class AuthService {
+  constructor(
+    private usersService: UsersService, 
+    private jwtService: JwtService
+  ){}
+
+  async signIn(username: string, pass:string): Promise<{access_token: string, refresh_token: string}> {
+    const user = await this.usersService.findByName(username);
+    if (!user) {
+      throw new UnauthorizedException();
+    }
+    if (!user.password) {
+      throw new UnauthorizedException('Please sign in with Google');
+}
+    const isPasswordValid = await bcrypt.compare(pass, user.password);
+    if (!isPasswordValid) {
+      throw new UnauthorizedException();
+    }
+    const payload = { sub: user.id, username: user.username, role: user.globalRole };
+    return {
+      access_token: await this.jwtService.signAsync(payload, {expiresIn: '15m'}),
+      refresh_token: await this.jwtService.signAsync(payload, {expiresIn: '7d'}),
+    };
+  }
+
+  // In auth.service.ts
+async signInOAuth(user: SafeUser) {
+  const payload = { sub: user.id, username: user.username, role: user.globalRole };
+  return {
+    access_token: await this.jwtService.signAsync(payload),
+  };
+}
+
+async refresh(refreshToken: string): Promise<{access_token: string}> {
+   try {
+     const payload = await this.jwtService.verifyAsync<JwtPayload>(refreshToken, {secret: process.env.JWT_SECRET});
+     return {
+             access_token: await this.jwtService.signAsync(payload, {expiresIn: '15m'}),
+     }
+   } catch {
+     throw new UnauthorizedException();
+    }
+ }
+
+ async signUp(username: string, email: string, avatar: string, pass: string): Promise<any> {
+  const salt = await bcrypt.genSalt();
+  const hashedPassword = await bcrypt.hash(pass, salt);
+
+ 
+  const newUser = await this.usersService.create({
+    username,
+    email,
+    avatar,
+    password: hashedPassword,
+
+  });
+
+  return this.signIn(newUser.username, pass); 
+}
+
+async validateOAuthUser(data: {email: string, googleId: string, username:string}): Promise <SafeUser>{
+   let user = await this.usersService.findByGoogleId(data.googleId);
+   if (user) return user;
+
+   user = await this.usersService.findByEmail(data.email);
+   if (user) {
+     return this.usersService.updateGoogleId(user.id, data.googleId);
+   }
+
+    return this.usersService.createOAuthUser({
+      email: data.email,
+      googleId: data.googleId,
+      username: data.email.split('@')[0],
+
+    });
+  }
 }
 </file>
 
@@ -2601,13 +3492,48 @@ import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { NotificationsGateway } from 'src/notifications/notifications.gateway';
 
 @Injectable()
 export class ProjectsService {
   constructor(
     private prisma: PrismaService,
     private readonly notificationsService: NotificationsService,
+    private readonly notificationsGateway: NotificationsGateway,
   ) {}
+
+  async createmessage(projectId: number, userId: number, content: string) {
+  const newMessage = await this.prisma.message.create({
+    data: {
+      content: content,
+      projectId: projectId, 
+      userId: userId,
+    },
+    include: {
+      user: {
+        select: { username: true, avatar: true }
+      }
+    }
+  });
+  this.notificationsGateway.sendProjectNotification(projectId, {
+    ...newMessage,
+    projectId: projectId 
+  });
+
+  return newMessage;
+}
+
+  async getProjectMessages(projectId: number) {
+    return this.prisma.message.findMany({
+      where: { projectId: projectId },
+      orderBy: { Time : 'asc' },
+      include: {
+        user: {
+          select: { username: true, avatar: true }
+        }
+      }
+    });
+  }
 
   async create(createProjectDto: CreateProjectDto, userId: number, deadline: Date | null) {
     const newProject = await this.prisma.project.create({
@@ -2694,251 +3620,32 @@ export class ProjectsService {
     });
   }
 
-  async remove(id: number) {
-    return this.prisma.project.delete({
-      where: { id }
+  async remove(id: number, currentUserId: number) {
+    const project = await this.prisma.project.findUnique({
+        where: { id: id },
+        include: { members: true }
     });
-  }
-}
-</file>
-
-<file path="srcs/backend/src/tasks/dto/create-task.dto.ts">
-import { TaskStatus } from '@prisma/client';
-import { IsString, IsNotEmpty, IsInt, IsOptional, IsArray, IsDateString, IsEnum  } from 'class-validator';
-
-export class CreateTaskDto {
-  @IsString()
-  @IsNotEmpty()
-  title: string;
-
-  @IsString()
-  @IsOptional()
-  description?: string;
-
-  @IsInt()
-  @IsNotEmpty()
-  projectId: number;
-
-@IsOptional()
-  @IsEnum(TaskStatus) 
-  status?: TaskStatus;
-
-  @IsOptional()
-  @IsDateString()
-  deadline?: string;
-
-  @IsArray()
-  @IsOptional()
-  @IsInt({ each: true })
-  assigneeIds?: number[]; 
-}
-</file>
-
-<file path="docker-compose.yml">
-services:
-  postgres:
-    image: postgres:17
-    container_name: transcendence_postgres
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  backend:
-    build: ./srcs/backend
-    container_name: transcendence_backend
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      TZ: Europe/Brussels
-      DATABASE_URL: ${DATABASE_URL}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
-      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL}
-      JWT_SECRET: ${JWT_SECRET}
-      SMTP_HOST: ${SMTP_HOST}
-      SMTP_PORT: ${SMTP_PORT}
-      SMTP_USER: ${SMTP_USER}
-      SMTP_PASS: ${SMTP_PASS}
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./srcs/backend:/app
-      - /app/node_modules
-    command: sh -c "npx prisma migrate deploy && npm run start:dev"
-
-volumes:
-  postgres_data:
-</file>
-
-<file path="srcs/backend/src/auth/auth.service.ts">
-import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { UsersService } from '../users/users.service'
-import * as bcrypt from 'bcrypt';
-import { JwtService } from '@nestjs/jwt';
-import { User } from '@prisma/client';
-import { GlobalRole } from '@prisma/client';
-
-interface JwtPayload {
-  sub: number;
-  username: string;
-}
-
-export type SafeUser = {
-  id: number;
-  username: string;
-  email: string | null;
-  globalRole: GlobalRole;
-  avatar: string | null;
-  createdAt: Date;
-};
-
-@Injectable()
-export class AuthService {
-  constructor(
-    private usersService: UsersService, 
-    private jwtService: JwtService
-  ){}
-
-  async signIn(username: string, pass:string): Promise<{access_token: string, refresh_token: string}> {
-    const user = await this.usersService.findByName(username);
-    if (!user) {
-      throw new UnauthorizedException();
-    }
-    if (!user.password) {
-      throw new UnauthorizedException('Please sign in with Google');
-}
-    const isPasswordValid = await bcrypt.compare(pass, user.password);
-    if (!isPasswordValid) {
-      throw new UnauthorizedException();
-    }
-    const payload = { sub: user.id, username: user.username, role: user.globalRole };
-    return {
-      access_token: await this.jwtService.signAsync(payload, {expiresIn: '15m'}),
-      refresh_token: await this.jwtService.signAsync(payload, {expiresIn: '7d'}),
-    };
-  }
-
-  // In auth.service.ts
-async signInOAuth(user: SafeUser) {
-  const payload = { sub: user.id, username: user.username, role: user.globalRole };
-  return {
-    access_token: await this.jwtService.signAsync(payload),
-  };
-}
-
-async refresh(refreshToken: string): Promise<{access_token: string}> {
-   try {
-     const payload = await this.jwtService.verifyAsync<JwtPayload>(refreshToken, {secret: process.env.JWT_SECRET});
-     return {
-             access_token: await this.jwtService.signAsync(payload, {expiresIn: '15m'}),
-     }
-   } catch {
-     throw new UnauthorizedException();
-    }
- }
-
- async signUp(username: string, email: string, pass: string): Promise<any> {
-  const salt = await bcrypt.genSalt();
-  const hashedPassword = await bcrypt.hash(pass, salt);
-
- 
-  const newUser = await this.usersService.create({
-    username,
-    email,
-    password: hashedPassword,
-  });
-
-  return this.signIn(newUser.username, pass); 
-}
-
-async validateOAuthUser(data: {email: string, googleId: string, username:string}): Promise <SafeUser>{
-   let user = await this.usersService.findByGoogleId(data.googleId);
-   if (user) return user;
-
-   user = await this.usersService.findByEmail(data.email);
-   if (user) {
-     return this.usersService.updateGoogleId(user.id, data.googleId);
-   }
-
-    return this.usersService.createOAuthUser({
-      email: data.email,
-      googleId: data.googleId,
-      username: data.email.split('@')[0],
-
+        if (!project) {
+            throw new Error('Project not found'); 
+          }
+    await this.prisma.projectMember.delete({
+        where: { id: id },
     });
-  }
-}
-</file>
-
-<file path="srcs/backend/src/tasks/tasks.controller.ts">
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
-import { TasksService } from './tasks.service';
-import { CreateTaskDto } from './dto/create-task.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { ApiBearerAuth } from '@nestjs/swagger';
-import { Request } from '@nestjs/common';
-import { Roles } from 'src/auth/decorators/roles.decorator';
-import { RolesGuard } from 'src/auth/guards/roles.guard';
-import { ProjectLeaderGuard } from 'src/projects/project-leader.guard';
-
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
-@Controller('tasks')
-export class TasksController {
-  constructor(private readonly tasksService: TasksService) {}
-
-  @Post()
-  create(@Body() createTaskDto: CreateTaskDto) {
-    const deadlineDate = createTaskDto.deadline ? new Date(createTaskDto.deadline) : null;
-    return this.tasksService.create(createTaskDto, deadlineDate);
-  }
-@ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
-  @Get('all')
-  findAllAdmins() {
-    return this.tasksService.findAll(); 
-  }
-
-@ApiBearerAuth()
-  @UseGuards(JwtAuthGuard) 
-  @Get()
-  findMyTasks(@Request() req) {
-    return this.tasksService.findMyTasks(req.user.sub);
-  }
-
-
-  @Get()
-  findAll(@Request() req) {
-    return this.tasksService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.tasksService.findOne(+id);
-  }
-
-  @UseGuards(RolesGuard, ProjectLeaderGuard)
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.tasksService.remove(+id);
+        const target = project.members.map(member => member.userId).filter(userid => userid !== currentUserId);
+        target.forEach(async userId => {
+            this.notificationsGateway.server.to(`user_${userId}`).emit('new_notification', {
+                type: 'PROJECT_DELETED',
+                projectId: id,
+                message: `The project ${project.name} has been deleted.`,
+            });
+        });
+        return { message: 'Project successfully deleted' };
   }
 }
 </file>
 
 <file path="srcs/backend/src/users/dto/create-user.dto.ts">
-import { IsString, MinLength, IsEmail
+import { IsString, MinLength, IsEmail, IsOptional
     
  } from 'class-validator';
 
@@ -2953,11 +3660,23 @@ export class CreateUserDto {
     @IsString()
     @MinLength(8)
     password: string;
+
+    @IsString()
+    @IsOptional()
+    avatar: string;
 }
 
 export class UpdateUserDto{
     username?: string;
     avatar?: string;
+}
+</file>
+
+<file path="package.json">
+{
+  "dependencies": {
+    "typescript": "^5.9.3"
+  }
 }
 </file>
 
@@ -2993,7 +3712,6 @@ export class UsersController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN', 'USER')
-  @Delete(':id')
   @Get()
   findAll() {
     return this.usersService.findAll();
@@ -3003,11 +3721,13 @@ export class UsersController {
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(+id);
   }
-
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto) {
-    return this.usersService.update(+id, updateUserDto);
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Patch('me')
+  update( @Request() req, @Body() updateUserDto: UpdateUserDto,) {
+    return this.usersService.update(req.user.id, updateUserDto);
   }
+  
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN') // only admins can delete users
@@ -3015,7 +3735,6 @@ export class UsersController {
   remove(@Param('id') id: string) {
     return this.usersService.remove(+id);
   }
-
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard) // <-- Check if the user is logged in first, THEN check their role
@@ -3034,112 +3753,6 @@ export class UsersController {
     // to the service (e.g., to prevent an admin from demoting themselves).
     return this.usersService.demote(username, req.user.username);
   }
-}
-</file>
-
-<file path="package.json">
-{
-  "dependencies": {
-    "typescript": "^5.9.3"
-  }
-}
-</file>
-
-<file path="srcs/backend/prisma/schema.prisma">
-generator client {
-  provider = "prisma-client-js"
-}
-
-datasource db {
-  provider = "postgresql"
-}
-
-enum GlobalRole {
-  USER
-  ADMIN
-}
-
-enum ProjectRole {
-  GUEST
-  MEMBER
-  PROJECT_LEADER
-}
-
-enum TaskStatus {
-  TODO
-  IN_PROGRESS
-  DONE
-}
-
-enum ProjectStatus {
-  PLANNING
-  ACTIVE
-  COMPLETED
-}
-
-model User {
-  id                 Int             @id @default(autoincrement())
-  username           String          @unique
-  email              String         @unique
-  password           String?
-  googleId           String?         @unique
-  intraId            String?         @unique
-  githubId           String?         @unique
-  globalRole         GlobalRole      @default(USER)
-  avatar             String?
-  createdAt          DateTime        @default(now())
-  updatedAt          DateTime        @updatedAt
-  projectMemberships ProjectMember[]
-  tasks              Task[]          @relation("TaskAssignees")
-  notifications Notification[]
-}
-
-model Project {
-  id          Int             @id @default(autoincrement())
-  name        String
-  description String?
-  deadline    DateTime?
-  deadlineNotified Boolean   @default(false)
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
-  status      ProjectStatus   @default(PLANNING)
-  members     ProjectMember[]
-  tasks       Task[]
-}
-
-model ProjectMember {
-  id        Int         @id @default(autoincrement())
-  role      ProjectRole @default(MEMBER)
-  joinedAt  DateTime    @default(now())
-  userId    Int
-  projectId Int
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  @@unique([userId, projectId])
-}
-
-model Task {
-  id          Int        @id @default(autoincrement())
-  title       String
-  description String?
-  status      TaskStatus @default(TODO)
-  deadline    DateTime?
-  deadlineNotified Boolean   @default(false)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  projectId   Int
-  project     Project    @relation(fields: [projectId], references: [id])
-  assignees   User[]     @relation("TaskAssignees")
-}
-
-model Notification {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type      String
-  message   String
-  isRead    Boolean  @default(false)
-  createdAt DateTime @default(now())
 }
 </file>
 
@@ -3208,7 +3821,8 @@ export class UsersService {
 
   async findOne(id: number) {
     return this.prisma.user.findUnique({
-      where: { id }
+      where: { id },
+      select: userSelect,
     });
   }
 
@@ -3230,9 +3844,11 @@ export class UsersService {
   }
 
   async update(id: number, updateUserDto: UpdateUserDto) {
+    const { username, password, avatar, email} = updateUserDto;
+    const hashedpassword = password ? await bcrypt.hash(password, 10) : undefined;
     return this.prisma.user.update({
       where: { id },
-      data: updateUserDto,
+      data: { username, password: hashedpassword, avatar, email} ,
       select: userSelect,
     });
   }
@@ -3357,6 +3973,7 @@ export class UsersService {
     "@types/bcrypt": "^6.0.0",
     "@types/express": "^5.0.0",
     "@types/jest": "^30.0.0",
+    "@types/multer": "^2.1.0",
     "@types/node": "^22.10.7",
     "@types/nodemailer": "^8.0.0",
     "@types/passport-google-oauth20": "^2.0.17",
@@ -3399,6 +4016,156 @@ export class UsersService {
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
   }
+}
+</file>
+
+<file path="srcs/backend/prisma/schema.prisma">
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum GlobalRole {
+  USER
+  ADMIN
+}
+
+enum ProjectRole {
+  GUEST
+  MEMBER
+  PROJECT_LEADER
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  PENDING_EVALUATION
+  DONE
+}
+
+enum ProjectStatus {
+  PLANNING
+  ACTIVE
+  COMPLETED
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+model User {
+  id                 Int             @id @default(autoincrement())
+  username           String          @unique
+  email              String         @unique
+  password           String?
+  googleId           String?         @unique
+  intraId            String?         @unique
+  githubId           String?         @unique
+  globalRole         GlobalRole      @default(USER)
+  avatar             String?
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+  sentRequests       Friendship[]    @relation("SentRequests")
+  receivedRequests   Friendship[]    @relation("ReceivedRequests")
+  projectMemberships ProjectMember[]
+  tasks              Task[]          @relation("TaskAssignees")
+  notifications Notification[]
+  messages           Message[]
+  comments            Comment[]
+}
+
+model Project {
+  id          Int             @id @default(autoincrement())
+  name        String
+  description String?
+  deadline    DateTime?
+  deadlineNotified Boolean   @default(false)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  status      ProjectStatus   @default(PLANNING)
+  members     ProjectMember[]
+  tasks       Task[]
+  messages  Message[]
+}
+
+model ProjectMember {
+  id        Int         @id @default(autoincrement())
+  role      ProjectRole @default(MEMBER)
+  joinedAt  DateTime    @default(now())
+  userId    Int
+  projectId Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  @@unique([userId, projectId])
+}
+
+model Task {
+  id          Int        @id @default(autoincrement())
+  title       String
+  description String?
+  status      TaskStatus @default(TODO)
+  deadline    DateTime?
+  deadlineNotified Boolean   @default(false)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  projectId   Int
+  comments Comment[]
+  project     Project    @relation(fields: [projectId], references: [id])
+  assignees   User[]     @relation("TaskAssignees")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  content   String
+  Time      DateTime @default(now())
+  userId    Int
+  projectId Int
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model Friendship {
+  id          Int              @id @default(autoincrement())
+  requesterId Int
+  addresseeId Int
+  status      FriendshipStatus @default(PENDING) // Nu is het een strakke Enum!
+  createdAt   DateTime         @default(now())
+
+  requester   User             @relation("SentRequests", fields: [requesterId], references: [id], onDelete: Cascade)
+  addressee   User             @relation("ReceivedRequests", fields: [addresseeId], references: [id], onDelete: Cascade)
+
+  @@unique([requesterId, addresseeId])
+}
+
+model Comment {
+  id         Int      @id @default(autoincrement())
+  content    String
+  attachments String[]
+  createdAt  DateTime @default(now())
+
+  userId     Int
+  taskId     Int
+
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task       Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  parentId    Int?
+  parent      Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies     Comment[] @relation("CommentReplies")
 }
 </file>
 
