@@ -131,11 +131,25 @@ export class ProjectsService {
     });
   }
 
-  async remove(id: number) {
-    return this.prisma.project.delete({
-      where: { id }
+  async remove(id: number, currentUserId: number) {
+    const project = await this.prisma.project.findUnique({
+        where: { id: id },
+        include: { members: true }
     });
+        if (!project) {
+            throw new Error('Project not found'); 
+          }
+    await this.prisma.projectMember.delete({
+        where: { id: id },
+    });
+        const target = project.members.map(member => member.userId).filter(userid => userid !== currentUserId);
+        target.forEach(async userId => {
+            this.notificationsGateway.server.to(`user_${userId}`).emit('new_notification', {
+                type: 'PROJECT_DELETED',
+                projectId: id,
+                message: `The project ${project.name} has been deleted.`,
+            });
+        });
+        return { message: 'Project successfully deleted' };
   }
-
-  
 }

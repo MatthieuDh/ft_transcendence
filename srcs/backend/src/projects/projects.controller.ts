@@ -39,8 +39,10 @@ export class ProjectsController {
 
   @UseGuards(ProjectLeaderGuard) 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.projectsService.remove(+id);
+  remove(@Param('id') id: string,
+         @Request() req) {
+    const currentUserId = req.user.sub;
+    return this.projectsService.remove(+id, currentUserId);
   }
 
   @UseGuards(ProjectLeaderGuard) 
