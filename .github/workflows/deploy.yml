@@ -18,3 +18,4 @@ jobs:
           script: |
             cd /home/sigmatm42/transcendence
             git pull origin main
+            docker compose up -d --build
