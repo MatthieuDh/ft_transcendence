@@ -17,7 +17,9 @@ services:
       retries: 5
 
   backend:
-    build: ./srcs/backend
+    build:
+      context: .
+      dockerfile: srcs/backend/Dockerfile
     container_name: transcendence_backend
     depends_on:
       postgres:
@@ -38,10 +40,11 @@ services:
     volumes:
       - ./srcs/backend:/app
       - /app/node_modules
-    command: sh -c "npx prisma migrate deploy && npm run start:dev"
+    command: sh -c "npx prisma migrate deploy --schema=./srcs/backend/prisma/schema.prisma && npm run start:dev"
   frontend:
     build:
-      context: ./srcs/frontend
+      context: .
+      dockerfile: srcs/frontend/Dockerfile
     ports:
       - "5173:5173"
     restart: unless-stopped

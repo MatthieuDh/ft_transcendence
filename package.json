@@ -1,5 +1,10 @@
 {
-  "dependencies": {
-    "typescript": "^5.9.3"
-  }
+  "name": "transcendence-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "srcs/frontend",
+    "srcs/backend",
+    "shared"
+  ]
 }

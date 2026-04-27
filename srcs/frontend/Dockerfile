@@ -3,9 +3,15 @@ FROM node:20-alpine
 WORKDIR /app
 
 COPY package*.json ./
+COPY srcs/frontend/package*.json ./srcs/frontend/
+COPY shared/package*.json ./shared/
+
 RUN npm install
 
-COPY . .
+COPY shared ./shared
+COPY srcs/frontend ./srcs/frontend
+
+WORKDIR /app/srcs/frontend
 
 RUN npm run build
 
