@@ -40,11 +40,31 @@ The content is organized as follows:
 </file_summary>
 
 <directory_structure>
+.github/
+  workflows/
+    deploy.yml
+shared/
+  srcs/
+    types/
+      authToken.ts
+      comment.ts
+      dashboard.ts
+      friend.ts
+      index.ts
+      message.ts
+      notification.ts
+      project.ts
+      task.ts
+      user.ts
+  package.json
+  tsconfig.json
 srcs/
   backend/
     prisma/
       migrations/
         20260421111338_init/
+          migration.sql
+        20260422112409_add_task_status_history/
           migration.sql
         migration_lock.toml
       schema.prisma
@@ -62,7 +82,6 @@ srcs/
         strategies/
           google.strategy.ts
           jwt.strategy.ts
-        auth.controller.spec.ts
         auth.controller.ts
         auth.module.ts
         auth.service.spec.ts
@@ -75,6 +94,15 @@ srcs/
         comments.module.ts
         comments.service.spec.ts
         comments.service.ts
+      dashboard/
+        dto/
+          dashboard-filters.dto.ts
+        dashboard.controller.ts
+        dashboard.module.ts
+        dashboard.service.ts
+      export/
+        export.module.ts
+        export.service.ts
       friends/
         friends.controller.spec.ts
         friends.controller.ts
@@ -99,8 +127,6 @@ srcs/
           create-message.dto.ts
           create-project.dto.ts
           update-project.dto.ts
-        entities/
-          project.entity.ts
         project-leader.guard.ts
         projects.controller.spec.ts
         projects.controller.ts
@@ -111,8 +137,6 @@ srcs/
         dto/
           create-task.dto.ts
           update-task.dto.ts
-        entities/
-          task.entity.ts
         tasks.controller.spec.ts
         tasks.controller.ts
         tasks.module.ts
@@ -122,10 +146,8 @@ srcs/
         dto/
           create-user.dto.ts
           update-user.dto.ts
-        users.controller.spec.ts
         users.controller.ts
         users.module.ts
-        users.service.spec.ts
         users.service.ts
       app.controller.spec.ts
       app.controller.ts
@@ -149,7 +171,32 @@ srcs/
     tsconfig.build.json
     tsconfig.json
   frontend/
+    public/
+      favicon.svg
+      icons.svg
+    src/
+      api/
+        client.ts
+        services.ts
+      assets/
+        hero.png
+        react.svg
+        vite.svg
+      App.css
+      App.tsx
+      index.css
+      main.tsx
+    .dockerignore
+    .gitignore
     Dockerfile
+    eslint.config.js
+    index.html
+    package.json
+    README.md
+    tsconfig.app.json
+    tsconfig.json
+    tsconfig.node.json
+    vite.config.ts
 .gitignore
 admin.html
 docker-compose.yml
@@ -161,6 +208,186 @@ README.md
 
 <files>
 This section contains the contents of the repository's files.
+
+<file path="shared/srcs/types/authToken.ts">
+export interface AuthToken{
+    access_token: string;
+    refresh_token?: string;
+}
+</file>
+
+<file path="shared/srcs/types/comment.ts">
+import { User } from "./user";
+import { Task } from "./task";
+
+export interface Comment{
+    user: User;
+    task: Task;
+    parrentComment?: Comment;
+    replies?: Comment[];
+    createdAt: Date;
+    attachments: string[];
+    content: string;
+}
+</file>
+
+<file path="shared/srcs/types/dashboard.ts">
+import { TaskStatus } from "./task";
+import { ProjectStatus } from "./project";
+
+
+export interface DashboardFilters {
+    from?: string;
+    to?: string;
+    memberId?: number;
+    projectStatus?: ProjectStatus;
+    taskStatus?: TaskStatus;
+}
+
+export interface DashboardMetrics{
+    totalTasks: number;
+    completedTasks: number;
+    overdueTasks: number;
+    pendingOverLimit: number;
+    averageCompletionTime: number;
+    avgTimePerStage: Record<TaskStatus, number>;
+}
+</file>
+
+<file path="shared/srcs/types/friend.ts">
+import { User } from "./user";
+
+export enum FriendshipStatus{
+    PENDING = 'PENDING',
+    REJECTED = 'REJECTED',
+    ACCEPTED = 'ACCEPTED'
+}
+
+export interface Friend{
+    friendshipId: number;
+    requester: User;
+    addressee: User;
+    status: FriendshipStatus;
+}
+
+export interface FriendUser {
+  id: number;
+  username: string;
+  avatar?: string;
+}
+
+export interface FriendRequest {
+  id: number;
+  requesterId: number;
+  addresseeId: number;
+  status: FriendshipStatus;
+  requester: { id: number; username: string; email: string };
+}
+</file>
+
+<file path="shared/srcs/types/index.ts">
+export * from './user';
+export * from './project';
+export * from './task';
+export * from './friend';
+export * from './notification';
+export * from './message';
+export * from './comment';
+export * from './dashboard';
+export * from './authToken';
+</file>
+
+<file path="shared/srcs/types/message.ts">
+import { User } from "./user";
+import { Project } from "./project";
+
+export interface Message{
+    user: User;
+    project: Project;
+    content: string;
+}
+</file>
+
+<file path="shared/srcs/types/notification.ts">
+import { User } from "./user";
+
+export interface Notification{
+    user: User;
+    message: string;
+    createdAt: Date;
+}
+</file>
+
+<file path="shared/srcs/types/project.ts">
+import { Task } from "./task";
+import { Message } from "./message";
+
+export enum ProjectStatus{
+    PLANNING = 'PLANNING',
+    ACTIVE = 'ACTIVE',
+    COMPLETED = 'COMPLETED'
+}
+
+export enum ProjectRole{
+    PROJECT_LEADER = ' PROJECT_LEADER',
+    MEMBER = 'MEMBER',
+    GUEST = 'GUEST'
+}
+
+export interface ProjectMember{
+    projectRole: ProjectRole;
+    projectId: number;
+}
+
+export interface Project{
+    name: string;
+    description?: string;
+    deadline?: Date;
+    createdAt: Date;
+    status: ProjectStatus;
+    member: ProjectMember[];
+    tasks: Task[];
+    messages: Message[];
+}
+</file>
+
+<file path="shared/srcs/types/task.ts">
+export enum TaskStatus{
+    TODO = 'TODO',
+    IN_PROGRESS = 'IN_PROGRESS',
+    PENDING_EVALUATION = 'PENDING_EVALUATION',
+    DONE = 'DONE'
+}
+
+export interface Task{
+    id: number;
+    title: string;
+    description?: string;
+    status: TaskStatus;
+    deadline?: Date;
+    createdAt: Date;
+    updatedAt: Date;
+    comments?: Comment[];
+    assignee?: {username: string}[];
+    project: {project: string};
+}
+</file>
+
+<file path="shared/srcs/types/user.ts">
+export enum GlobalRole{
+    USER = 'User',
+    ADMIN = 'ADMIN'
+}
+
+export interface User{
+    id: number;
+    username: string;
+    email: string;
+    avatar: string;
+    role: GlobalRole;
+    createdAt: Date;
+}
+</file>
 
 <file path="srcs/backend/prisma/migrations/20260421111338_init/migration.sql">
 -- CreateEnum
@@ -292,6 +519,25 @@ ALTER TABLE "_TaskAssignees" ADD CONSTRAINT "_TaskAssignees_A_fkey" FOREIGN KEY 
 ALTER TABLE "_TaskAssignees" ADD CONSTRAINT "_TaskAssignees_B_fkey" FOREIGN KEY ("B") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 </file>
 
+<file path="srcs/backend/prisma/migrations/20260422112409_add_task_status_history/migration.sql">
+-- AlterEnum
+ALTER TYPE "TaskStatus" ADD VALUE 'PENDING_EVALUATION';
+
+-- CreateTable
+CREATE TABLE "TaskStatusHistory" (
+    "id" SERIAL NOT NULL,
+    "taskId" INTEGER NOT NULL,
+    "status" "TaskStatus" NOT NULL,
+    "changedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "changedBy" INTEGER,
+
+    CONSTRAINT "TaskStatusHistory_pkey" PRIMARY KEY ("id")
+);
+
+-- AddForeignKey
+ALTER TABLE "TaskStatusHistory" ADD CONSTRAINT "TaskStatusHistory_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "Task"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+</file>
+
 <file path="srcs/backend/prisma/migrations/migration_lock.toml">
 # Please do not edit this file manually
 # It should be added in your version-control system (e.g., Git)
@@ -393,29 +639,6 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google'){
 }
 </file>
 
-<file path="srcs/backend/src/auth/auth.controller.spec.ts">
-import { Test, TestingModule } from '@nestjs/testing';
-import { AuthController } from './auth.controller';
-import { AuthService } from './auth.service';
-
-describe('AuthController', () => {
-  let controller: AuthController;
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      controllers: [AuthController],
-      providers: [AuthService],
-    }).compile();
-
-    controller = module.get<AuthController>(AuthController);
-  });
-
-  it('should be defined', () => {
-    expect(controller).toBeDefined();
-  });
-});
-</file>
-
 <file path="srcs/backend/src/auth/auth.service.spec.ts">
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthService } from './auth.service';
@@ -435,21 +658,6 @@ describe('AuthService', () => {
     expect(service).toBeDefined();
   });
 });
-</file>
-
-<file path="srcs/backend/src/comments/dto/create-command.dto.ts">
-import { IsString, IsNotEmpty } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
-
-export class CreateCommentDto {
-    @IsString()
-    content: string;
-
-    @ApiProperty({ description: 'the text of the comment', example: 'here is the document you needed.' })
-    @IsString()
-    @IsNotEmpty()
-    parentId?: number;
-}
 </file>
 
 <file path="srcs/backend/src/comments/comments.controller.spec.ts">
@@ -561,6 +769,137 @@ describe('CommentsService', () => {
 });
 </file>
 
+<file path="srcs/backend/src/dashboard/dto/dashboard-filters.dto.ts">
+import { IsOptional, IsDateString, IsInt, IsEnum, IsString } from "class-validator";
+import { TaskStatus, ProjectStatus } from "@prisma/client";
+import { ApiPropertyOptional } from "@nestjs/swagger";
+import { Type } from "class-transformer";
+
+export class DashboardFiltersDto {
+    @ApiPropertyOptional()
+    @IsOptional()
+    @IsDateString()
+    from?: string;
+
+    @ApiPropertyOptional()
+    @IsOptional()
+    @IsDateString()
+    to?: string;
+
+    @ApiPropertyOptional()
+    @IsOptional()
+    @Type(() => Number)
+    @IsInt()
+    memberId?: number;
+
+    @ApiPropertyOptional({ enum: ProjectStatus })
+    @IsOptional()
+    @IsEnum(ProjectStatus)
+    projectStatus?: ProjectStatus;
+
+    @ApiPropertyOptional({ enum: TaskStatus })
+    @IsOptional()
+    @IsEnum(TaskStatus)
+    taskStatus?: TaskStatus;
+}
+</file>
+
+<file path="srcs/backend/src/export/export.module.ts">
+import { Module } from '@nestjs/common';
+import { ExportService } from './export.service';
+
+@Module({
+  providers: [ExportService],
+  exports: [ExportService],
+})
+export class ExportModule {}
+</file>
+
+<file path="srcs/backend/src/export/export.service.ts">
+import { Injectable } from '@nestjs/common';
+import { stringify } from 'csv-stringify/sync';
+import PdfPrinter from 'pdfmake';
+import { TDocumentDefinitions } from 'pdfmake/interfaces';
+
+@Injectable()
+export class ExportService {
+
+    exportCsv(data: any): Buffer{
+        const porjectRows = data.projectHealthList.map((p: any) => ({
+            'Project Name': p.name,
+            'Status': p.status,
+            'Risk': p.risk,
+            'Overdue Tasks': p.overdue,
+            'Pending Too Long': p.pendingLong,
+        }));
+
+        const csv = stringify(porjectRows, { header: true });
+        return Buffer.from(csv);
+    }
+
+    exportPdf(data: any): Promise<Buffer>{
+        const fonts = {
+            Helvetica : {
+                normal: 'Helvetica',
+                bold: 'Helvitca-Bold',
+                italics: 'Helvetica-Oblique',
+                bolditalics: 'Helvetica-BoldOblique'
+            },
+        };
+
+        const printer = new (PdfPrinter as any)(fonts);
+        const docDefinition: TDocumentDefinitions = {
+            defaultStyle: {font: 'Helvetica'},
+            content: [
+                { text: 'Dashboard Report', style: 'header' },
+                { text: '\Overall Metrics', style: 'subheader' },
+                {
+                    ul:[
+                        'Total Projects: ${data.totalProjects}',
+                        'Completed Projects: ${data.completedProjects}',
+                        'Total Tasks: ${data.totalTasks}',
+                        'Overdue Tasks: ${data.overdueTasks}',
+                        'Pending over Limit: ${data.pendingOverLimit}',
+                    ],
+                },
+                { text: 'Average Time Per Stage (days)', style: 'subheader'},
+                {
+                    ul: Object.entries(data.avgTimePerStage).map(([stage, days]) => '${stage}: ${says}d'),
+                },
+                {text: '\Project Health', style: 'subheader'},
+                {
+                    table: {
+                        headerRows: 1,
+                        widths: ['*', 'auto', 'auto', 'auto', 'auto'],
+                        body: [
+                            ['Project', 'Status', 'Risk', 'Overdue', 'Pending Too Long'],
+                            ...data.projectHealthList.map((p: any) => [
+                                p.name, p.status, p.risk, p.overdue, p.pendingLong,
+                            ]),
+                        ],
+                    },
+                },
+            ],
+            styles:{
+                header: { fontSize: 18, bold: true},
+                subheader: { fontSize: 14, bold: true},
+            },
+        };
+
+        const pdfDoc = printer.createPdfKitDocument(docDefinition);
+
+        return new Promise((resolve, reject) =>{
+            const chunks: Buffer[] = [];
+            pdfDoc.on('data', (chunk: Buffer) => chunks.push(chunk));
+            pdfDoc.on('end', () => resolve(Buffer.concat(chunks)));
+            pdfDoc.on('error', reject);
+            pdfDoc.end();
+        });
+    }
+
+}
+</file>
+
 <file path="srcs/backend/src/friends/friends.controller.spec.ts">
 import { Test, TestingModule } from '@nestjs/testing';
 import { FriendsController } from './friends.controller';
@@ -580,50 +919,6 @@ describe('FriendsController', () => {
     expect(controller).toBeDefined();
   });
 });
-</file>
-
-<file path="srcs/backend/src/friends/friends.controller.ts">
-import { Controller, Post, Patch, Delete, Get, Param, ParseIntPipe, UseGuards, Request } from '@nestjs/common';
-import { FriendsService } from './friends.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { ApiBearerAuth } from '@nestjs/swagger';
-
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
-@Controller('friends')
-export class FriendsController {
-  constructor(private readonly friendsService: FriendsService) {}
-
-  @Get()
-  getMyFriends(@Request() req) {
-    return this.friendsService.getMyFriends(req.user.sub);
-  }
-
-  @Get('requests')
-  getPendingRequests(@Request() req) {
-    return this.friendsService.getFriendRequests(req.user.sub);
-  }
-
-  @Post('request/:userId')
-  sendRequest(@Request() req, @Param('userId', ParseIntPipe) targetUserId: number) {
-    return this.friendsService.sendrequest(req.user.sub, targetUserId);
-  }
-
-  @Patch('accept/:friendshipId')
-  acceptRequest(@Request() req, @Param('friendshipId', ParseIntPipe) friendshipId: number) {
-    return this.friendsService.acceptrequest(req.user.sub, friendshipId);
-  }
-
-  @Patch('reject/:friendshipId')
-  rejectRequest(@Request() req, @Param('friendshipId', ParseIntPipe) friendshipId: number) {
-    return this.friendsService.rejectrequest(req.user.sub, friendshipId);
-  }
-
-  @Delete('remove/:friendshipId')
-  removeFriendship(@Request() req, @Param('friendshipId', ParseIntPipe) friendshipId: number) {
-    return this.friendsService.removefriendship(req.user.sub, friendshipId);
-  }
-}
 </file>
 
 <file path="srcs/backend/src/friends/friends.module.ts">
@@ -888,32 +1183,11 @@ import { PrismaService } from "./prisma.service";
 export class PrismaModule {}
 </file>
 
-<file path="srcs/backend/src/projects/dto/create-message.dto.ts">
-import { IsInt, IsNotEmpty, IsString } from 'class-validator';
-import { ApiProperty } from '@nestjs/swagger';
-
-export class CreateMessageDto {
-  @ApiProperty({ description: 'The ID of the user sending the message', example: 1 })
-  @IsInt()
-  @IsNotEmpty()
-  userId: number;
-
-  @ApiProperty({ description: 'The content of the chat message', example: 'Hello team!' })
-  @IsString()
-  @IsNotEmpty()
-  content: string;
-}
-</file>
-
 <file path="srcs/backend/src/projects/dto/update-project.dto.ts">
 import { PartialType } from '@nestjs/swagger';
 import { CreateProjectDto } from './create-project.dto';
 
 export class UpdateProjectDto extends PartialType(CreateProjectDto) {}
-</file>
-
-<file path="srcs/backend/src/projects/entities/project.entity.ts">
-export class Project {}
 </file>
 
 <file path="srcs/backend/src/projects/projects.controller.spec.ts">
@@ -967,10 +1241,6 @@ import { CreateTaskDto } from './create-task.dto';
 export class UpdateTaskDto extends PartialType(CreateTaskDto) {}
 </file>
 
-<file path="srcs/backend/src/tasks/entities/task.entity.ts">
-export class Task {}
-</file>
-
 <file path="srcs/backend/src/tasks/tasks.controller.spec.ts">
 import { Test, TestingModule } from '@nestjs/testing';
 import { TasksController } from './tasks.controller';
@@ -1007,50 +1277,6 @@ describe('TasksService', () => {
     }).compile();
 
     service = module.get<TasksService>(TasksService);
-  });
-
-  it('should be defined', () => {
-    expect(service).toBeDefined();
-  });
-});
-</file>
-
-<file path="srcs/backend/src/users/users.controller.spec.ts">
-import { Test, TestingModule } from '@nestjs/testing';
-import { UsersController } from './users.controller';
-import { UsersService } from './users.service';
-
-describe('UsersController', () => {
-  let controller: UsersController;
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      controllers: [UsersController],
-      providers: [UsersService],
-    }).compile();
-
-    controller = module.get<UsersController>(UsersController);
-  });
-
-  it('should be defined', () => {
-    expect(controller).toBeDefined();
-  });
-});
-</file>
-
-<file path="srcs/backend/src/users/users.service.spec.ts">
-import { Test, TestingModule } from '@nestjs/testing';
-import { UsersService } from './users.service';
-
-describe('UsersService', () => {
-  let service: UsersService;
-
-  beforeEach(async () => {
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [UsersService],
-    }).compile();
-
-    service = module.get<UsersService>(UsersService);
   });
 
   it('should be defined', () => {
@@ -1473,8 +1699,708 @@ Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
 }
 </file>
 
-<file path="srcs/frontend/Dockerfile">
+<file path="srcs/frontend/public/favicon.svg">
+<svg xmlns="http://www.w3.org/2000/svg" width="48" height="46" fill="none" viewBox="0 0 48 46"><path fill="#863bff" d="M25.946 44.938c-.664.845-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.287c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.497 0-3.578-1.842-3.578H1.237c-.92 0-1.456-1.04-.92-1.788L10.013.474c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.579 1.842 3.579h11.377c.943 0 1.473 1.088.89 1.83L25.947 44.94z" style="fill:#863bff;fill:color(display-p3 .5252 .23 1);fill-opacity:1"/><mask id="a" width="48" height="46" x="0" y="0" maskUnits="userSpaceOnUse" style="mask-type:alpha"><path fill="#000" d="M25.842 44.938c-.664.844-2.021.375-2.021-.698V33.937a2.26 2.26 0 0 0-2.262-2.262H10.183c-.92 0-1.456-1.04-.92-1.788l7.48-10.471c1.07-1.498 0-3.579-1.842-3.579H1.133c-.92 0-1.456-1.04-.92-1.787L9.91.473c.214-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.471c-1.07 1.498 0 3.578 1.842 3.578h11.377c.943 0 1.473 1.088.89 1.832L25.843 44.94z" style="fill:#000;fill-opacity:1"/></mask><g mask="url(#a)"><g filter="url(#b)"><ellipse cx="5.508" cy="14.704" fill="#ede6ff" rx="5.508" ry="14.704" style="fill:#ede6ff;fill:color(display-p3 .9275 .9033 1);fill-opacity:1" transform="matrix(.00324 1 1 -.00324 -4.47 31.516)"/></g><g filter="url(#c)"><ellipse cx="10.399" cy="29.851" fill="#ede6ff" rx="10.399" ry="29.851" style="fill:#ede6ff;fill:color(display-p3 .9275 .9033 1);fill-opacity:1" transform="matrix(.00324 1 1 -.00324 -39.328 7.883)"/></g><g filter="url(#d)"><ellipse cx="5.508" cy="30.487" fill="#7e14ff" rx="5.508" ry="30.487" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.814 -25.913 -14.639)scale(1 -1)"/></g><g filter="url(#e)"><ellipse cx="5.508" cy="30.599" fill="#7e14ff" rx="5.508" ry="30.599" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.814 -32.644 -3.334)scale(1 -1)"/></g><g filter="url(#f)"><ellipse cx="5.508" cy="30.599" fill="#7e14ff" rx="5.508" ry="30.599" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="matrix(.00324 1 1 -.00324 -34.34 30.47)"/></g><g filter="url(#g)"><ellipse cx="14.072" cy="22.078" fill="#ede6ff" rx="14.072" ry="22.078" style="fill:#ede6ff;fill:color(display-p3 .9275 .9033 1);fill-opacity:1" transform="rotate(93.35 24.506 48.493)scale(-1 1)"/></g><g filter="url(#h)"><ellipse cx="3.47" cy="21.501" fill="#7e14ff" rx="3.47" ry="21.501" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.009 28.708 47.59)scale(-1 1)"/></g><g filter="url(#i)"><ellipse cx="3.47" cy="21.501" fill="#7e14ff" rx="3.47" ry="21.501" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(89.009 28.708 47.59)scale(-1 1)"/></g><g filter="url(#j)"><ellipse cx=".387" cy="8.972" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(39.51 .387 8.972)"/></g><g filter="url(#k)"><ellipse cx="47.523" cy="-6.092" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 47.523 -6.092)"/></g><g filter="url(#l)"><ellipse cx="41.412" cy="6.333" fill="#47bfff" rx="5.971" ry="9.665" style="fill:#47bfff;fill:color(display-p3 .2799 .748 1);fill-opacity:1" transform="rotate(37.892 41.412 6.333)"/></g><g filter="url(#m)"><ellipse cx="-1.879" cy="38.332" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 -1.88 38.332)"/></g><g filter="url(#n)"><ellipse cx="-1.879" cy="38.332" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 -1.88 38.332)"/></g><g filter="url(#o)"><ellipse cx="35.651" cy="29.907" fill="#7e14ff" rx="4.407" ry="29.108" style="fill:#7e14ff;fill:color(display-p3 .4922 .0767 1);fill-opacity:1" transform="rotate(37.892 35.651 29.907)"/></g><g filter="url(#p)"><ellipse cx="38.418" cy="32.4" fill="#47bfff" rx="5.971" ry="15.297" style="fill:#47bfff;fill:color(display-p3 .2799 .748 1);fill-opacity:1" transform="rotate(37.892 38.418 32.4)"/></g></g><defs><filter id="b" width="60.045" height="41.654" x="-19.77" y="16.149" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="7.659"/></filter><filter id="c" width="90.34" height="51.437" x="-54.613" y="-7.533" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="7.659"/></filter><filter id="d" width="79.355" height="29.4" x="-49.64" y="2.03" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="e" width="79.579" height="29.4" x="-45.045" y="20.029" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="f" width="79.579" height="29.4" x="-43.513" y="21.178" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="g" width="74.749" height="58.852" x="15.756" y="-17.901" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="7.659"/></filter><filter id="h" width="61.377" height="25.362" x="23.548" y="2.284" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="i" width="61.377" height="25.362" x="23.548" y="2.284" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="j" width="56.045" height="63.649" x="-27.636" y="-22.853" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="k" width="54.814" height="64.646" x="20.116" y="-38.415" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="l" width="33.541" height="35.313" x="24.641" y="-11.323" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="m" width="54.814" height="64.646" x="-29.286" y="6.009" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="n" width="54.814" height="64.646" x="-29.286" y="6.009" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="o" width="54.814" height="64.646" x="8.244" y="-2.416" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter><filter id="p" width="39.409" height="43.623" x="18.713" y="10.588" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17158" stdDeviation="4.596"/></filter></defs></svg>
+</file>
 
+<file path="srcs/frontend/public/icons.svg">
+<svg xmlns="http://www.w3.org/2000/svg">
+  <symbol id="bluesky-icon" viewBox="0 0 16 17">
+    <g clip-path="url(#bluesky-clip)"><path fill="#08060d" d="M7.75 7.735c-.693-1.348-2.58-3.86-4.334-5.097-1.68-1.187-2.32-.981-2.74-.79C.188 2.065.1 2.812.1 3.251s.241 3.602.398 4.13c.52 1.744 2.367 2.333 4.07 2.145-2.495.37-4.71 1.278-1.805 4.512 3.196 3.309 4.38-.71 4.987-2.746.608 2.036 1.307 5.91 4.93 2.746 2.72-2.746.747-4.143-1.747-4.512 1.702.189 3.55-.4 4.07-2.145.156-.528.397-3.691.397-4.13s-.088-1.186-.575-1.406c-.42-.19-1.06-.395-2.741.79-1.755 1.24-3.64 3.752-4.334 5.099"/></g>
+    <defs><clipPath id="bluesky-clip"><path fill="#fff" d="M.1.85h15.3v15.3H.1z"/></clipPath></defs>
+  </symbol>
+  <symbol id="discord-icon" viewBox="0 0 20 19">
+    <path fill="#08060d" d="M16.224 3.768a14.5 14.5 0 0 0-3.67-1.153c-.158.286-.343.67-.47.976a13.5 13.5 0 0 0-4.067 0c-.128-.306-.317-.69-.476-.976A14.4 14.4 0 0 0 3.868 3.77C1.546 7.28.916 10.703 1.231 14.077a14.7 14.7 0 0 0 4.5 2.306q.545-.748.965-1.587a9.5 9.5 0 0 1-1.518-.74q.191-.14.372-.293c2.927 1.369 6.107 1.369 8.999 0q.183.152.372.294-.723.437-1.52.74.418.838.963 1.588a14.6 14.6 0 0 0 4.504-2.308c.37-3.911-.63-7.302-2.644-10.309m-9.13 8.234c-.878 0-1.599-.82-1.599-1.82 0-.998.705-1.82 1.6-1.82.894 0 1.614.82 1.599 1.82.001 1-.705 1.82-1.6 1.82m5.91 0c-.878 0-1.599-.82-1.599-1.82 0-.998.705-1.82 1.6-1.82.893 0 1.614.82 1.599 1.82 0 1-.706 1.82-1.6 1.82"/>
+  </symbol>
+  <symbol id="documentation-icon" viewBox="0 0 21 20">
+    <path fill="none" stroke="#aa3bff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.35" d="m15.5 13.333 1.533 1.322c.645.555.967.833.967 1.178s-.322.623-.967 1.179L15.5 18.333m-3.333-5-1.534 1.322c-.644.555-.966.833-.966 1.178s.322.623.966 1.179l1.534 1.321"/>
+    <path fill="none" stroke="#aa3bff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.35" d="M17.167 10.836v-4.32c0-1.41 0-2.117-.224-2.68-.359-.906-1.118-1.621-2.08-1.96-.599-.21-1.349-.21-2.848-.21-2.623 0-3.935 0-4.983.369-1.684.591-3.013 1.842-3.641 3.428C3 6.449 3 7.684 3 10.154v2.122c0 2.558 0 3.838.706 4.726q.306.383.713.671c.76.536 1.79.64 3.581.66"/>
+    <path fill="none" stroke="#aa3bff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.35" d="M3 10a2.78 2.78 0 0 1 2.778-2.778c.555 0 1.209.097 1.748-.047.48-.129.854-.503.982-.982.145-.54.048-1.194.048-1.749a2.78 2.78 0 0 1 2.777-2.777"/>
+  </symbol>
+  <symbol id="github-icon" viewBox="0 0 19 19">
+    <path fill="#08060d" fill-rule="evenodd" d="M9.356 1.85C5.05 1.85 1.57 5.356 1.57 9.694a7.84 7.84 0 0 0 5.324 7.44c.387.079.528-.168.528-.376 0-.182-.013-.805-.013-1.454-2.165.467-2.616-.935-2.616-.935-.349-.91-.864-1.143-.864-1.143-.71-.48.051-.48.051-.48.787.051 1.2.805 1.2.805.695 1.194 1.817.857 2.268.649.064-.507.27-.857.49-1.052-1.728-.182-3.545-.857-3.545-3.87 0-.857.31-1.558.8-2.104-.078-.195-.349-1 .077-2.078 0 0 .657-.208 2.14.805a7.5 7.5 0 0 1 1.946-.26c.657 0 1.328.092 1.946.26 1.483-1.013 2.14-.805 2.14-.805.426 1.078.155 1.883.078 2.078.502.546.799 1.247.799 2.104 0 3.013-1.818 3.675-3.558 3.87.284.247.528.714.528 1.454 0 1.052-.012 1.896-.012 2.156 0 .208.142.455.528.377a7.84 7.84 0 0 0 5.324-7.441c.013-4.338-3.48-7.844-7.773-7.844" clip-rule="evenodd"/>
+  </symbol>
+  <symbol id="social-icon" viewBox="0 0 20 20">
+    <path fill="none" stroke="#aa3bff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.35" d="M12.5 6.667a4.167 4.167 0 1 0-8.334 0 4.167 4.167 0 0 0 8.334 0"/>
+    <path fill="none" stroke="#aa3bff" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.35" d="M2.5 16.667a5.833 5.833 0 0 1 8.75-5.053m3.837.474.513 1.035c.07.144.257.282.414.309l.93.155c.596.1.736.536.307.965l-.723.73a.64.64 0 0 0-.152.531l.207.903c.164.715-.213.991-.84.618l-.872-.52a.63.63 0 0 0-.577 0l-.872.52c-.624.373-1.003.094-.84-.618l.207-.903a.64.64 0 0 0-.152-.532l-.723-.729c-.426-.43-.289-.864.306-.964l.93-.156a.64.64 0 0 0 .412-.31l.513-1.034c.28-.562.735-.562 1.012 0"/>
+  </symbol>
+  <symbol id="x-icon" viewBox="0 0 19 19">
+    <path fill="#08060d" fill-rule="evenodd" d="M1.893 1.98c.052.072 1.245 1.769 2.653 3.77l2.892 4.114c.183.261.333.48.333.486s-.068.089-.152.183l-.522.593-.765.867-3.597 4.087c-.375.426-.734.834-.798.905a1 1 0 0 0-.118.148c0 .01.236.017.664.017h.663l.729-.83c.4-.457.796-.906.879-.999a692 692 0 0 0 1.794-2.038c.034-.037.301-.34.594-.675l.551-.624.345-.392a7 7 0 0 1 .34-.374c.006 0 .93 1.306 2.052 2.903l2.084 2.965.045.063h2.275c1.87 0 2.273-.003 2.266-.021-.008-.02-1.098-1.572-3.894-5.547-2.013-2.862-2.28-3.246-2.273-3.266.008-.019.282-.332 2.085-2.38l2-2.274 1.567-1.782c.022-.028-.016-.03-.65-.03h-.674l-.3.342a871 871 0 0 1-1.782 2.025c-.067.075-.405.458-.75.852a100 100 0 0 1-.803.91c-.148.172-.299.344-.99 1.127-.304.343-.32.358-.345.327-.015-.019-.904-1.282-1.976-2.808L6.365 1.85H1.8zm1.782.91 8.078 11.294c.772 1.08 1.413 1.973 1.425 1.984.016.017.241.02 1.05.017l1.03-.004-2.694-3.766L7.796 5.75 5.722 2.852l-1.039-.004-1.039-.004z" clip-rule="evenodd"/>
+  </symbol>
+</svg>
+</file>
+
+<file path="srcs/frontend/src/api/client.ts">
+import axios from 'axios';
+
+const client = axios.create({
+    baseURL: "http://localhost:3000",
+    withCredentials: true,
+});
+
+client.interceptors.request.use((config) => {
+    const token = localStorage.getItem('access_token');
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+    return config;
+});
+
+client.interceptors.response.use(
+    (res) =>  res,
+    async (err) => {
+        if (err.response?.status === 401){
+            try {
+                await axios.post(`${import.meta.env.VITE_API_BASE_URL}/auth/refresh`, {}, {withCredentials: true});
+                return client.request(err.config);
+            } catch {
+                localStorage.removeItem('access_token');
+                window.location.href = '/login';
+            }
+        }
+        return Promise.reject(err);
+    }
+);
+
+export default client;
+</file>
+
+<file path="srcs/frontend/src/api/services.ts">
+import client from './client';
+import type { AuthToken, DashboardMetrics, Comment, Message, FriendRequest, FriendUser, Notification, Project, Task, User, TaskStatus, DashboardFilters } from '../../../../shared/srcs/types';
+
+export const authService = {
+    login: (username: string, password: string) =>
+        client.post<AuthToken>('auth/login', {username, password}),
+    googleLogin: () => {window.location.href = '${import.meta.env.VITE_API_BASE_URL}/auth/google';},
+    refresh: () => client.post('auth/refresh'),
+};
+
+export const commentService = {
+    create: (taskId: number, userId: number, data: { content: string; parentId?: number; files?: string[]}) =>
+        client.post<Comment>(`tasks/${taskId}/comments`, { userId, ...data}),
+    getByTaskId: (taskId: number) =>
+        client.get<Comment[]>(`tasks/${taskId}/comments`),
+};
+
+export const taskService = {
+  getAllAdmin: () => client.get<Task[]>('/tasks/all'),
+  getMyTasks: () => client.get<Task[]>('/tasks/my'),
+  getTaskById: (taskId: number) => client.get<Task>(`/tasks/${taskId}`),
+  create: (data: { title: string; description?: string; projectId: number; status?: TaskStatus; deadline?: Date; assigneeIds: number[] }) =>
+    client.post<Task>('/tasks', data),
+  update: (taskId: number, data: { title?: string; status?: TaskStatus; assigneeIds?: number[] }) =>
+    client.patch<Task>(`/tasks/${taskId}`, data),
+  delete: (taskId: number) => client.delete<Task>(`/tasks/${taskId}`),
+};
+
+export const projectService = {
+    create: (data: { name: string; description?: string; deadline?: string }, userId: number) =>
+        client.post<Project>('/projects', {userId, ...data}),
+    getAll: () => client.get<Project[]>('/projects'),
+    getById: (projectId: number) =>
+        client.get<Project>(`/projects/${projectId}`),
+    update: (projectId: number, name?: string, description?: string, deadline?: string ) =>
+        client.patch<Project>(`/projects/${projectId}`, {name, description, deadline}),
+    delete: (projectId: number) =>
+        client.delete<Project>(`/projects/${projectId}`),
+    addMember: (projectId: number, userId: number, role:string) =>
+        client.post<Project>(`/projects/${projectId}/members`, {userId, role}),
+    createMessage: (projectId: number, content: string) =>
+        client.post<Message>(`/projects/${projectId}/messages`, {content}),
+    getMessages: (projectId: number) =>
+        client.get<Message[]>(`/projects/${projectId}/messages`),
+};
+
+export const friendService = {
+  getMyFriends: () => client.get<FriendUser[]>('/friends'),
+  getRequests: () => client.get<FriendRequest[]>('/friends/requests'),
+  sendRequest: (addressee: number) => client.post<FriendRequest>(`/friends/requests/${addressee}`),
+  acceptRequest: (requesterId: number) => client.patch<FriendRequest>(`/friends/accept/${requesterId}`),
+  rejectRequest: (requesterId: number) => client.patch<FriendRequest>(`/friends/reject/${requesterId}`),
+  removeFriend: (friendshipId: number) => client.delete<void>(`/friends/remove/${friendshipId}`),
+};
+
+export const notificationService = {
+    create: (userId: number, type: string, message: string) =>
+        client.post<Notification>('/notifications', {userId, type, message}),
+    getNotifications: (userId: number) => client.get<Notification[]>(`/notification/user/${userId}`),
+    markAsRead: (userId: number) => client.patch<Notification>(`/notifications/user/${userId}/read`),
+};
+
+export const dashboardMetrics = {
+    getGlobalMetrics: (filters: DashboardFilters) =>
+        client.get<DashboardMetrics>('/dashboard', {params: filters}),
+    getProjectMetrics: (projectId: number, filters: DashboardFilters) => 
+        client.get<DashboardMetrics>(`/dashboard/projects/${projectId}`, {params: filters}),
+    exportMetrics: (filters: DashboardFilters, format: 'csv' | 'pdf') =>
+        client.get('dashboard/export', {params: {...filters, format}, responseType: 'blob'}),
+};
+
+export const userService = {
+    create: (data: {username: string; email: string; password: string; avatar?: string}) =>
+        client.post<User>('/users', {data}),
+    getAllUsers: () => client.get<User[]>('/users'),
+    getUser: (userId: number) => client.get<User>(`/users/${userId}`),
+    delete: (userId: number) => client.delete<User>(`/users/${userId}`),
+    updateUser: (data: {username?: string; email?: string; password?: string; avatar?: string}) =>
+        client.patch<User>('users/me', {data}),
+    promoteUser: (username: string) => client.patch<User>(`/users/promote/${username}`),
+    demoteUser: (username: string) => client.patch<User>(`/users/demote/${username}`),
+};
+</file>
+
+<file path="srcs/frontend/src/assets/react.svg">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" role="img" class="iconify iconify--logos" width="35.93" height="32" preserveAspectRatio="xMidYMid meet" viewBox="0 0 256 228"><path fill="#00D8FF" d="M210.483 73.824a171.49 171.49 0 0 0-8.24-2.597c.465-1.9.893-3.777 1.273-5.621c6.238-30.281 2.16-54.676-11.769-62.708c-13.355-7.7-35.196.329-57.254 19.526a171.23 171.23 0 0 0-6.375 5.848a155.866 155.866 0 0 0-4.241-3.917C100.759 3.829 77.587-4.822 63.673 3.233C50.33 10.957 46.379 33.89 51.995 62.588a170.974 170.974 0 0 0 1.892 8.48c-3.28.932-6.445 1.924-9.474 2.98C17.309 83.498 0 98.307 0 113.668c0 15.865 18.582 31.778 46.812 41.427a145.52 145.52 0 0 0 6.921 2.165a167.467 167.467 0 0 0-2.01 9.138c-5.354 28.2-1.173 50.591 12.134 58.266c13.744 7.926 36.812-.22 59.273-19.855a145.567 145.567 0 0 0 5.342-4.923a168.064 168.064 0 0 0 6.92 6.314c21.758 18.722 43.246 26.282 56.54 18.586c13.731-7.949 18.194-32.003 12.4-61.268a145.016 145.016 0 0 0-1.535-6.842c1.62-.48 3.21-.974 4.76-1.488c29.348-9.723 48.443-25.443 48.443-41.52c0-15.417-17.868-30.326-45.517-39.844Zm-6.365 70.984c-1.4.463-2.836.91-4.3 1.345c-3.24-10.257-7.612-21.163-12.963-32.432c5.106-11 9.31-21.767 12.459-31.957c2.619.758 5.16 1.557 7.61 2.4c23.69 8.156 38.14 20.213 38.14 29.504c0 9.896-15.606 22.743-40.946 31.14Zm-10.514 20.834c2.562 12.94 2.927 24.64 1.23 33.787c-1.524 8.219-4.59 13.698-8.382 15.893c-8.067 4.67-25.32-1.4-43.927-17.412a156.726 156.726 0 0 1-6.437-5.87c7.214-7.889 14.423-17.06 21.459-27.246c12.376-1.098 24.068-2.894 34.671-5.345a134.17 134.17 0 0 1 1.386 6.193ZM87.276 214.515c-7.882 2.783-14.16 2.863-17.955.675c-8.075-4.657-11.432-22.636-6.853-46.752a156.923 156.923 0 0 1 1.869-8.499c10.486 2.32 22.093 3.988 34.498 4.994c7.084 9.967 14.501 19.128 21.976 27.15a134.668 134.668 0 0 1-4.877 4.492c-9.933 8.682-19.886 14.842-28.658 17.94ZM50.35 144.747c-12.483-4.267-22.792-9.812-29.858-15.863c-6.35-5.437-9.555-10.836-9.555-15.216c0-9.322 13.897-21.212 37.076-29.293c2.813-.98 5.757-1.905 8.812-2.773c3.204 10.42 7.406 21.315 12.477 32.332c-5.137 11.18-9.399 22.249-12.634 32.792a134.718 134.718 0 0 1-6.318-1.979Zm12.378-84.26c-4.811-24.587-1.616-43.134 6.425-47.789c8.564-4.958 27.502 2.111 47.463 19.835a144.318 144.318 0 0 1 3.841 3.545c-7.438 7.987-14.787 17.08-21.808 26.988c-12.04 1.116-23.565 2.908-34.161 5.309a160.342 160.342 0 0 1-1.76-7.887Zm110.427 27.268a347.8 347.8 0 0 0-7.785-12.803c8.168 1.033 15.994 2.404 23.343 4.08c-2.206 7.072-4.956 14.465-8.193 22.045a381.151 381.151 0 0 0-7.365-13.322Zm-45.032-43.861c5.044 5.465 10.096 11.566 15.065 18.186a322.04 322.04 0 0 0-30.257-.006c4.974-6.559 10.069-12.652 15.192-18.18ZM82.802 87.83a323.167 323.167 0 0 0-7.227 13.238c-3.184-7.553-5.909-14.98-8.134-22.152c7.304-1.634 15.093-2.97 23.209-3.984a321.524 321.524 0 0 0-7.848 12.897Zm8.081 65.352c-8.385-.936-16.291-2.203-23.593-3.793c2.26-7.3 5.045-14.885 8.298-22.6a321.187 321.187 0 0 0 7.257 13.246c2.594 4.48 5.28 8.868 8.038 13.147Zm37.542 31.03c-5.184-5.592-10.354-11.779-15.403-18.433c4.902.192 9.899.29 14.978.29c5.218 0 10.376-.117 15.453-.343c-4.985 6.774-10.018 12.97-15.028 18.486Zm52.198-57.817c3.422 7.8 6.306 15.345 8.596 22.52c-7.422 1.694-15.436 3.058-23.88 4.071a382.417 382.417 0 0 0 7.859-13.026a347.403 347.403 0 0 0 7.425-13.565Zm-16.898 8.101a358.557 358.557 0 0 1-12.281 19.815a329.4 329.4 0 0 1-23.444.823c-7.967 0-15.716-.248-23.178-.732a310.202 310.202 0 0 1-12.513-19.846h.001a307.41 307.41 0 0 1-10.923-20.627a310.278 310.278 0 0 1 10.89-20.637l-.001.001a307.318 307.318 0 0 1 12.413-19.761c7.613-.576 15.42-.876 23.31-.876H128c7.926 0 15.743.303 23.354.883a329.357 329.357 0 0 1 12.335 19.695a358.489 358.489 0 0 1 11.036 20.54a329.472 329.472 0 0 1-11 20.722Zm22.56-122.124c8.572 4.944 11.906 24.881 6.52 51.026c-.344 1.668-.73 3.367-1.15 5.09c-10.622-2.452-22.155-4.275-34.23-5.408c-7.034-10.017-14.323-19.124-21.64-27.008a160.789 160.789 0 0 1 5.888-5.4c18.9-16.447 36.564-22.941 44.612-18.3ZM128 90.808c12.625 0 22.86 10.235 22.86 22.86s-10.235 22.86-22.86 22.86s-22.86-10.235-22.86-22.86s10.235-22.86 22.86-22.86Z"></path></svg>
+</file>
+
+<file path="srcs/frontend/src/assets/vite.svg">
+<svg xmlns="http://www.w3.org/2000/svg" width="77" height="47" fill="none" aria-labelledby="vite-logo-title" viewBox="0 0 77 47"><title id="vite-logo-title">Vite</title><style>.parenthesis{fill:#000}@media (prefers-color-scheme:dark){.parenthesis{fill:#fff}}</style><path fill="#9135ff" d="M40.151 45.71c-.663.844-2.02.374-2.02-.699V34.708a2.26 2.26 0 0 0-2.262-2.262H24.493c-.92 0-1.457-1.04-.92-1.788l7.479-10.471c1.07-1.498 0-3.578-1.842-3.578H15.443c-.92 0-1.456-1.04-.92-1.788l9.696-13.576c.213-.297.556-.474.92-.474h28.894c.92 0 1.456 1.04.92 1.788l-7.48 10.472c-1.07 1.497 0 3.578 1.842 3.578h11.376c.944 0 1.474 1.087.89 1.83L40.153 45.712z"/><mask id="a" width="48" height="47" x="14" y="0" maskUnits="userSpaceOnUse" style="mask-type:alpha"><path fill="#000" d="M40.047 45.71c-.663.843-2.02.374-2.02-.699V34.708a2.26 2.26 0 0 0-2.262-2.262H24.389c-.92 0-1.457-1.04-.92-1.788l7.479-10.472c1.07-1.497 0-3.578-1.842-3.578H15.34c-.92 0-1.456-1.04-.92-1.788l9.696-13.575c.213-.297.556-.474.92-.474H53.93c.92 0 1.456 1.04.92 1.788L47.37 13.03c-1.07 1.498 0 3.578 1.842 3.578h11.376c.944 0 1.474 1.088.89 1.831L40.049 45.712z"/></mask><g mask="url(#a)"><g filter="url(#b)"><ellipse cx="5.508" cy="14.704" fill="#eee6ff" rx="5.508" ry="14.704" transform="rotate(269.814 20.96 11.29)scale(-1 1)"/></g><g filter="url(#c)"><ellipse cx="10.399" cy="29.851" fill="#eee6ff" rx="10.399" ry="29.851" transform="rotate(89.814 -16.902 -8.275)scale(1 -1)"/></g><g filter="url(#d)"><ellipse cx="5.508" cy="30.487" fill="#8900ff" rx="5.508" ry="30.487" transform="rotate(89.814 -19.197 -7.127)scale(1 -1)"/></g><g filter="url(#e)"><ellipse cx="5.508" cy="30.599" fill="#8900ff" rx="5.508" ry="30.599" transform="rotate(89.814 -25.928 4.177)scale(1 -1)"/></g><g filter="url(#f)"><ellipse cx="5.508" cy="30.599" fill="#8900ff" rx="5.508" ry="30.599" transform="rotate(89.814 -25.738 5.52)scale(1 -1)"/></g><g filter="url(#g)"><ellipse cx="14.072" cy="22.078" fill="#eee6ff" rx="14.072" ry="22.078" transform="rotate(93.35 31.245 55.578)scale(-1 1)"/></g><g filter="url(#h)"><ellipse cx="3.47" cy="21.501" fill="#8900ff" rx="3.47" ry="21.501" transform="rotate(89.009 35.419 55.202)scale(-1 1)"/></g><g filter="url(#i)"><ellipse cx="3.47" cy="21.501" fill="#8900ff" rx="3.47" ry="21.501" transform="rotate(89.009 35.419 55.202)scale(-1 1)"/></g><g filter="url(#j)"><ellipse cx="14.592" cy="9.743" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(39.51 14.592 9.743)"/></g><g filter="url(#k)"><ellipse cx="61.728" cy="-5.321" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 61.728 -5.32)"/></g><g filter="url(#l)"><ellipse cx="55.618" cy="7.104" fill="#00c2ff" rx="5.971" ry="9.665" transform="rotate(37.892 55.618 7.104)"/></g><g filter="url(#m)"><ellipse cx="12.326" cy="39.103" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 12.326 39.103)"/></g><g filter="url(#n)"><ellipse cx="12.326" cy="39.103" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 12.326 39.103)"/></g><g filter="url(#o)"><ellipse cx="49.857" cy="30.678" fill="#8900ff" rx="4.407" ry="29.108" transform="rotate(37.892 49.857 30.678)"/></g><g filter="url(#p)"><ellipse cx="52.623" cy="33.171" fill="#00c2ff" rx="5.971" ry="15.297" transform="rotate(37.892 52.623 33.17)"/></g></g><path d="M6.919 0c-9.198 13.166-9.252 33.575 0 46.789h6.215c-9.25-13.214-9.196-33.623 0-46.789zm62.424 0h-6.215c9.198 13.166 9.252 33.575 0 46.789h6.215c9.25-13.214 9.196-33.623 0-46.789" class="parenthesis"/><defs><filter id="b" width="60.045" height="41.654" x="-5.564" y="16.92" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="7.659"/></filter><filter id="c" width="90.34" height="51.437" x="-40.407" y="-6.762" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="7.659"/></filter><filter id="d" width="79.355" height="29.4" x="-35.435" y="2.801" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="e" width="79.579" height="29.4" x="-30.84" y="20.8" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="f" width="79.579" height="29.4" x="-29.307" y="21.949" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="g" width="74.749" height="58.852" x="29.961" y="-17.13" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="7.659"/></filter><filter id="h" width="61.377" height="25.362" x="37.754" y="3.055" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="i" width="61.377" height="25.362" x="37.754" y="3.055" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="j" width="56.045" height="63.649" x="-13.43" y="-22.082" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="k" width="54.814" height="64.646" x="34.321" y="-37.644" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="l" width="33.541" height="35.313" x="38.847" y="-10.552" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="m" width="54.814" height="64.646" x="-15.081" y="6.78" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="n" width="54.814" height="64.646" x="-15.081" y="6.78" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="o" width="54.814" height="64.646" x="22.45" y="-1.645" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter><filter id="p" width="39.409" height="43.623" x="32.919" y="11.36" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse"><feFlood flood-opacity="0" result="BackgroundImageFix"/><feBlend in="SourceGraphic" in2="BackgroundImageFix" result="shape"/><feGaussianBlur result="effect1_foregroundBlur_2002_17286" stdDeviation="4.596"/></filter></defs></svg>
+</file>
+
+<file path="srcs/frontend/src/App.css">
+.counter {
+  font-size: 16px;
+  padding: 5px 10px;
+  border-radius: 5px;
+  color: var(--accent);
+  background: var(--accent-bg);
+  border: 2px solid transparent;
+  transition: border-color 0.3s;
+  margin-bottom: 24px;
+
+  &:hover {
+    border-color: var(--accent-border);
+  }
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+.hero {
+  position: relative;
+
+  .base,
+  .framework,
+  .vite {
+    inset-inline: 0;
+    margin: 0 auto;
+  }
+
+  .base {
+    width: 170px;
+    position: relative;
+    z-index: 0;
+  }
+
+  .framework,
+  .vite {
+    position: absolute;
+  }
+
+  .framework {
+    z-index: 1;
+    top: 34px;
+    height: 28px;
+    transform: perspective(2000px) rotateZ(300deg) rotateX(44deg) rotateY(39deg)
+      scale(1.4);
+  }
+
+  .vite {
+    z-index: 0;
+    top: 107px;
+    height: 26px;
+    width: auto;
+    transform: perspective(2000px) rotateZ(300deg) rotateX(40deg) rotateY(39deg)
+      scale(0.8);
+  }
+}
+
+#center {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+  place-content: center;
+  place-items: center;
+  flex-grow: 1;
+
+  @media (max-width: 1024px) {
+    padding: 32px 20px 24px;
+    gap: 18px;
+  }
+}
+
+#next-steps {
+  display: flex;
+  border-top: 1px solid var(--border);
+  text-align: left;
+
+  & > div {
+    flex: 1 1 0;
+    padding: 32px;
+    @media (max-width: 1024px) {
+      padding: 24px 20px;
+    }
+  }
+
+  .icon {
+    margin-bottom: 16px;
+    width: 22px;
+    height: 22px;
+  }
+
+  @media (max-width: 1024px) {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+#docs {
+  border-right: 1px solid var(--border);
+
+  @media (max-width: 1024px) {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+}
+
+#next-steps ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  gap: 8px;
+  margin: 32px 0 0;
+
+  .logo {
+    height: 18px;
+  }
+
+  a {
+    color: var(--text-h);
+    font-size: 16px;
+    border-radius: 6px;
+    background: var(--social-bg);
+    display: flex;
+    padding: 6px 12px;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    transition: box-shadow 0.3s;
+
+    &:hover {
+      box-shadow: var(--shadow);
+    }
+    .button-icon {
+      height: 18px;
+      width: 18px;
+    }
+  }
+
+  @media (max-width: 1024px) {
+    margin-top: 20px;
+    flex-wrap: wrap;
+    justify-content: center;
+
+    li {
+      flex: 1 1 calc(50% - 8px);
+    }
+
+    a {
+      width: 100%;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+  }
+}
+
+#spacer {
+  height: 88px;
+  border-top: 1px solid var(--border);
+  @media (max-width: 1024px) {
+    height: 48px;
+  }
+}
+
+.ticks {
+  position: relative;
+  width: 100%;
+
+  &::before,
+  &::after {
+    content: '';
+    position: absolute;
+    top: -4.5px;
+    border: 5px solid transparent;
+  }
+
+  &::before {
+    left: 0;
+    border-left-color: var(--border);
+  }
+  &::after {
+    right: 0;
+    border-right-color: var(--border);
+  }
+}
+</file>
+
+<file path="srcs/frontend/src/App.tsx">
+import { useEffect, useState } from 'react'
+import axios from 'axios'
+
+function App() {
+  const [data, setData] = useState('')
+
+  useEffect(() => {
+    axios.get(import.meta.env.VITE_API_URL)
+      .then(res => setData(res.data))
+      .catch(err => setData("Error: " + err.message))
+  }, [])
+
+  return (
+    <div>
+      <h1>Transcendence Frontend</h1>
+      <p>Bericht van de backend: <strong>{data}</strong></p>
+    </div>
+  )
+}
+
+export default App
+</file>
+
+<file path="srcs/frontend/src/index.css">
+:root {
+  --text: #6b6375;
+  --text-h: #08060d;
+  --bg: #fff;
+  --border: #e5e4e7;
+  --code-bg: #f4f3ec;
+  --accent: #aa3bff;
+  --accent-bg: rgba(170, 59, 255, 0.1);
+  --accent-border: rgba(170, 59, 255, 0.5);
+  --social-bg: rgba(244, 243, 236, 0.5);
+  --shadow:
+    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
+
+  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --mono: ui-monospace, Consolas, monospace;
+
+  font: 18px/145% var(--sans);
+  letter-spacing: 0.18px;
+  color-scheme: light dark;
+  color: var(--text);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  @media (max-width: 1024px) {
+    font-size: 16px;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --text: #9ca3af;
+    --text-h: #f3f4f6;
+    --bg: #16171d;
+    --border: #2e303a;
+    --code-bg: #1f2028;
+    --accent: #c084fc;
+    --accent-bg: rgba(192, 132, 252, 0.15);
+    --accent-border: rgba(192, 132, 252, 0.5);
+    --social-bg: rgba(47, 48, 58, 0.5);
+    --shadow:
+      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
+  }
+
+  #social .button-icon {
+    filter: invert(1) brightness(2);
+  }
+}
+
+#root {
+  width: 1126px;
+  max-width: 100%;
+  margin: 0 auto;
+  text-align: center;
+  border-inline: 1px solid var(--border);
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+h1,
+h2 {
+  font-family: var(--heading);
+  font-weight: 500;
+  color: var(--text-h);
+}
+
+h1 {
+  font-size: 56px;
+  letter-spacing: -1.68px;
+  margin: 32px 0;
+  @media (max-width: 1024px) {
+    font-size: 36px;
+    margin: 20px 0;
+  }
+}
+h2 {
+  font-size: 24px;
+  line-height: 118%;
+  letter-spacing: -0.24px;
+  margin: 0 0 8px;
+  @media (max-width: 1024px) {
+    font-size: 20px;
+  }
+}
+p {
+  margin: 0;
+}
+
+code,
+.counter {
+  font-family: var(--mono);
+  display: inline-flex;
+  border-radius: 4px;
+  color: var(--text-h);
+}
+
+code {
+  font-size: 15px;
+  line-height: 135%;
+  padding: 4px 8px;
+  background: var(--code-bg);
+}
+</file>
+
+<file path="srcs/frontend/src/main.tsx">
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import './index.css'
+import App from './App.tsx'
+
+createRoot(document.getElementById('root')!).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)
+</file>
+
+<file path="srcs/frontend/.gitignore">
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+</file>
+
+<file path="srcs/frontend/eslint.config.js">
+import js from '@eslint/js'
+import globals from 'globals'
+import reactHooks from 'eslint-plugin-react-hooks'
+import reactRefresh from 'eslint-plugin-react-refresh'
+import tseslint from 'typescript-eslint'
+import { defineConfig, globalIgnores } from 'eslint/config'
+
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      js.configs.recommended,
+      tseslint.configs.recommended,
+      reactHooks.configs.flat.recommended,
+      reactRefresh.configs.vite,
+    ],
+    languageOptions: {
+      globals: globals.browser,
+    },
+  },
+])
+</file>
+
+<file path="srcs/frontend/index.html">
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>frontend</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+</file>
+
+<file path="srcs/frontend/README.md">
+# React + TypeScript + Vite
+
+This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+
+Currently, two official plugins are available:
+
+- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
+- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+
+## React Compiler
+
+The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+
+## Expanding the ESLint configuration
+
+If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+
+```js
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+
+      // Remove tseslint.configs.recommended and replace with this
+      tseslint.configs.recommendedTypeChecked,
+      // Alternatively, use this for stricter rules
+      tseslint.configs.strictTypeChecked,
+      // Optionally, add this for stylistic rules
+      tseslint.configs.stylisticTypeChecked,
+
+      // Other configs...
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```
+
+You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+
+```js
+// eslint.config.js
+import reactX from 'eslint-plugin-react-x'
+import reactDom from 'eslint-plugin-react-dom'
+
+export default defineConfig([
+  globalIgnores(['dist']),
+  {
+    files: ['**/*.{ts,tsx}'],
+    extends: [
+      // Other configs...
+      // Enable lint rules for React
+      reactX.configs['recommended-typescript'],
+      // Enable lint rules for React DOM
+      reactDom.configs.recommended,
+    ],
+    languageOptions: {
+      parserOptions: {
+        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        tsconfigRootDir: import.meta.dirname,
+      },
+      // other options...
+    },
+  },
+])
+```
+</file>
+
+<file path="srcs/frontend/tsconfig.app.json">
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.app.tsbuildinfo",
+    "target": "es2023",
+    "lib": ["ES2023", "DOM"],
+    "module": "esnext",
+    "types": ["vite/client"],
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+    "jsx": "react-jsx",
+
+    /* Linting */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src"]
+}
+</file>
+
+<file path="srcs/frontend/tsconfig.node.json">
+{
+  "compilerOptions": {
+    "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.node.tsbuildinfo",
+    "target": "es2023",
+    "lib": ["ES2023"],
+    "module": "esnext",
+    "types": ["node"],
+    "skipLibCheck": true,
+
+    /* Bundler mode */
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "moduleDetection": "force",
+    "noEmit": true,
+
+    /* Linting */
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "erasableSyntaxOnly": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["vite.config.ts"]
+}
+</file>
+
+<file path="srcs/frontend/vite.config.ts">
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [react()],
+})
 </file>
 
 <file path=".gitignore">
@@ -2114,6 +3040,57 @@ report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
 </file>
 
+<file path=".github/workflows/deploy.yml">
+name: Deploy to VM
+
+on:
+  push:
+    branches:
+      - main  # or master, or whichever branch you want to trigger deploys
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_PRIVATE_KEY }}
+          script: |
+            cd /home/sigmatm42/transcendence
+            git pull origin main
+            docker compose up -d --build
+</file>
+
+<file path="shared/package.json">
+{
+  "name": "@transcendence/shared",
+  "version": "1.0.0",
+  "main": "srcs/index.ts",
+  "types": "srcs/index.ts"
+}
+</file>
+
+<file path="shared/tsconfig.json">
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM"],
+    "types": ["vite/client"],
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true
+  },
+  "include": ["srcs", "../srcs/frontend/src/api"]
+}
+</file>
+
 <file path="srcs/backend/src/auth/strategies/jwt.strategy.ts">
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
@@ -2135,6 +3112,23 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
     if (!user) throw new UnauthorizedException();
     return { sub: payload.sub, id: payload.sub, username: payload.username, role: payload.role };
   }
+}
+</file>
+
+<file path="srcs/backend/src/comments/dto/create-command.dto.ts">
+import { IsString, IsNotEmpty, IsOptional, IsInt } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+
+export class CreateCommentDto {
+    @ApiProperty({ description: 'the text of the comment', example: 'here is the document you needed.' })
+    @IsString()
+    @IsNotEmpty()
+    content: string;
+
+    
+    @IsInt()
+    @IsOptional()
+    parentId?: number;
 }
 </file>
 
@@ -2222,6 +3216,69 @@ export class CommentsService {
 }
 </file>
 
+<file path="srcs/backend/src/dashboard/dashboard.module.ts">
+import { Module } from '@nestjs/common';
+import { DashboardController } from './dashboard.controller';
+import { DashboardService } from './dashboard.service';
+import { ProjectLeaderGuard } from 'src/projects/project-leader.guard';
+import { PrismaModule } from 'src/prisma/prisma.module';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { ExportService } from 'src/export/export.service';
+import { ExportModule } from 'src/export/export.module';
+
+@Module({
+  controllers: [DashboardController],
+  providers: [DashboardService, ExportService, ProjectLeaderGuard, JwtAuthGuard, RolesGuard],
+  imports: [PrismaModule, ExportModule]
+})
+export class DashboardModule {}
+</file>
+
+<file path="srcs/backend/src/friends/friends.controller.ts">
+import { Controller, Post, Patch, Delete, Get, Param, ParseIntPipe, UseGuards, Request } from '@nestjs/common';
+import { FriendsService } from './friends.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ApiBearerAuth } from '@nestjs/swagger';
+
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
+@Controller('friends')
+export class FriendsController {
+  constructor(private readonly friendsService: FriendsService) {}
+
+  @Get()
+  getMyFriends(@Request() req) {
+    return this.friendsService.getMyFriends(req.user.sub);
+  }
+
+  @Get('requests')
+  getPendingRequests(@Request() req) {
+    return this.friendsService.getFriendRequests(req.user.sub);
+  }
+
+  @Post('request/:userId')
+  sendRequest(@Request() req, @Param('targetUserId', ParseIntPipe) targetUserId: number) {
+    return this.friendsService.sendrequest(req.user.sub, targetUserId);
+  }
+
+  @Patch('accept/:friendshipId')
+  acceptRequest(@Request() req, @Param('friendshipId', ParseIntPipe) friendshipId: number) {
+    return this.friendsService.acceptrequest(req.user.sub, friendshipId);
+  }
+
+  @Patch('reject/:friendshipId')
+  rejectRequest(@Request() req, @Param('friendshipId', ParseIntPipe) friendshipId: number) {
+    return this.friendsService.rejectrequest(req.user.sub, friendshipId);
+  }
+
+  @Delete('remove/:friendshipId')
+  removeFriendship(@Request() req, @Param('friendshipId', ParseIntPipe) friendshipId: number) {
+    return this.friendsService.removefriendship(req.user.sub, friendshipId);
+  }
+}
+</file>
+
 <file path="srcs/backend/src/notifications/notifications.controller.ts">
 import { Controller, Patch, Get, Param, ParseIntPipe, Post, Body } from '@nestjs/common';
 import { NotificationsService } from './notifications.service';
@@ -2290,6 +3347,19 @@ import { NotificationsController } from './notifications.controller';
   providers: [NotificationsService, NotificationsGateway],
 })
 export class NotificationsModule {}
+</file>
+
+<file path="srcs/backend/src/projects/dto/create-message.dto.ts">
+import { IsNotEmpty, IsString } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
+
+export class CreateMessageDto {
+
+  @ApiProperty({ description: 'The content of the chat message', example: 'Hello team!' })
+  @IsString()
+  @IsNotEmpty()
+  content: string;
+}
 </file>
 
 <file path="srcs/backend/src/projects/project-leader.guard.ts">
@@ -2447,6 +3517,59 @@ export default defineConfig({
     url: process.env["DATABASE_URL"],
   },
 });
+</file>
+
+<file path="srcs/frontend/.dockerignore">
+node_modules
+dist
+.DS_Store
+</file>
+
+<file path="srcs/frontend/package.json">
+{
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@transcendence/shared": "*",
+    "axios": "^1.15.2",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "react-router-dom": "^7.14.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.12.2",
+    "@types/pdfmake": "^0.3.2",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "eslint": "^10.2.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.5.0",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.58.2",
+    "vite": "^8.0.10"
+  }
+}
+</file>
+
+<file path="srcs/frontend/tsconfig.json">
+{
+  "files": [],
+  "references": [
+    { "path": "./tsconfig.app.json" },
+    { "path": "./tsconfig.node.json" }
+  ]
+}
 </file>
 
 <file path="srcs/backend/src/notifications/notifications.gateway.ts">
@@ -2799,24 +3922,6 @@ import { PrismaModule } from '../prisma/prisma.module';
 export class UsersModule {}
 </file>
 
-<file path="srcs/backend/Dockerfile">
-FROM node:22-alpine
-
-WORKDIR /app
-
-COPY package*.json ./
-
-RUN npm install
-
-COPY . .
-
-RUN npx prisma generate
-
-EXPOSE 3000
-
-CMD ["npm", "run", "dev"]
-</file>
-
 <file path="srcs/backend/tsconfig.json">
 {
   "compilerOptions": {
@@ -2843,6 +3948,31 @@ CMD ["npm", "run", "dev"]
     "noFallthroughCasesInSwitch": false
   }
 }
+</file>
+
+<file path="srcs/frontend/Dockerfile">
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+COPY srcs/frontend/package*.json ./srcs/frontend/
+COPY shared/package*.json ./shared/
+
+RUN npm install
+
+COPY shared ./shared
+COPY srcs/frontend ./srcs/frontend
+
+WORKDIR /app/srcs/frontend
+
+RUN npm run build
+
+RUN npm install -g serve
+
+EXPOSE 5173
+
+CMD ["serve", "-s", "dist", "-l", "5173"]
 </file>
 
 <file path="srcs/backend/src/auth/dto/sign-in.dto.ts">
@@ -2874,6 +4004,28 @@ export class CreateProjectDto {
   @IsDateString()
   deadline?: string;
 }
+</file>
+
+<file path="srcs/backend/Dockerfile">
+FROM node:22-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+COPY srcs/backend/package*.json ./srcs/backend/
+COPY shared/package*.json ./shared/
+
+RUN npm install
+
+COPY shared ./shared
+COPY srcs/backend ./srcs/backend
+
+WORKDIR /app/srcs/backend
+RUN npx prisma generate
+
+EXPOSE 3000
+
+CMD ["npm", "run", "dev"]
 </file>
 
 <file path="srcs/backend/src/auth/auth.controller.ts">
@@ -2919,6 +4071,90 @@ export class AuthController {
 }
 </file>
 
+<file path="srcs/backend/src/dashboard/dashboard.controller.ts">
+import { Controller, Get, Query, ParseIntPipe, UseGuards, Param, Res, BadRequestException } from '@nestjs/common';
+import { DashboardService } from './dashboard.service';
+import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { ProjectLeaderGuard } from 'src/projects/project-leader.guard';
+import { DashboardFiltersDto } from './dto/dashboard-filters.dto';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { ExportService } from 'src/export/export.service';
+import type { Response } from 'express';
+
+@Controller('dashboard')
+export class DashboardController {
+    constructor(private readonly dashboardService: DashboardService,
+        private readonly exportService: ExportService
+    ) {}
+
+    @Get()
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('ADMIN')
+    getGlobalMetrics(
+        @Query() filters: DashboardFiltersDto){
+        return this.dashboardService.getGlobalMetrics(
+            {
+                from: filters.from ? new Date(filters.from) : undefined,
+                to: filters.to ? new Date(filters.to) : undefined,
+                memberId: filters.memberId,
+                projectStatus: filters.projectStatus,
+            }
+        );
+    }
+
+    @Get('projects/:id')
+    @ApiBearerAuth()
+    @UseGuards(JwtAuthGuard,ProjectLeaderGuard)
+    getProjectMetrics(
+        @Param('id', ParseIntPipe) id: number,
+        @Query() filters: DashboardFiltersDto
+    ){
+        return this.dashboardService.getProjectMetrics(id, {
+            from: filters.from ? new Date(filters.from) : undefined,
+            to: filters.to ? new Date(filters.to) : undefined,
+            memberId: filters.memberId,
+            taskStatus: filters.taskStatus,
+        });
+    }
+
+    @Get('export')
+    @UseGuards(JwtAuthGuard, RolesGuard)
+    @Roles('ADMIN')
+    async exportGlobalMetrics(
+        @Query() filters: DashboardFiltersDto,
+        @Query('format') format: string,
+        @Res() res: Response,
+    ) {
+        const data = await this.dashboardService.getGlobalMetrics({
+            from: filters.from ? new Date(filters.from) : undefined,
+            to: filters.to ? new Date(filters.to) : undefined,
+            memberId: filters.memberId,
+            projectStatus: filters.projectStatus,
+            taskStatus: filters.taskStatus,
+        });
+
+        if (format === 'csv') {
+            const buffer = this.exportService.exportCsv(data);
+            res.setHeader('Content-Type', 'text/csv');
+            res.setHeader('Content-Disposition', 'attachment; filename=dashboard.csv');
+            return res.send(buffer);
+        }
+
+        if (format === 'pdf') {
+            const buffer = await this.exportService.exportPdf(data);
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', 'attachment; filename=dashboard.pdf');
+            return res.send(buffer);
+        }
+
+        throw new BadRequestException('Unsupported format. Use csv or pdf.');
+    }
+}
+</file>
+
 <file path="srcs/backend/src/auth/auth.module.ts">
 import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
@@ -2948,6 +4184,231 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 export class AuthModule {}
 </file>
 
+<file path="srcs/backend/src/dashboard/dashboard.service.ts">
+import { Injectable } from '@nestjs/common';
+import { ProjectStatus, TaskStatus } from '@prisma/client';
+import { PrismaService } from 'src/prisma/prisma.service';
+
+interface DashboardFilters{
+    from?: Date;
+    to?: Date;
+    memberId?: number;
+    projectStatus?: ProjectStatus;
+    taskStatus?: TaskStatus;
+}
+
+@Injectable()
+export class DashboardService {
+    constructor(private prisma: PrismaService) {}
+
+
+    async getGlobalMetrics(filters: DashboardFilters = {}) {
+        const {from, to, memberId, projectStatus} = filters;
+        const projectWhere = {
+            ...(from || to ? {
+                createdAt:{
+                    ...(from ? { gte: from } : {}),
+                    ...(to ? { lte: to } : {}),
+                },
+            } : {}),
+            ...(memberId ? { 
+                members : { some: { userId: memberId}},
+            }: {}),
+            ...(projectStatus ? { status: projectStatus } : {}),
+        };
+
+        const now = new Date();
+
+        const [projects, tasks] = await Promise.all([
+            this.prisma.project.findMany({
+                where: projectWhere,
+                include: {
+                    tasks: {
+                        include: { statusHistory: { orderBy: { changedAt: 'asc'}}},
+                    },
+                }
+            }),
+            this.prisma.task.findMany({
+                include: { statusHistory: { orderBy: { changedAt: 'asc'}}},
+            }),
+        ]);
+
+        const totalProjects = projects.length;
+        const completedProjects = projects.filter((p) => p.status === 'COMPLETED').length;
+        const totalTasks = tasks.length;
+        const pendingCount = tasks.filter((t) => t.status === 'PENDING_EVALUATION').length;
+        const pendingOverLimit = tasks.filter((t) => this.isPendingTooLong(t, now)).length;
+        const completedTasks = tasks.filter((t => t.status === 'DONE')).length;
+        const overdueTasks = tasks.filter((t) => this.isOverdue(t, now)).length;
+        const avgTimePerStage = this.computeAvgTimePerStage(tasks);
+        const projectHealthList = projects.map((p) => {
+            const overdue = p.tasks.filter((t) => this.isOverdue(t, now)).length;
+            const pendingLong = p.tasks.filter((t) => this.isPendingTooLong(t, now)). length;
+            const risk = this.computeRisk(overdue, pendingLong);
+            return{
+                id: p.id,
+                name: p.name,
+                status: p.status,
+                overdue,
+                pendingLong,
+                risk,
+            }
+        });
+
+        return{
+            totalProjects,
+            completedProjects,
+            totalTasks,
+            pendingCount,
+            pendingOverLimit,
+            completedTasks,
+            overdueTasks,
+            avgTimePerStage,
+            projectHealthList,
+        };
+    }
+
+    async getProjectMetrics(projectId: number, filters: DashboardFilters = {}) {
+        const { from, to, memberId, taskStatus } = filters;
+        const taskWhere = {
+            ...(from || to ? {
+                createdAt:{
+                    ...(from ? { gte: from } : {}),
+                    ...(to ? { lte: to } : {}),
+                },
+            } : {}),
+            ...(memberId ? { 
+                assignees : { some: { id: memberId}},
+            }: {}),
+            ...(taskStatus ? { status: taskStatus } : {}),
+        };
+        const now = new Date();
+
+        const project = await this.prisma.project.findUnique({
+            where: { id: projectId, },
+            include: {
+                tasks: {
+                    where: taskWhere,
+                    include: {
+                        statusHistory: {
+                            orderBy: { changedAt: 'asc' },
+                        },
+                    },
+                },
+            },
+        });
+
+        if (!project) {
+            throw new Error('Project not found');
+        }
+
+        const tasks = project.tasks;
+        const totalTasks = tasks.length;
+
+        return {
+            totalTasks,
+            completedTasks: tasks.filter((t) => t.status === 'DONE').length,
+            overdueTasks: tasks.filter((t) => this.isOverdue(t, now)).length,
+            pendingOverlimit: tasks.filter((t) => this.isPendingTooLong(t, now)).length,
+            averageCompletionTime: this.compouteCompletionTime(tasks),
+            avgTimePerStage: this.computeAvgTimePerStage(tasks),
+        };
+
+    }
+
+    private isOverdue(task: any, now: Date): boolean{
+        return task.status !== 'DONE' && task.deadline && task.deadline < now;
+    }
+
+    private isPendingTooLong(task: any, now: Date, treshHoldDays = 7){
+        if (task.status !== 'PENDING_EVALUATION') return false;
+        const lastStatus = task.changeHistory(-1);
+        if (!lastStatus) return false;
+        const timediff = (now.getTime() - lastStatus.changedAt.getTime()) / (1000 * 60 * 60 *24);
+        return timediff > treshHoldDays;
+    }
+
+    private compouteCompletionTime(tasks: any[]): number{
+        const completedWithHistory = tasks.filter((t) => t.status === 'DONE' && t.statusHistory.length > 0);
+        if (completedWithHistory.length === 0) return 0;
+        const totalTime = completedWithHistory.reduce((acc, task) => {
+            const start = new Date(task.statusHistory[0].changedAt).getTime();
+            const end = new Date(task.statusHistory.at(-1).changedAt).getTime();
+            return acc + (end - start);
+        }, 0);
+        return totalTime / completedWithHistory.length;        
+    }
+
+    private computeRisk(overdue: number, pendingTooLong: number): string {
+        if (overdue >= 5 || pendingTooLong >= 3) return 'CRITICAL';
+        if (overdue >= 3 || pendingTooLong >= 1) return 'AT_RISK';
+        if (overdue >= 1 || pendingTooLong >= 0) return 'WATCH';
+        return 'HEALTHY';
+    }
+
+    private computeAvgTimePerStage(tasks: any[]){
+        const stageTotals: Record<string, { total: number, count: number } > = {
+            TODO: { total: 0, count : 0 },
+            IN_PROGRESS: { total: 0, count: 0 },
+            PENDING_EVALUATION: { total: 0, count: 0},
+            DONE: { total:0, count: 0 },
+        };
+
+        for (const task of tasks) {
+            const history = task.statusHistory;
+            for (let i = 0; i < history.length; i++) {
+                const current = history[i];
+                const next = history[i + 1];
+                const end = next ? next.changedAt : new Date();
+                const days = (end.getTime() - current.changedAt.getTime()) / (1000 * 60 * 60 * 24);
+                if (stageTotals[current.status]) {
+                    stageTotals[current.status].total += days;
+                    stageTotals[current.status].count += 1;
+                }
+            }
+        }
+        return Object.fromEntries(
+            Object.entries(stageTotals).map(([stage, {total, count}]) => [
+                stage,
+                count > 0 ? Math.round((total/count) *10) / 10 : 0,
+            ]),
+        );
+    }
+}
+</file>
+
+<file path="srcs/backend/src/main.ts">
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+import { ValidationPipe } from '@nestjs/common';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { join } from 'path';
+import * as express from 'express';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+  
+  app.enableCors({ origin: '*' });
+
+  app.useGlobalPipes(new ValidationPipe());
+
+  app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
+
+  const config = new DocumentBuilder()
+    .setTitle('Transcendence API')
+    .setDescription('De API documentatie voor ons Transcendence project')
+    .setVersion('1.0')
+    .addBearerAuth() 
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+  
+  SwaggerModule.setup('api', app, document);
+
+  await app.listen(process.env.PORT ?? 3000);
+}
+bootstrap();
+</file>
+
 <file path="srcs/backend/src/tasks/dto/create-task.dto.ts">
 import { TaskStatus } from '@prisma/client';
 import { IsString, IsNotEmpty, IsInt, IsOptional, IsArray, IsDateString, IsEnum  } from 'class-validator';
@@ -2955,7 +4416,7 @@ import { IsString, IsNotEmpty, IsInt, IsOptional, IsArray, IsDateString, IsEnum 
 export class CreateTaskDto {
   @IsString()
   @IsNotEmpty()
-  title: string;
+  title!: string;
 
   @IsString()
   @IsOptional()
@@ -2963,9 +4424,9 @@ export class CreateTaskDto {
 
   @IsInt()
   @IsNotEmpty()
-  projectId: number;
+  projectId!: number;
 
-@IsOptional()
+  @IsOptional()
   @IsEnum(TaskStatus) 
   status?: TaskStatus;
 
@@ -2986,6 +4447,7 @@ import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { TaskStatus } from '@prisma/client';
 
 @Injectable()
 export class TasksService {
@@ -3017,9 +4479,14 @@ export class TasksService {
         assignees: assigneeIds && assigneeIds.length > 0 ? {
           connect: assigneeIds.map((id) => ({ id: id })),
         } : undefined,
+        statusHistory: {
+          create: { status: TaskStatus.TODO }
+        },
       },
       include: { assignees: { select: { id: true, username: true } } },
     });
+
+
 
     if (assigneeIds && assigneeIds.length > 0) {
       for (const userId of assigneeIds) {
@@ -3073,54 +4540,67 @@ export class TasksService {
     });
   }
 
-  async update(id: number, updateTaskDto: UpdateTaskDto) {
-    const { assigneeIds, ...taskData } = updateTaskDto;
-    
-    const currentTask = await this.prisma.task.findUnique({ where: { id } });
-    if (!currentTask) throw new NotFoundException('Task not found');
+  async update(id: number, updateTaskDto: UpdateTaskDto, userId?: number) {
+  const { assigneeIds, ...taskData } = updateTaskDto;
 
-    if (assigneeIds && assigneeIds.length > 0) {
-      const validMembers = await this.prisma.projectMember.findMany({
-        where: {
-          projectId: currentTask.projectId,
-          userId: { in: assigneeIds },
-        },
-      });
+  const currentTask = await this.prisma.task.findUnique({ where: { id } });
+  if (!currentTask) throw new NotFoundException('Task not found');
 
-      if (validMembers.length !== assigneeIds.length) {
-        throw new BadRequestException('Make sure all new assignees are members of the project');
-      }
+  if (assigneeIds?.length) {
+    const validMembers = await this.prisma.projectMember.findMany({
+      where: {
+        projectId: currentTask.projectId,
+        userId: { in: assigneeIds },
+      },
+    });
+    if (validMembers.length !== assigneeIds.length) {
+      throw new BadRequestException('Make sure all new assignees are members of the project');
     }
-    
-    const updatedTask = await this.prisma.task.update({
+  }
+
+  const statusChanged = taskData.status && taskData.status !== currentTask.status;
+
+  const updatedTask = await this.prisma.$transaction(async (tx) => {
+    const task = await tx.task.update({
       where: { id },
       data: {
         ...taskData,
         assignees: assigneeIds ? {
-          set: assigneeIds.map((userId) => ({ id: userId })),
+          set: assigneeIds.map((uid) => ({ id: uid })),
         } : undefined,
       },
-      include: { 
+      include: {
         assignees: true,
         project: {
-          include: { members: { where: { role: 'PROJECT_LEADER' } } }
-        }
+          include: { members: { where: { role: 'PROJECT_LEADER' } } },
+        },
       },
     });
 
-    if (updateTaskDto.status === 'PENDING_EVALUATION') {
-      const leaderId = updatedTask.project.members[0]?.userId;
-      if (leaderId) {
-        await this.notificationsService.createNotification(
-          leaderId,
-          'TASK_PENDING_EVALUATION',
-          `Task is pending evaluation: ${updatedTask.title}`
-        );
-      }
+    if (statusChanged) {
+      await tx.taskStatusHistory.create({
+        data: {
+          taskId: id,
+          status: taskData.status!,
+          changedBy: userId ?? null,
+        },
+      });
     }
 
-    return updatedTask;
+    return task;
+  });
+
+  if (updateTaskDto.status === 'PENDING_EVALUATION') {
+    const leaderId = updatedTask.project.members[0]?.userId;
+    if (leaderId) {
+      await this.notificationsService.createNotification(
+        leaderId,
+        'TASK_PENDING_EVALUATION',
+        `Task is pending evaluation: ${updatedTask.title}`,
+      );
+    }
   }
+}
 
   async remove(id: number) {
     const task = await this.prisma.task.findUnique({
@@ -3143,245 +4623,6 @@ export class TasksService {
     });
   }
 }
-</file>
-
-<file path="srcs/backend/src/main.ts">
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { join } from 'path';
-import * as express from 'express';
-
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  
-  app.enableCors({ origin: '*' });
-
-  app.useGlobalPipes(new ValidationPipe());
-
-  app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
-
-  const config = new DocumentBuilder()
-    .setTitle('Transcendence API')
-    .setDescription('De API documentatie voor ons Transcendence project')
-    .setVersion('1.0')
-    .addBearerAuth() 
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  
-  SwaggerModule.setup('api', app, document);
-
-  await app.listen(process.env.PORT ?? 3000);
-}
-bootstrap();
-</file>
-
-<file path="docker-compose.yml">
-services:
-  postgres:
-    image: postgres:17
-    container_name: transcendence_postgres
-    environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  backend:
-    build: ./srcs/backend
-    container_name: transcendence_backend
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      TZ: Europe/Brussels
-      DATABASE_URL: ${DATABASE_URL}
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
-      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL}
-      JWT_SECRET: ${JWT_SECRET}
-      SMTP_HOST: ${SMTP_HOST}
-      SMTP_PORT: ${SMTP_PORT}
-      SMTP_USER: ${SMTP_USER}
-      SMTP_PASS: ${SMTP_PASS}
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./srcs/backend:/app
-      - /app/node_modules
-    command: sh -c "npx prisma migrate deploy && npm run start:dev"
-
-volumes:
-  postgres_data:
-</file>
-
-<file path="srcs/backend/src/projects/projects.controller.ts">
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
-import { ProjectsService } from './projects.service';
-import { CreateProjectDto } from './dto/create-project.dto';
-import { UpdateProjectDto } from './dto/update-project.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { ProjectLeaderGuard } from './project-leader.guard';
-import { ApiBearerAuth } from '@nestjs/swagger';
-import { AddMemberDto } from './dto/add-member.dto';
-import { CreateMessageDto } from './dto/create-message.dto';
-
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard) // you need to be logged in before you can do ANYTHING with projects
-@Controller('projects')
-export class ProjectsController {
-  constructor(private readonly projectsService: ProjectsService) {}
-
-  @Post()
-  create(@Body() createProjectDto: CreateProjectDto, @Request() req) {
-    const userId = req.user.sub; 
-    const deadlineDate = createProjectDto.deadline ? new Date(createProjectDto.deadline) : null;
-    return this.projectsService.create(createProjectDto, userId, deadlineDate);
-  }
-
-  @Get()
-  findAll() {
-    return this.projectsService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.projectsService.findOne(+id);
-  }
-
-  @UseGuards(ProjectLeaderGuard) 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateProjectDto: UpdateProjectDto) {
-    return this.projectsService.update(+id, updateProjectDto);
-  }
-
-  @UseGuards(ProjectLeaderGuard) 
-  @Delete(':id')
-  remove(@Param('id') id: string,
-         @Request() req) {
-    const currentUserId = req.user.sub;
-    return this.projectsService.remove(+id, currentUserId);
-  }
-
-  @UseGuards(ProjectLeaderGuard) 
-  @Post(':id/members')
-  addMember(
-    @Param('id') id: string, 
-    @Body() addMemberDto: AddMemberDto
-  ) {
-    return this.projectsService.addMember(+id, addMemberDto.userId, addMemberDto.role);
-  }
-
-  @Post(':id/messages')
-  createMessage(
-    @Param('id') projectid: string,
-    @Body() createMessageDto: CreateMessageDto
-  ) {
-    return this.projectsService.createmessage(+projectid, createMessageDto.userId, createMessageDto.content);
-  }
-
-  @Get(':id/messages')
-  getMessages(@Param('id') projectId: string) {
-    return this.projectsService.getProjectMessages(+projectId);
-  }
-}
-</file>
-
-<file path="srcs/backend/src/tasks/tasks.controller.ts">
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
-import { TasksService } from './tasks.service';
-import { CreateTaskDto } from './dto/create-task.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { ApiBearerAuth } from '@nestjs/swagger';
-import { Request } from '@nestjs/common';
-import { Roles } from 'src/auth/decorators/roles.decorator';
-import { RolesGuard } from 'src/auth/guards/roles.guard';
-import { ProjectLeaderGuard } from 'src/projects/project-leader.guard';
-
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
-@Controller('tasks')
-export class TasksController {
-  constructor(private readonly tasksService: TasksService) {}
-
-  @Post()
-  create(@Body() createTaskDto: CreateTaskDto) {
-    const deadlineDate = createTaskDto.deadline ? new Date(createTaskDto.deadline) : null;
-    return this.tasksService.create(createTaskDto, deadlineDate);
-  }
-@ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
-  @Get('all')
-  findAllAdmins() {
-    return this.tasksService.findAll(); 
-  }
-
-@ApiBearerAuth()
-  @UseGuards(JwtAuthGuard) 
-  @Get()
-  findMyTasks(@Request() req) {
-    return this.tasksService.findMyTasks(req.user.sub);
-  }
-
-
-  @Get()
-  findAll(@Request() req) {
-    return this.tasksService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.tasksService.findOne(+id);
-  }
-
-  @UseGuards(RolesGuard, ProjectLeaderGuard)
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.tasksService.remove(+id);
-  }
-}
-</file>
-
-<file path="srcs/backend/src/app.module.ts">
-import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config'; // <--- Import staat hier goed
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
-import { UsersModule } from './users/users.module';
-import { AuthModule } from './auth/auth.module';
-import { ProjectsModule } from './projects/projects.module';
-import { TasksModule } from './tasks/tasks.module';
-import { ScheduleModule } from '@nestjs/schedule';
-import { NotificationsModule } from './notifications/notifications.module';
-import { FriendsModule } from './friends/friends.module';
-import { CommentsModule } from './comments/comments.module';
-
-@Module({
-  imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-    }),
-    UsersModule, 
-    AuthModule, 
-    ProjectsModule, 
-    TasksModule, 
-    ScheduleModule.forRoot(), 
-    NotificationsModule, FriendsModule, CommentsModule
-  ],
-  controllers: [AppController],
-  providers: [AppService],
-})
-export class AppModule {}
 </file>
 
 <file path="srcs/backend/src/auth/auth.service.ts">
@@ -3486,6 +4727,218 @@ async validateOAuthUser(data: {email: string, googleId: string, username:string}
 }
 </file>
 
+<file path="srcs/backend/src/tasks/tasks.controller.ts">
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { TasksService } from './tasks.service';
+import { CreateTaskDto } from './dto/create-task.dto';
+import { UpdateTaskDto } from './dto/update-task.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { Request } from '@nestjs/common';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { ProjectLeaderGuard } from 'src/projects/project-leader.guard';
+
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
+@Controller('tasks')
+export class TasksController {
+  constructor(private readonly tasksService: TasksService) {}
+
+  @Post()
+  create(@Body() createTaskDto: CreateTaskDto) {
+    const deadlineDate = createTaskDto.deadline ? new Date(createTaskDto.deadline) : null;
+    return this.tasksService.create(createTaskDto, deadlineDate);
+  }
+@ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Get('all')
+  findAllAdmins() {
+    return this.tasksService.findAll(); 
+  }
+
+@ApiBearerAuth()
+  @UseGuards(JwtAuthGuard) 
+  @Get('me')
+  findMyTasks(@Request() req) {
+    return this.tasksService.findMyTasks(req.user.sub);
+  }
+
+
+  @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  findOne(@Param('id') id: string) {
+    return this.tasksService.findOne(+id);
+  }
+
+  @UseGuards(RolesGuard, ProjectLeaderGuard)
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.tasksService.remove(+id);
+  }
+
+  @Patch(':id')
+  update(
+    @Param('id') id: string, 
+    @Body() updateTaskDto: UpdateTaskDto,
+    @Request() req) {
+    return this.tasksService.update(+id, updateTaskDto, req.user.sub);
+  }
+}
+</file>
+
+<file path="srcs/backend/src/users/dto/create-user.dto.ts">
+import { IsString, MinLength, IsEmail, IsOptional
+    
+ } from 'class-validator';
+
+export class CreateUserDto {
+    @IsString()
+    username: string;
+
+    @IsString()
+    @IsEmail()
+    email: string;
+
+    @IsString()
+    @MinLength(8)
+    password: string;
+
+    @IsString()
+    @IsOptional()
+    avatar: string;
+}
+
+export class UpdateUserDto{
+    username?: string;
+    avatar?: string;
+}
+</file>
+
+<file path="srcs/backend/src/projects/projects.controller.ts">
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
+import { ProjectsService } from './projects.service';
+import { CreateProjectDto } from './dto/create-project.dto';
+import { UpdateProjectDto } from './dto/update-project.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ProjectLeaderGuard } from './project-leader.guard';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { AddMemberDto } from './dto/add-member.dto';
+import { CreateMessageDto } from './dto/create-message.dto';
+
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard) // you need to be logged in before you can do ANYTHING with projects
+@Controller('projects')
+export class ProjectsController {
+  constructor(private readonly projectsService: ProjectsService) {}
+
+  @Post()
+  create(@Body() createProjectDto: CreateProjectDto, @Request() req) {
+    const userId = req.user.sub; 
+    const deadlineDate = createProjectDto.deadline ? new Date(createProjectDto.deadline) : null;
+    return this.projectsService.create(createProjectDto, userId);
+  }
+
+  @Get()
+  findAll() {
+    return this.projectsService.findAll();
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.projectsService.findOne(+id);
+  }
+
+  @UseGuards(ProjectLeaderGuard) 
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() updateProjectDto: UpdateProjectDto) {
+    return this.projectsService.update(+id, updateProjectDto);
+  }
+
+  @UseGuards(ProjectLeaderGuard) 
+  @Delete(':id')
+  remove(@Param('id') id: string,
+         @Request() req) {
+    const currentUserId = req.user.sub;
+    return this.projectsService.remove(+id, currentUserId);
+  }
+
+  @UseGuards(ProjectLeaderGuard) 
+  @Post(':id/members')
+  addMember(
+    @Param('id') id: string, 
+    @Body() addMemberDto: AddMemberDto
+  ) {
+    return this.projectsService.addMember(+id, addMemberDto.userId, addMemberDto.role);
+  }
+
+  @Post(':id/messages')
+  createMessage(
+    @Param('id') projectid: string,
+    @Body() createMessageDto: CreateMessageDto,
+    @Request () req) {
+    const currentUserId = req.user.sub;
+    return this.projectsService.createmessage(+projectid, currentUserId, createMessageDto);
+  }
+
+  @Get(':id/messages')
+  getMessages(@Param('id') projectId: string) {
+    return this.projectsService.getProjectMessages(+projectId);
+  }
+}
+</file>
+
+<file path="srcs/backend/src/app.module.ts">
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module';
+import { ProjectsModule } from './projects/projects.module';
+import { TasksModule } from './tasks/tasks.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { NotificationsModule } from './notifications/notifications.module';
+import { FriendsModule } from './friends/friends.module';
+import { CommentsModule } from './comments/comments.module';
+import { DashboardModule } from './dashboard/dashboard.module';
+import { ExportModule } from './export/export.module';
+
+@Module({
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    UsersModule, 
+    AuthModule, 
+    ProjectsModule, 
+    TasksModule, 
+    ScheduleModule.forRoot(), 
+    NotificationsModule, FriendsModule, CommentsModule, DashboardModule, ExportModule
+  ],
+  controllers: [AppController],
+  providers: [AppService],
+})
+export class AppModule {}
+</file>
+
+<file path="package.json">
+{
+  "name": "transcendence-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "srcs/frontend",
+    "srcs/backend",
+    "shared"
+  ],
+  "dependencies": {
+    "axios": "^1.15.2"
+  }
+}
+</file>
+
 <file path="srcs/backend/src/projects/projects.service.ts">
 import { Injectable, ConflictException } from '@nestjs/common';
 import { CreateProjectDto } from './dto/create-project.dto';
@@ -3493,6 +4946,7 @@ import { UpdateProjectDto } from './dto/update-project.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationsGateway } from 'src/notifications/notifications.gateway';
+import { CreateMessageDto } from './dto/create-message.dto';
 
 @Injectable()
 export class ProjectsService {
@@ -3502,10 +4956,10 @@ export class ProjectsService {
     private readonly notificationsGateway: NotificationsGateway,
   ) {}
 
-  async createmessage(projectId: number, userId: number, content: string) {
+  async createmessage(projectId: number, userId: number, createMessageDto: CreateMessageDto) {
   const newMessage = await this.prisma.message.create({
     data: {
-      content: content,
+      content: createMessageDto.content,
       projectId: projectId, 
       userId: userId,
     },
@@ -3535,12 +4989,12 @@ export class ProjectsService {
     });
   }
 
-  async create(createProjectDto: CreateProjectDto, userId: number, deadline: Date | null) {
+  async create(createProjectDto: CreateProjectDto, userId: number) {
     const newProject = await this.prisma.project.create({
       data: {
         name: createProjectDto.name,
         description: createProjectDto.description,
-        deadline: deadline,
+        deadline: createProjectDto.deadline,
         members: {
           create: {
             userId: userId,
@@ -3640,118 +5094,6 @@ export class ProjectsService {
             });
         });
         return { message: 'Project successfully deleted' };
-  }
-}
-</file>
-
-<file path="srcs/backend/src/users/dto/create-user.dto.ts">
-import { IsString, MinLength, IsEmail, IsOptional
-    
- } from 'class-validator';
-
-export class CreateUserDto {
-    @IsString()
-    username: string;
-
-    @IsString()
-    @IsEmail()
-    email: string;
-
-    @IsString()
-    @MinLength(8)
-    password: string;
-
-    @IsString()
-    @IsOptional()
-    avatar: string;
-}
-
-export class UpdateUserDto{
-    username?: string;
-    avatar?: string;
-}
-</file>
-
-<file path="package.json">
-{
-  "dependencies": {
-    "typescript": "^5.9.3"
-  }
-}
-</file>
-
-<file path="srcs/backend/src/users/users.controller.ts">
-import { 
-  Controller, 
-  Get, 
-  Post, 
-  Body, 
-  Patch, 
-  Param, 
-  Delete, 
-  UseGuards, 
-  Request 
-} from '@nestjs/common';
-import { ApiBearerAuth } from '@nestjs/swagger';
-import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
-
-@Controller('users')
-export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
-
-  @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
-  }
-
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN', 'USER')
-  @Get()
-  findAll() {
-    return this.usersService.findAll();
-  }
-
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.usersService.findOne(+id);
-  }
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
-  @Patch('me')
-  update( @Request() req, @Body() updateUserDto: UpdateUserDto,) {
-    return this.usersService.update(req.user.id, updateUserDto);
-  }
-  
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN') // only admins can delete users
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.usersService.remove(+id);
-  }
-
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard) // <-- Check if the user is logged in first, THEN check their role
-  @Roles('ADMIN')                   // <-- The magic tag! Only ADMINs can access this route
-  @Patch('promote/:username')
-  promote(@Param('username') username: string) {
-    // If the execution reaches this point, we are 100% sure the user is an ADMIN.
-    return this.usersService.promote(username);
-  }
-
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
-  @Patch('demote/:username')
-  demote(@Param('username') username: string, @Request() req) {
-    // to the service (e.g., to prevent an admin from demoting themselves).
-    return this.usersService.demote(username, req.user.username);
   }
 }
 </file>
@@ -3916,6 +5258,141 @@ export class UsersService {
 }
 </file>
 
+<file path="docker-compose.yml">
+services:
+  postgres:
+    image: postgres:17
+    container_name: transcendence_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: srcs/backend/Dockerfile
+    container_name: transcendence_backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      TZ: Europe/Brussels
+      DATABASE_URL: ${DATABASE_URL}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_CALLBACK_URL: ${GOOGLE_CALLBACK_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/srcs/backend/node_modules
+    command: sh -c "npx prisma migrate deploy --schema=./prisma/schema.prisma && npm run start:dev"
+  frontend:
+    build:
+      context: .
+      dockerfile: srcs/frontend/Dockerfile
+    ports:
+      - "5173:5173"
+    restart: unless-stopped
+    depends_on:
+      - backend
+volumes:
+  postgres_data:
+</file>
+
+<file path="srcs/backend/src/users/users.controller.ts">
+import { 
+  Controller, 
+  Get, 
+  Post, 
+  Body, 
+  Patch, 
+  Param, 
+  Delete, 
+  UseGuards, 
+  Request 
+} from '@nestjs/common';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { UsersService } from './users.service';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+
+@Controller('users')
+export class UsersController {
+  constructor(private readonly usersService: UsersService) {}
+
+  @Post()
+  create(@Body() createUserDto: CreateUserDto) {
+    return this.usersService.create(createUserDto);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'USER')
+  @Get()
+  findAll() {
+    return this.usersService.findAll();
+  }
+
+  @Get(':id')
+  @UseGuards(JwtAuthGuard)
+  findOne(@Param('id') id: string) {
+    return this.usersService.findOne(+id);
+  }
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Patch('me')
+  update( @Request() req, @Body() updateUserDto: UpdateUserDto,) {
+    return this.usersService.update(req.user.id, updateUserDto);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN') // only admins can delete users
+  @Delete(':id')
+  remove(@Param('id') id: string) {
+    return this.usersService.remove(+id);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard) // <-- Check if the user is logged in first, THEN check their role
+  @Roles('ADMIN')                   // <-- The magic tag! Only ADMINs can access this route
+  @Patch('promote/:username')
+  promote(@Param('username') username: string) {
+    // If the execution reaches this point, we are 100% sure the user is an ADMIN.
+    return this.usersService.promote(username);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Patch('demote/:username')
+  demote(@Param('username') username: string, @Request() req) {
+    // to the service (e.g., to prevent an admin from demoting themselves).
+    return this.usersService.demote(username, req.user.username);
+  }
+}
+</file>
+
 <file path="srcs/backend/package.json">
 {
   "name": "backend",
@@ -3956,13 +5433,16 @@ export class UsersService {
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.14.4",
+    "csv-stringify": "^6.7.0",
     "nodemailer": "^8.0.5",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1",
+    "pdfmake": "^0.3.7",
     "pg": "^8.20.0",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "@transcendence/shared": "*"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -3978,6 +5458,7 @@ export class UsersService {
     "@types/nodemailer": "^8.0.0",
     "@types/passport-google-oauth20": "^2.0.17",
     "@types/passport-jwt": "^4.0.1",
+    "@types/pdfmake": "^0.3.2",
     "@types/pg": "^8.20.0",
     "@types/supertest": "^6.0.2",
     "eslint": "^9.18.0",
@@ -4090,7 +5571,7 @@ model Project {
   status      ProjectStatus   @default(PLANNING)
   members     ProjectMember[]
   tasks       Task[]
-  messages  Message[]
+  messages    Message[]
 }
 
 model ProjectMember {
@@ -4115,8 +5596,9 @@ model Task {
   updatedAt   DateTime   @updatedAt
   projectId   Int
   comments Comment[]
-  project     Project    @relation(fields: [projectId], references: [id])
+  project     Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
   assignees   User[]     @relation("TaskAssignees")
+  statusHistory TaskStatusHistory[]
 }
 
 model Notification {
@@ -4166,6 +5648,15 @@ model Comment {
   parentId    Int?
   parent      Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
   replies     Comment[] @relation("CommentReplies")
+}
+
+model TaskStatusHistory {
+  id        Int        @id @default(autoincrement())
+  taskId    Int
+  task      Task       @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  status    TaskStatus
+  changedAt DateTime   @default(now())
+  changedBy Int?
 }
 </file>
 
