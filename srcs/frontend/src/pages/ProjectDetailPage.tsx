@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Separator } from '@/components/ui/separator'
-import type { Project, Task } from '../../../../shared/srcs/types'
-import { ArrowLeft, Plus } from 'lucide-react'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import type { Project, Task, User } from '../../../../shared/srcs/types'
+import { ArrowLeft, Plus, UserPlus } from 'lucide-react'
 
 function getToken() { return localStorage.getItem('token') }
 function authHeaders() {
@@ -35,15 +36,24 @@ const columns: Array<{ status: string; label: string }> = [
   { status: 'DONE', label: 'Klaar' },
 ]
 
+type Member = { id: number; role: string; user: { username: string; avatar?: string } }
+
 export default function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [project, setProject] = useState<Project | null>(null)
   const [tasks, setTasks] = useState<Task[]>([])
+  const [members, setMembers] = useState<Member[]>([])
+  const [allUsers, setAllUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [showTaskForm, setShowTaskForm] = useState(false)
+  const [showMemberForm, setShowMemberForm] = useState(false)
   const [taskForm, setTaskForm] = useState({ title: '', description: '', deadline: '' })
+  const [memberSearch, setMemberSearch] = useState('')
+  const [memberRole, setMemberRole] = useState('MEMBER')
   const [creating, setCreating] = useState(false)
+  const [addingMember, setAddingMember] = useState(false)
+  const [memberError, setMemberError] = useState('')
 
   const base = import.meta.env.VITE_API_BASE_URL
 
@@ -53,9 +63,12 @@ export default function ProjectDetailPage() {
     Promise.all([
       fetch(`${base}/projects/${id}`, { headers: authHeaders() }).then((r) => r.json()),
       fetch(`${base}/projects/${id}/tasks`, { headers: authHeaders() }).then((r) => r.json()).catch(() => []),
-    ]).then(([p, t]) => {
+      fetch(`${base}/users`, { headers: authHeaders() }).then((r) => r.json()).catch(() => []),
+    ]).then(([p, t, u]) => {
       setProject(p)
       setTasks(Array.isArray(t) ? t : [])
+      setMembers(Array.isArray(p?.members) ? p.members : [])
+      setAllUsers(Array.isArray(u) ? u : [])
     }).finally(() => setLoading(false))
   }, [id, navigate, base])
 
@@ -82,6 +95,31 @@ export default function ProjectDetailPage() {
     }
   }
 
+  async function addMember(user: User) {
+    if (!id) return
+    setAddingMember(true)
+    setMemberError('')
+    try {
+      const res = await fetch(`${base}/projects/${id}/members`, {
+        method: 'POST',
+        headers: authHeaders(),
+        body: JSON.stringify({ userId: user.id, role: memberRole }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}))
+        throw new Error(body.message ?? 'Toevoegen mislukt')
+      }
+      const newMember: Member = { id: user.id, role: memberRole, user: { username: user.username, avatar: user.avatar } }
+      setMembers((prev) => [...prev, newMember])
+      setMemberSearch('')
+      setShowMemberForm(false)
+    } catch (err: unknown) {
+      setMemberError(err instanceof Error ? err.message : 'Fout')
+    } finally {
+      setAddingMember(false)
+    }
+  }
+
   async function updateTaskStatus(taskId: number, status: string) {
     await fetch(`${base}/tasks/${taskId}`, {
       method: 'PATCH',
@@ -90,6 +128,12 @@ export default function ProjectDetailPage() {
     })
     setTasks((prev) => prev.map((t) => t.id === taskId ? { ...t, status: status as Task['status'] } : t))
   }
+
+  const memberIds = new Set(members.map((m) => m.user?.username))
+  const filteredUsers = allUsers.filter(
+    (u) => !memberIds.has(u.username) &&
+      u.username.toLowerCase().includes(memberSearch.toLowerCase())
+  )
 
   if (loading) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Laden...</div>
   if (!project) return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Project niet gevonden</div>
@@ -110,6 +154,79 @@ export default function ProjectDetailPage() {
         {project.description && (
           <p className="text-muted-foreground">{project.description}</p>
         )}
+
+        {/* Leden */}
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Teamleden ({members.length})</CardTitle>
+              <Button size="sm" variant="outline" onClick={() => setShowMemberForm((v) => !v)}>
+                <UserPlus className="h-4 w-4 mr-2" /> Lid toevoegen
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex flex-wrap gap-2">
+              {members.map((m, i) => (
+                <div key={i} className="flex items-center gap-2 rounded-full border px-3 py-1">
+                  <Avatar className="h-6 w-6">
+                    <AvatarFallback className="text-xs">
+                      {m.user?.username?.[0]?.toUpperCase() ?? '?'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="text-sm">{m.user?.username}</span>
+                  <Badge variant="secondary" className="text-xs py-0">{m.role}</Badge>
+                </div>
+              ))}
+            </div>
+
+            {showMemberForm && (
+              <div className="border-t pt-3 space-y-3">
+                {memberError && (
+                  <p className="text-sm text-destructive">{memberError}</p>
+                )}
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Zoek gebruiker..."
+                    value={memberSearch}
+                    onChange={(e) => setMemberSearch(e.target.value)}
+                    className="max-w-xs"
+                  />
+                  <select
+                    value={memberRole}
+                    onChange={(e) => setMemberRole(e.target.value)}
+                    className="border rounded-md px-3 py-2 text-sm bg-background"
+                  >
+                    <option value="MEMBER">Lid</option>
+                    <option value="GUEST">Gast</option>
+                    <option value="PROJECT_LEADER">Projectleider</option>
+                  </select>
+                </div>
+                {memberSearch && (
+                  <div className="border rounded-md divide-y max-h-48 overflow-y-auto">
+                    {filteredUsers.length === 0 && (
+                      <p className="text-sm text-muted-foreground p-3">Geen gebruikers gevonden</p>
+                    )}
+                    {filteredUsers.map((u) => (
+                      <button
+                        key={u.id}
+                        className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted text-left"
+                        onClick={() => addMember(u)}
+                        disabled={addingMember}
+                      >
+                        <Avatar className="h-6 w-6">
+                          <AvatarFallback className="text-xs">{u.username[0].toUpperCase()}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm">{u.username}</span>
+                        <span className="text-xs text-muted-foreground ml-auto">{u.email}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
         <Tabs defaultValue="board">
           <div className="flex items-center justify-between">

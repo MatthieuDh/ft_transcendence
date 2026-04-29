@@ -114,8 +114,12 @@ export class ProjectsService {
     return newMember;
   }
 
-  async findAll() {
-    return this.prisma.project.findMany();
+  async findAll(userId: number) {
+    return this.prisma.project.findMany({
+      where: {
+        members: { some: { userId } },
+      },
+    });
   }
 
   async findOne(id: number) {
