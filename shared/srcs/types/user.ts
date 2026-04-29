@@ -1,4 +1,4 @@
-import { ProjectMember } from "./project";
+import type { ProjectMember } from "./project";
 
 export enum GlobalRole{
     USER = 'USER',

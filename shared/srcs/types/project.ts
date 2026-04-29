@@ -1,5 +1,5 @@
-import { Task } from "./task";
-import { Message } from "./message";
+import type { Task } from "./task";
+import type { Message } from "./message";
 
 export enum ProjectStatus{
     PLANNING = 'PLANNING',

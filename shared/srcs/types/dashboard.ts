@@ -1,5 +1,5 @@
-import { TaskStatus } from "./task";
-import { ProjectStatus } from "./project";
+import type { TaskStatus } from "./task";
+import type { ProjectStatus } from "./project";
 
 
 export interface DashboardFilters {
