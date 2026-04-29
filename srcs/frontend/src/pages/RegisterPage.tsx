@@ -26,8 +26,13 @@ export default function RegisterPage() {
         body: JSON.stringify({ data: form }),
       })
       if (!res.ok) {
-        const body = await res.json()
-        throw new Error(body.message ?? 'Registratie mislukt')
+        let message = 'Registratie mislukt'
+        try {
+          const body = await res.json()
+          if (typeof body.message === 'string') message = body.message
+          else if (Array.isArray(body.message)) message = body.message.join(', ')
+        } catch { /* lege body */ }
+        throw new Error(message)
       }
       navigate('/login')
     } catch (err: unknown) {
