@@ -4,6 +4,7 @@ import { UpdateProjectDto } from './dto/update-project.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationsGateway } from 'src/notifications/notifications.gateway';
+import { CreateMessageDto } from './dto/create-message.dto';
 
 @Injectable()
 export class ProjectsService {
@@ -13,10 +14,10 @@ export class ProjectsService {
     private readonly notificationsGateway: NotificationsGateway,
   ) {}
 
-  async createmessage(projectId: number, userId: number, content: string) {
+  async createmessage(projectId: number, userId: number, createMessageDto: CreateMessageDto) {
   const newMessage = await this.prisma.message.create({
     data: {
-      content: content,
+      content: createMessageDto.content,
       projectId: projectId, 
       userId: userId,
     },
@@ -46,12 +47,12 @@ export class ProjectsService {
     });
   }
 
-  async create(createProjectDto: CreateProjectDto, userId: number, deadline: Date | null) {
+  async create(createProjectDto: CreateProjectDto, userId: number) {
     const newProject = await this.prisma.project.create({
       data: {
         name: createProjectDto.name,
         description: createProjectDto.description,
-        deadline: deadline,
+        deadline: createProjectDto.deadline,
         members: {
           create: {
             userId: userId,

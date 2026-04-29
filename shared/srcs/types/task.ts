@@ -1,14 +1,12 @@
-import { User } from "./user";
-import { Project } from "./project";
-
 export enum TaskStatus{
     TODO = 'TODO',
     IN_PROGRESS = 'IN_PROGRESS',
-    PENDING_EVALUATION = 'PENDING_EVALUTION',
+    PENDING_EVALUATION = 'PENDING_EVALUATION',
     DONE = 'DONE'
 }
 
 export interface Task{
+    id: number;
     title: string;
     description?: string;
     status: TaskStatus;
@@ -16,6 +14,6 @@ export interface Task{
     createdAt: Date;
     updatedAt: Date;
     comments?: Comment[];
-    assignee?: User[];
-    project: Project;    
+    assignee?: {username: string}[];
+    project: {project: string};
 }

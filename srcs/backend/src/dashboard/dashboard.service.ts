@@ -145,7 +145,7 @@ export class DashboardService {
         const completedWithHistory = tasks.filter((t) => t.status === 'DONE' && t.statusHistory.length > 0);
         if (completedWithHistory.length === 0) return 0;
         const totalTime = completedWithHistory.reduce((acc, task) => {
-            const start = new Date(task.statusHistoy[0].changedAt).getTime();
+            const start = new Date(task.statusHistory[0].changedAt).getTime();
             const end = new Date(task.statusHistory.at(-1).changedAt).getTime();
             return acc + (end - start);
         }, 0);

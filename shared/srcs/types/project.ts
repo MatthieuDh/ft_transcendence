@@ -1,5 +1,5 @@
 import { Task } from "./task";
-import { Messages } from "./messages";
+import { Message } from "./message";
 
 export enum ProjectStatus{
     PLANNING = 'PLANNING',
@@ -26,5 +26,5 @@ export interface Project{
     status: ProjectStatus;
     member: ProjectMember[];
     tasks: Task[];
-    messages: Messages[];
+    messages: Message[];
 }

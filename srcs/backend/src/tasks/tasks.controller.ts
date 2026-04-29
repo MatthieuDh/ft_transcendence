@@ -1,6 +1,7 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './dto/create-task.dto';
+import { UpdateTaskDto } from './dto/update-task.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ApiBearerAuth } from '@nestjs/swagger';
 import { Request } from '@nestjs/common';
@@ -29,18 +30,14 @@ export class TasksController {
 
 @ApiBearerAuth()
   @UseGuards(JwtAuthGuard) 
-  @Get()
+  @Get('me')
   findMyTasks(@Request() req) {
     return this.tasksService.findMyTasks(req.user.sub);
   }
 
 
-  @Get()
-  findAll(@Request() req) {
-    return this.tasksService.findAll();
-  }
-
   @Get(':id')
+  @UseGuards(JwtAuthGuard)
   findOne(@Param('id') id: string) {
     return this.tasksService.findOne(+id);
   }
@@ -49,5 +46,13 @@ export class TasksController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.tasksService.remove(+id);
+  }
+
+  @Patch(':id')
+  update(
+    @Param('id') id: string, 
+    @Body() updateTaskDto: UpdateTaskDto,
+    @Request() req) {
+    return this.tasksService.update(+id, updateTaskDto, req.user.sub);
   }
 }

@@ -1,7 +1,7 @@
 import { User } from "./user";
 import { Project } from "./project";
 
-export interface Messages{
+export interface Message{
     user: User;
     project: Project;
     content: string;

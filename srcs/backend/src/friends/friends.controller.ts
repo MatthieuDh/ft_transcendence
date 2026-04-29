@@ -20,7 +20,7 @@ export class FriendsController {
   }
 
   @Post('request/:userId')
-  sendRequest(@Request() req, @Param('userId', ParseIntPipe) targetUserId: number) {
+  sendRequest(@Request() req, @Param('targetUserId', ParseIntPipe) targetUserId: number) {
     return this.friendsService.sendrequest(req.user.sub, targetUserId);
   }
 

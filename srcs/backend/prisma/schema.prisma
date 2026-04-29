@@ -68,7 +68,7 @@ model Project {
   status      ProjectStatus   @default(PLANNING)
   members     ProjectMember[]
   tasks       Task[]
-  messages  Message[]
+  messages    Message[]
 }
 
 model ProjectMember {

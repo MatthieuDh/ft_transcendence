@@ -1,11 +1,11 @@
 import { User } from "./user";
 import { Task } from "./task";
 
-export interface Comments{
+export interface Comment{
     user: User;
     task: Task;
-    parrentComment?: Comments;
-    replies?: Comments[];
+    parrentComment?: Comment;
+    replies?: Comment[];
     createdAt: Date;
     attachments: string[];
     content: string;

@@ -18,7 +18,7 @@ export class ProjectsController {
   create(@Body() createProjectDto: CreateProjectDto, @Request() req) {
     const userId = req.user.sub; 
     const deadlineDate = createProjectDto.deadline ? new Date(createProjectDto.deadline) : null;
-    return this.projectsService.create(createProjectDto, userId, deadlineDate);
+    return this.projectsService.create(createProjectDto, userId);
   }
 
   @Get()
@@ -57,9 +57,10 @@ export class ProjectsController {
   @Post(':id/messages')
   createMessage(
     @Param('id') projectid: string,
-    @Body() createMessageDto: CreateMessageDto
-  ) {
-    return this.projectsService.createmessage(+projectid, createMessageDto.userId, createMessageDto.content);
+    @Body() createMessageDto: CreateMessageDto,
+    @Request () req) {
+    const currentUserId = req.user.sub;
+    return this.projectsService.createmessage(+projectid, currentUserId, createMessageDto);
   }
 
   @Get(':id/messages')
