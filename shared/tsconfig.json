@@ -9,7 +9,9 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "noEmit": true
+    "noEmit": true,
+    "verbatimModuleSyntax": false,
+    "erasableSyntaxOnly": false
   },
   "include": ["srcs", "../srcs/frontend/src/api"]
 }
