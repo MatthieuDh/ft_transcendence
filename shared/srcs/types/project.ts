@@ -8,23 +8,28 @@ export enum ProjectStatus{
 }
 
 export enum ProjectRole{
-    PROJECT_LEADER = ' PROJECT_LEADER',
+    PROJECT_LEADER = 'PROJECT_LEADER',
     MEMBER = 'MEMBER',
     GUEST = 'GUEST'
 }
 
 export interface ProjectMember{
-    projectRole: ProjectRole;
+    id: number;
+    userId: number;
+    role: ProjectRole;
     projectId: number;
+    user?: {username: string};
+    project?: {name: string};
 }
 
-export interface Project{
+export interface Project {
+    id: number;
     name: string;
     description?: string;
     deadline?: Date;
     createdAt: Date;
     status: ProjectStatus;
-    member: ProjectMember[];
-    tasks: Task[];
-    messages: Message[];
+    members?: ProjectMember[];
+    tasks?: Task[];
+    messages?: Message[];
 }

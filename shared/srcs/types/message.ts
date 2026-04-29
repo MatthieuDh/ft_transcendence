@@ -1,8 +1,7 @@
-import { User } from "./user";
-import { Project } from "./project";
-
-export interface Message{
-    user: User;
-    project: Project;
-    content: string;
+export interface Message {
+  id: number;
+  content: string;
+  projectId: number;
+  createdAt: Date;
+  user: { username: string; avatar: string };
 }

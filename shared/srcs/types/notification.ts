@@ -1,7 +1,10 @@
 import { User } from "./user";
 
 export interface Notification{
-    user: User;
+    id: number;
+    userId: number;
+    type: string;
+    isRead: boolean;
     message: string;
     createdAt: Date;
 }

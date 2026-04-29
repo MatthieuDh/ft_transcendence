@@ -1,18 +1,29 @@
 import client from './client';
-import type { AuthToken, DashboardMetrics, Comment, Message, FriendRequest, FriendUser, Notification, Project, Task, User, TaskStatus, DashboardFilters } from '../../../../shared/srcs/types';
+import type { AuthToken, DashboardMetrics, Comment, Message, FriendRequest, FriendUser, Notification, Project, ProjectMember, ProjectRole, Task, User, PromotedUser, TaskStatus, DashboardFilters } from '../../../../shared/srcs/types';
 
 export const authService = {
-    login: (username: string, password: string) =>
-        client.post<AuthToken>('auth/login', {username, password}),
-    googleLogin: () => {window.location.href = '${import.meta.env.VITE_API_BASE_URL}/auth/google';},
-    refresh: () => client.post('auth/refresh'),
+  login: (username: string, password: string) =>
+    client.post<AuthToken>('/auth/login', { username, password }),
+  googleLogin: () => {
+    window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/google`;
+  },
+  refresh: (refreshToken: string) =>
+    client.post<{ access_token: string }>('/auth/refresh', { refresh_token: refreshToken }),
+  getProfile: () => client.get<User>('/auth/profile'),
 };
 
 export const commentService = {
-    create: (taskId: number, userId: number, data: { content: string; parentId?: number; files?: string[]}) =>
-        client.post<Comment>(`tasks/${taskId}/comments`, { userId, ...data}),
-    getByTaskId: (taskId: number) =>
-        client.get<Comment[]>(`tasks/${taskId}/comments`),
+  create: (taskId: number, data: { content: string; parentId?: number; files?: File[] }) => {
+    const formData = new FormData();
+    formData.append('content', data.content);
+    if (data.parentId) formData.append('parentId', String(data.parentId));
+    if (data.files) data.files.forEach(file => formData.append('files', file));
+    return client.post<Comment>(`/tasks/${taskId}/comments`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  getByTaskId: (taskId: number) =>
+    client.get<Comment[]>(`/tasks/${taskId}/comments`),
 };
 
 export const taskService = {
@@ -27,21 +38,18 @@ export const taskService = {
 };
 
 export const projectService = {
-    create: (data: { name: string; description?: string; deadline?: string }, userId: number) =>
-        client.post<Project>('/projects', {userId, ...data}),
-    getAll: () => client.get<Project[]>('/projects'),
-    getById: (projectId: number) =>
-        client.get<Project>(`/projects/${projectId}`),
-    update: (projectId: number, name?: string, description?: string, deadline?: string ) =>
-        client.patch<Project>(`/projects/${projectId}`, {name, description, deadline}),
-    delete: (projectId: number) =>
-        client.delete<Project>(`/projects/${projectId}`),
-    addMember: (projectId: number, userId: number, role:string) =>
-        client.post<Project>(`/projects/${projectId}/members`, {userId, role}),
-    createMessage: (projectId: number, content: string) =>
-        client.post<Message>(`/projects/${projectId}/messages`, {content}),
-    getMessages: (projectId: number) =>
-        client.get<Message[]>(`/projects/${projectId}/messages`),
+  create: (data: { name: string; description?: string; deadline?: string }) =>
+    client.post<Project>('/projects', data),
+  getAll: () => client.get<Project[]>('/projects'),
+  getById: (projectId: number) => client.get<Project>(`/projects/${projectId}`),
+  update: (projectId: number, data: { name?: string; description?: string; deadline?: string }) =>
+    client.patch<Project>(`/projects/${projectId}`, data),
+  delete: (projectId: number) => client.delete<{ message: string }>(`/projects/${projectId}`),
+  addMember: (projectId: number, userId: number, role: ProjectRole) =>
+    client.post<ProjectMember>(`/projects/${projectId}/members`, { userId, role }),
+  createMessage: (projectId: number, content: string) =>
+    client.post<Message>(`/projects/${projectId}/messages`, { content }),
+  getMessages: (projectId: number) => client.get<Message[]>(`/projects/${projectId}/messages`),
 };
 
 export const friendService = {
@@ -54,10 +62,8 @@ export const friendService = {
 };
 
 export const notificationService = {
-    create: (userId: number, type: string, message: string) =>
-        client.post<Notification>('/notifications', {userId, type, message}),
     getNotifications: (userId: number) => client.get<Notification[]>(`/notification/user/${userId}`),
-    markAsRead: (userId: number) => client.patch<Notification>(`/notifications/user/${userId}/read`),
+    markAsRead: (userId: number) => client.patch<{ count: number}>(`/notifications/user/${userId}/read`),
 };
 
 export const dashboardMetrics = {
@@ -70,13 +76,13 @@ export const dashboardMetrics = {
 };
 
 export const userService = {
-    create: (data: {username: string; email: string; password: string; avatar?: string}) =>
-        client.post<User>('/users', {data}),
-    getAllUsers: () => client.get<User[]>('/users'),
-    getUser: (userId: number) => client.get<User>(`/users/${userId}`),
-    delete: (userId: number) => client.delete<User>(`/users/${userId}`),
-    updateUser: (data: {username?: string; email?: string; password?: string; avatar?: string}) =>
-        client.patch<User>('users/me', {data}),
-    promoteUser: (username: string) => client.patch<User>(`/users/promote/${username}`),
-    demoteUser: (username: string) => client.patch<User>(`/users/demote/${username}`),
+  create: (data: { username: string; email: string; password: string; avatar?: string }) =>
+    client.post<User>('/users', data),
+  getAllUsers: () => client.get<User[]>('/users'),
+  getUser: (userId: number) => client.get<User>(`/users/${userId}`),
+  delete: (userId: number) => client.delete<void>(`/users/${userId}`),
+  updateUser: (data: { username?: string; email?: string; password?: string; avatar?: string }) =>
+    client.patch<User>('/users/me', data),
+  promoteUser: (username: string) => client.patch<PromotedUser>(`/users/promote/${username}`),
+  demoteUser: (username: string) => client.patch<PromotedUser>(`/users/demote/${username}`),
 };

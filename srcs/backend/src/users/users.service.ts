@@ -12,6 +12,17 @@ const userSelect = {
   globalRole: true,
   avatar: true,
   createdAt: true,
+  projectMembership: {
+    select: {
+      role: true,
+      projectId: true,
+      project: {
+        selet: {
+          name: true,
+        },
+      },
+    },
+  },
 };
 
 export type SafeUser = {
@@ -85,11 +96,10 @@ export class UsersService {
   }
 
   async update(id: number, updateUserDto: UpdateUserDto) {
-    const { username, password, avatar, email} = updateUserDto;
-    const hashedpassword = password ? await bcrypt.hash(password, 10) : undefined;
+    const hashedpassword = updateUserDto.password ? await bcrypt.hash(updateUserDto.password, 10) : undefined;
     return this.prisma.user.update({
       where: { id },
-      data: { username, password: hashedpassword, avatar, email} ,
+      data: { username: updateUserDto.username, password: hashedpassword, avatar: updateUserDto.avatar, email: updateUserDto.email} ,
       select: userSelect,
     });
   }
