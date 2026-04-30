@@ -140,7 +140,7 @@ export class ProjectsService {
         if (!project) {
             throw new Error('Project not found'); 
           }
-    await this.prisma.projectMember.delete({
+    await this.prisma.project.delete({
         where: { id: id },
     });
         const target = project.members.map(member => member.userId).filter(userid => userid !== currentUserId);

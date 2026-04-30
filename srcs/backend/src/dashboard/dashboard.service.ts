@@ -135,7 +135,7 @@ export class DashboardService {
 
     private isPendingTooLong(task: any, now: Date, treshHoldDays = 7){
         if (task.status !== 'PENDING_EVALUATION') return false;
-        const lastStatus = task.changeHistory(-1);
+        const lastStatus = task.statusHistory.at(-1);
         if (!lastStatus) return false;
         const timediff = (now.getTime() - lastStatus.changedAt.getTime()) / (1000 * 60 * 60 *24);
         return timediff > treshHoldDays;

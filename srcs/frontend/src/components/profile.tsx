@@ -7,7 +7,7 @@ interface profileProps{
 function Profile({user} : profileProps) {
     return (
         <div>
-            <img src={user.avatar} alt={user.username} />
+            <img src={user.avatar ?? undefined} alt={user.username} />
             <h2>{user.username}</h2>
             <p>{user.email}</p>
             
