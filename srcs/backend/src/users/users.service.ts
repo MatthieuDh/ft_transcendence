@@ -12,12 +12,12 @@ const userSelect = {
   globalRole: true,
   avatar: true,
   createdAt: true,
-  projectMembership: {
+  projectMemberships: {
     select: {
       role: true,
       projectId: true,
       project: {
-        selet: {
+        select: {
           name: true,
         },
       },

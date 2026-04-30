@@ -2,15 +2,22 @@ import client from './client';
 import type { AuthToken, DashboardMetrics, Comment, Message, FriendRequest, FriendUser, Notification, Project, ProjectMember, ProjectRole, Task, User, PromotedUser, TaskStatus, DashboardFilters } from '../../../../shared/srcs/types';
 
 export const authService = {
-  login: (username: string, password: string) =>
-    client.post<AuthToken>('/auth/login', { username, password }),
+  login: async (username: string, password: string) => {
+    const response = await client.post<AuthToken>('/auth/login', { username, password });
+  localStorage.setItem('access_token', response.data.access_token);
+  return response;
+},
   googleLogin: () => {
     window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/google`;
   },
-  refresh: (refreshToken: string) =>
-    client.post<{ access_token: string }>('/auth/refresh', { refresh_token: refreshToken }),
+  refresh: async (refreshToken: string) => {
+   const response = await client.post<{ access_token: string }>('/auth/refresh', { refresh_token: refreshToken });
+   localStorage.setItem('acces_token', response.data.access_token)
+   return response;
+  },
   getProfile: () => client.get<User>('/auth/profile'),
 };
+
 
 export const commentService = {
   create: (taskId: number, data: { content: string; parentId?: number; files?: File[] }) => {
