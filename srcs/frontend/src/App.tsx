@@ -1,21 +1,20 @@
-import { useEffect, useState } from 'react'
-import axios from 'axios'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 
-function App() {
-  const [data, setData] = useState('')
-
-  useEffect(() => {
-    axios.get(import.meta.env.VITE_API_URL)
-      .then(res => setData(res.data))
-      .catch(err => setData("Error: " + err.message))
-  }, [])
-
+export default function App() {
   return (
-    <div>
-      <h1>Transcendence Frontend</h1>
-      <p>Bericht van de backend: <strong>{data}</strong></p>
-    </div>
-  )
-}
+    <BrowserRouter>
+      <Routes>
+        {/*login page redirect*/}
+        <Route path="/login" element={<LoginPage />} />
 
-export default App
+        {/* RergisterPafe redirect */}
+        <Route path="/register" element={<RegisterPage />} />
+
+        {/* for now if you go to an page that does not exist i route to login */} 
+        <Route path="*" element={<Navigate to="/login" />} />
+      </Routes>
+    </BrowserRouter>
+  );
+}
