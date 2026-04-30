@@ -2,7 +2,7 @@ import { useParams } from "react-router-dom";
 import { useProfile } from "../hooks/useProfile";
 import Profile from "../components/profile";
 
-function ProfilePage() {
+export function ProfilePage() {
   const { userId } = useParams();
   const { user } = useProfile(Number(userId));  // useParams gives a string, so cast it
 
