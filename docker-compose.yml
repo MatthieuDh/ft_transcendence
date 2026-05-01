@@ -35,20 +35,20 @@ services:
       SMTP_PORT: ${SMTP_PORT}
       SMTP_USER: ${SMTP_USER}
       SMTP_PASS: ${SMTP_PASS}
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     volumes:
       - .:/app
       - /app/node_modules
       - /app/srcs/backend/node_modules
     command: sh -c "npx prisma migrate deploy --schema=./prisma/schema.prisma && npm run start:dev"
-
+    
   frontend:
     build:
       context: .
       dockerfile: srcs/frontend/Dockerfile
-    ports:
-      - "5173:5173"
+    expose:
+      - "5173"
     restart: unless-stopped
     depends_on:
       - backend

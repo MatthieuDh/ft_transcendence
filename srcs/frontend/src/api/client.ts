@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const API_URL = isLocalhost ? "http://localhost:3000" : "https://34.79.48.4:3000";
+const API_URL = isLocalhost ? "http://localhost:3000" : "https://34.79.48.4.nip.io/api";
 
 const client = axios.create({
     baseURL: API_URL,
