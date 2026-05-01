@@ -7,6 +7,7 @@ interface ProfileProps {
 
 function Profile({ user }: ProfileProps) {
   return (
+    <VStack gap={4} align="stretch">
     <Card.Root>
       <Card.Body>
 
@@ -19,12 +20,19 @@ function Profile({ user }: ProfileProps) {
 
           {/* right: info stacked */}
           <VStack align="start" gap={10}>
-            <Heading size="md" color="fg.default">{user.username}</Heading>
+            <Heading size="md" color="brown">{user.username}</Heading>
             <Text color="fg.muted">{user.email}</Text>
           </VStack>
         </HStack>
+      </Card.Body>
+    </Card.Root>
 
-        {/* projects */}
+    {/*Projects*/}
+    <Card.Root>
+        <Card.Header>
+            <Heading size="md" color= "green">Projects</Heading>
+        </Card.Header>
+        <Card.Body>
         {user.projectMembership && user.projectMembership.length > 0 ? (
           <List.Root mt={4}>
             {user.projectMembership.map((membership) => (
@@ -36,9 +44,9 @@ function Profile({ user }: ProfileProps) {
         ) : (
           <Text mt={4}>No projects yet</Text>
         )}
-
-      </Card.Body>
+        </Card.Body>
     </Card.Root>
+    </VStack>
   );
 }
 
