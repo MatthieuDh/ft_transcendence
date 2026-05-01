@@ -1,7 +1,10 @@
 import axios from 'axios';
 
+const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const API_URL = isLocalhost ? "http://localhost:3000" : "https://34.79.48.4:3000";
+
 const client = axios.create({
-    baseURL: "http://localhost:3000",
+    baseURL: API_URL,
     withCredentials: true,
 });
 
@@ -10,7 +13,6 @@ client.interceptors.request.use((config) => {
     if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
 });
-
 
 client.interceptors.response.use(
   (res) => res,
@@ -22,7 +24,7 @@ client.interceptors.response.use(
     if (isUnauthorized && !isLoginRequest && !isRefreshRequest) {
       try {
         await axios.post(
-          `${import.meta.env.VITE_API_BASE_URL}/auth/refresh`,
+          `${API_URL}/auth/refresh`,
           {},
           { withCredentials: true }
         );
@@ -36,5 +38,5 @@ client.interceptors.response.use(
     return Promise.reject(err);
   }
 );
-export default client;
 
+export default client;

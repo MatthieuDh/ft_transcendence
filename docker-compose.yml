@@ -53,3 +53,13 @@ services:
       - backend
 volumes:
   postgres_data:
+
+nginx:
+    build: ./nginx
+    container_name: transcendence_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - frontend
+      - backend
