@@ -1,23 +1,22 @@
 import client from './client';
-import type { AuthToken, DashboardMetrics, Comment, Message, FriendRequest, FriendUser, Notification, Project, ProjectMember, ProjectRole, Task, User, PromotedUser, TaskStatus, DashboardFilters } from '../../../../shared/srcs/types';
+import type { AuthToken, DashboardMetrics, Comment, Message, FriendRequest, FriendUser, Notification, Project, ProjectMember, ProjectRole, Task, User, PromotedUser, TaskStatus, DashboardFilters, ProjectStatus } from '../../../../shared/srcs/types';
 
 export const authService = {
   login: async (username: string, password: string) => {
     const response = await client.post<AuthToken>('/auth/login', { username, password });
-  localStorage.setItem('access_token', response.data.access_token);
-  return response;
-},
+    localStorage.setItem('access_token', response.data.access_token);
+    return response;
+  },
   googleLogin: () => {
     window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/google`;
   },
   refresh: async (refreshToken: string) => {
-   const response = await client.post<{ access_token: string }>('/auth/refresh', { refresh_token: refreshToken });
-   localStorage.setItem('acces_token', response.data.access_token)
-   return response;
+    const response = await client.post<{ access_token: string }>('/auth/refresh', { refresh_token: refreshToken });
+    localStorage.setItem('access_token', response.data.access_token);
+    return response;
   },
   getProfile: () => client.get<User>('/auth/profile'),
 };
-
 
 export const commentService = {
   create: (taskId: number, data: { content: string; parentId?: number; files?: File[] }) => {
@@ -39,7 +38,7 @@ export const taskService = {
   getTaskById: (taskId: number) => client.get<Task>(`/tasks/${taskId}`),
   create: (data: { title: string; description?: string; projectId: number; status?: TaskStatus; deadline?: Date; assigneeIds: number[] }) =>
     client.post<Task>('/tasks', data),
-  update: (taskId: number, data: { title?: string; status?: TaskStatus; assigneeIds?: number[] }) =>
+  update: (taskId: number, data: { title?: string; description?: string; status?: TaskStatus; deadline?: Date | string | null; assigneeIds?: number[] }) =>
     client.patch<Task>(`/tasks/${taskId}`, data),
   delete: (taskId: number) => client.delete<Task>(`/tasks/${taskId}`),
 };
@@ -49,11 +48,13 @@ export const projectService = {
     client.post<Project>('/projects', data),
   getAll: () => client.get<Project[]>('/projects'),
   getById: (projectId: number) => client.get<Project>(`/projects/${projectId}`),
-  update: (projectId: number, data: { name?: string; description?: string; deadline?: string }) =>
+  update: (projectId: number, data: { name?: string; description?: string; deadline?: string; status?: ProjectStatus }) =>
     client.patch<Project>(`/projects/${projectId}`, data),
   delete: (projectId: number) => client.delete<{ message: string }>(`/projects/${projectId}`),
   addMember: (projectId: number, userId: number, role: ProjectRole) =>
     client.post<ProjectMember>(`/projects/${projectId}/members`, { userId, role }),
+  removeMember: (projectId: number, userId: number) =>
+    client.delete<{ message: string }>(`/projects/${projectId}/members/${userId}`),
   createMessage: (projectId: number, content: string) =>
     client.post<Message>(`/projects/${projectId}/messages`, { content }),
   getMessages: (projectId: number) => client.get<Message[]>(`/projects/${projectId}/messages`),
@@ -69,17 +70,17 @@ export const friendService = {
 };
 
 export const notificationService = {
-    getNotifications: (userId: number) => client.get<Notification[]>(`/notification/user/${userId}`),
-    markAsRead: (userId: number) => client.patch<{ count: number}>(`/notifications/user/${userId}/read`),
+  getNotifications: (userId: number) => client.get<Notification[]>(`/notifications/user/${userId}`),
+  markAsRead: (userId: number) => client.patch<{ count: number}>(`/notifications/user/${userId}/read`),
 };
 
 export const dashboardMetrics = {
-    getGlobalMetrics: (filters: DashboardFilters) =>
-        client.get<DashboardMetrics>('/dashboard', {params: filters}),
-    getProjectMetrics: (projectId: number, filters: DashboardFilters) => 
-        client.get<DashboardMetrics>(`/dashboard/projects/${projectId}`, {params: filters}),
-    exportMetrics: (filters: DashboardFilters, format: 'csv' | 'pdf') =>
-        client.get('dashboard/export', {params: {...filters, format}, responseType: 'blob'}),
+  getGlobalMetrics: (filters: DashboardFilters) =>
+    client.get<DashboardMetrics>('/dashboard', {params: filters}),
+  getProjectMetrics: (projectId: number, filters: DashboardFilters) => 
+    client.get<DashboardMetrics>(`/dashboard/projects/${projectId}`, {params: filters}),
+  exportMetrics: (filters: DashboardFilters, format: 'csv' | 'pdf') =>
+    client.get('dashboard/export', {params: {...filters, format}, responseType: 'blob'}),
 };
 
 export const userService = {

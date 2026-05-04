@@ -2,9 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateCommentDto } from './dto/create-command.dto';
 import { NotificationsGateway } from 'src/notifications/notifications.gateway';
-import { find } from 'rxjs';
-import { assign } from 'nodemailer/lib/shared';
-import { privateDecrypt } from 'crypto';
 
 @Injectable()
 export class CommentsService {
@@ -17,12 +14,16 @@ export class CommentsService {
             include: { assignees: true ,
             project: { include: { members: { where: { role : 'PROJECT_LEADER' } } } } },
         });
+        
         if (!task)
             throw new Error('Task not found');
+            
         const isAssignee = task.assignees.some(a => a.id === userId);
         const isLeader = task.project.members.some(m => m.userId === userId);
+        
         if (!isAssignee && !isLeader)
             throw new Error('You are not authorized to comment on this task');
+
         const comment = await this.prisma.comment.create({
             data: {
                 content: createCommentDto.content,
@@ -31,7 +32,12 @@ export class CommentsService {
                 attachments: files,
                 parentId: createCommentDto.parentId,
             },
+            include: {
+                user: { select: { id: true, username: true, avatar: true } },
+                replies: { include: { user: { select: { id: true, username: true, avatar: true } } } },
+            }
         });
+
         let notificationTargets: number[] = [];
         if (isLeader) {
             notificationTargets = task.assignees.map(a => a.id);
@@ -48,11 +54,15 @@ export class CommentsService {
             this.notificationGateway.server.to(`user_${targetId}`).emit('new_notification', {
                 type: 'NEW_COMMENT',
                 taskId: taskid,
-                message: 'a new comment has been added to a task you are involved in.',
+                message: 'A new comment has been added to a task you are involved in.',
             });
         });
+
+        this.notificationGateway.server.to(`project_${task.projectId}`).emit('new_task_comment', comment);
+
         return comment;
     }
+
     async findallcomments(taskid: number) {
         const comments = await this.prisma.comment.findMany({
             where: { taskId: taskid, parentId: null },
@@ -64,4 +74,3 @@ export class CommentsService {
         return comments;
     }
 }
-
