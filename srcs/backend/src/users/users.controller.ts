@@ -34,11 +34,19 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
+  @Get('me')
+   @UseGuards(JwtAuthGuard)
+   getMe(@Request() req) {
+    return this.usersService.findOne(req.user.sub);
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(+id);
   }
+
+
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Patch('me')

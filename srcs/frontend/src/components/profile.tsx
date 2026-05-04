@@ -7,6 +7,7 @@ interface ProfileProps {
 
 function Profile({ user }: ProfileProps) {
   return (
+    <VStack gap={4} align="stretch">
     <Card.Root>
       <Card.Body>
 
@@ -18,13 +19,24 @@ function Profile({ user }: ProfileProps) {
           </Avatar.Root>
 
           {/* right: info stacked */}
-          <VStack align="start" gap={10}>
+          <VStack align="start" gap={5}>
             <Heading size="md" color="fg.default">{user.username}</Heading>
             <Text color="fg.muted">{user.email}</Text>
+            <Text color="fg.muted">
+              Member since {new Date(user.createdAt).toLocaleDateString('en-GB', {
+              year: 'numeric', month: 'long', day: 'numeric'
+            })}</Text>
           </VStack>
         </HStack>
+      </Card.Body>
+    </Card.Root>
 
-        {/* projects */}
+    {/*Projects*/}
+    <Card.Root>
+        <Card.Header>
+            <Heading size="md" color= "fg.default">Projects</Heading>
+        </Card.Header>
+        <Card.Body>
         {user.projectMembership && user.projectMembership.length > 0 ? (
           <List.Root mt={4}>
             {user.projectMembership.map((membership) => (
@@ -36,9 +48,9 @@ function Profile({ user }: ProfileProps) {
         ) : (
           <Text mt={4}>No projects yet</Text>
         )}
-
-      </Card.Body>
+        </Card.Body>
     </Card.Root>
+    </VStack>
   );
 }
 
