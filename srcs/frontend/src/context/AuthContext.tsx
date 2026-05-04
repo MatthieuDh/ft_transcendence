@@ -17,6 +17,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    if (!token){
+      setIsLoading(false);
+      return;
+    }
+
     userService.getMe()  // ← endpoint that returns the logged in user
       .then(response => setCurrentUser(response.data))
       .finally(() => setIsLoading(false));

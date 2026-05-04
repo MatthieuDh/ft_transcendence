@@ -17,8 +17,10 @@ client.interceptors.response.use(
     const isUnauthorized = err.response?.status === 401;
     const isLoginRequest = err.config?.url?.includes('/auth/login');
     const isRefreshRequest = err.config?.url?.includes('/auth/refresh');
+    const originalRequest = err.config;
 
-    if (isUnauthorized && !isLoginRequest && !isRefreshRequest) {
+    if (isUnauthorized && !isLoginRequest && !isRefreshRequest && !originalRequest._retry) {
+      originalRequest._retry = true; 
       try {
         await axios.post('/api/auth/refresh', {}, { withCredentials: true });
         return client.request(err.config);
