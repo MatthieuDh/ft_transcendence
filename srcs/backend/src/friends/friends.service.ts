@@ -10,6 +10,7 @@ constructor(
     private  notificationsService: NotificationsService,
   ){}
 async sendrequest(requesterId: number, addresseeId: number) {
+    console.log('sendRequest called:', { requesterId, addresseeId });
     if (requesterId === addresseeId) {
       throw new BadRequestException('You cannot send a friend request to yourself.');
     }

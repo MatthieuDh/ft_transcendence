@@ -19,9 +19,13 @@ function Profile({ user }: ProfileProps) {
           </Avatar.Root>
 
           {/* right: info stacked */}
-          <VStack align="start" gap={10}>
-            <Heading size="md" color="brown">{user.username}</Heading>
+          <VStack align="start" gap={5}>
+            <Heading size="md" color="fg.default">{user.username}</Heading>
             <Text color="fg.muted">{user.email}</Text>
+            <Text color="fg.muted">
+              Member since {new Date(user.createdAt).toLocaleDateString('en-GB', {
+              year: 'numeric', month: 'long', day: 'numeric'
+            })}</Text>
           </VStack>
         </HStack>
       </Card.Body>
@@ -30,7 +34,7 @@ function Profile({ user }: ProfileProps) {
     {/*Projects*/}
     <Card.Root>
         <Card.Header>
-            <Heading size="md" color= "green">Projects</Heading>
+            <Heading size="md" color= "fg.default">Projects</Heading>
         </Card.Header>
         <Card.Body>
         {user.projectMembership && user.projectMembership.length > 0 ? (

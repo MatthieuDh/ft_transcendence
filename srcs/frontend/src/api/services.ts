@@ -62,7 +62,7 @@ export const projectService = {
 export const friendService = {
   getMyFriends: () => client.get<FriendUser[]>('/friends'),
   getRequests: () => client.get<FriendRequest[]>('/friends/requests'),
-  sendRequest: (addressee: number) => client.post<FriendRequest>(`/friends/requests/${addressee}`),
+  sendRequest: (addressee: number) => client.post<FriendRequest>(`/friends/request/${addressee}`),
   acceptRequest: (requesterId: number) => client.patch<FriendRequest>(`/friends/accept/${requesterId}`),
   rejectRequest: (requesterId: number) => client.patch<FriendRequest>(`/friends/reject/${requesterId}`),
   removeFriend: (friendshipId: number) => client.delete<void>(`/friends/remove/${friendshipId}`),
@@ -87,6 +87,7 @@ export const userService = {
     client.post<User>('/users', data),
   getAllUsers: () => client.get<User[]>('/users'),
   getUser: (userId: number) => client.get<User>(`/users/${userId}`),
+  getMe: () => client.get<User>('users/me'),
   delete: (userId: number) => client.delete<void>(`/users/${userId}`),
   updateUser: (data: { username?: string; email?: string; password?: string; avatar?: string }) =>
     client.patch<User>('/users/me', data),
