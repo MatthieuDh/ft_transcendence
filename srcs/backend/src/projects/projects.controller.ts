@@ -27,8 +27,8 @@ export class ProjectsController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.projectsService.findOne(+id);
+  findOne(@Param('id') id: string, @Request() req) {
+    return this.projectsService.findOne(+id, req.user.sub, req.user.role);
   }
 
   @UseGuards(ProjectLeaderGuard) 
@@ -52,6 +52,17 @@ export class ProjectsController {
     @Body() addMemberDto: AddMemberDto
   ) {
     return this.projectsService.addMember(+id, addMemberDto.userId, addMemberDto.role);
+  }
+
+  @UseGuards(ProjectLeaderGuard)
+  @Delete(':id/members/:userId')
+  removeMember(
+    @Param('id') projectId: string,
+    @Param('userId') userId: string,
+    @Request() req
+  ) {
+    const currentUserId = req.user.sub;
+    return this.projectsService.removeMember(+projectId, +userId, currentUserId);
   }
 
   @Post(':id/messages')

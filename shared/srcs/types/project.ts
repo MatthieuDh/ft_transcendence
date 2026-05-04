@@ -18,7 +18,11 @@ export interface ProjectMember{
     userId: number;
     role: ProjectRole;
     projectId: number;
-    user?: {username: string};
+    user?: {
+        id?: number;
+        username: string;
+        avatar?: string | null;
+    };
     project?: {name: string};
 }
 

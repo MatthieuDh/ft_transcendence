@@ -1,10 +1,7 @@
 import axios from 'axios';
 
-const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
-const API_URL = isLocalhost ? "http://localhost:3000" : "https://34.79.48.4.nip.io/api";
-
 const client = axios.create({
-    baseURL: API_URL,
+    baseURL: '/api',
     withCredentials: true,
 });
 
@@ -23,11 +20,7 @@ client.interceptors.response.use(
 
     if (isUnauthorized && !isLoginRequest && !isRefreshRequest) {
       try {
-        await axios.post(
-          `${API_URL}/auth/refresh`,
-          {},
-          { withCredentials: true }
-        );
+        await axios.post('/api/auth/refresh', {}, { withCredentials: true });
         return client.request(err.config);
       } catch {
         localStorage.removeItem('access_token');

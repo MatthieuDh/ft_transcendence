@@ -8,7 +8,8 @@ import * as express from 'express';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // CORS is nu goed ingesteld voor zowel lokaal als je live server!
+  app.setGlobalPrefix('api');
+
   app.enableCors({
     origin: ['http://localhost:5173', 'https://34.79.48.4.nip.io'],
     credentials: true
@@ -22,11 +23,12 @@ async function bootstrap() {
     .setTitle('Transcendence API')
     .setDescription('De API documentatie voor ons Transcendence project')
     .setVersion('1.0')
+    .addServer('/api') 
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);
 
-  SwaggerModule.setup('api', app, document);
+  SwaggerModule.setup('docs', app, document); 
 
   await app.listen(process.env.PORT ?? 3000);
 }

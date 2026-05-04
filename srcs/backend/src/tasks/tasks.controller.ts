@@ -42,10 +42,10 @@ export class TasksController {
     return this.tasksService.findOne(+id);
   }
 
-  @UseGuards(RolesGuard, ProjectLeaderGuard)
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.tasksService.remove(+id);
+ @UseGuards(RolesGuard, ProjectLeaderGuard)
+@Delete(':id')
+  remove(@Param('id') id: string, @Request() req) {
+    return this.tasksService.remove(+id, req.user.sub);
   }
 
   @Patch(':id')
