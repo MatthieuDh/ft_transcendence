@@ -11,7 +11,7 @@ async function bootstrap() {
   app.setGlobalPrefix('api');
 
   app.enableCors({
-    origin: ['http://localhost:5173', 'https://34.79.48.4.nip.io'],
+    origin: true,
     credentials: true
   });
 
@@ -23,7 +23,6 @@ async function bootstrap() {
     .setTitle('Transcendence API')
     .setDescription('De API documentatie voor ons Transcendence project')
     .setVersion('1.0')
-    .addServer('/api') 
     .addBearerAuth()
     .build();
   const document = SwaggerModule.createDocument(app, config);

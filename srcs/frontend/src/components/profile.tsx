@@ -37,9 +37,9 @@ function Profile({ user }: ProfileProps) {
             <Heading size="md" color= "fg.default">Projects</Heading>
         </Card.Header>
         <Card.Body>
-        {user.projectMembership && user.projectMembership.length > 0 ? (
+        {user.projectMemberships && user.projectMemberships.length > 0 ? (
           <List.Root mt={4}>
-            {user.projectMembership.map((membership) => (
+            {user.projectMemberships.map((membership) => (
               <List.Item key={membership.id}>
                 {membership.project?.name ?? 'Unknown project'}
               </List.Item>

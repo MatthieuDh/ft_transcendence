@@ -12,7 +12,7 @@ export interface User{
     avatar: string | null;
     globalRole: GlobalRole;
     createdAt: Date;
-    projectMembership: ProjectMember[] | null;
+    projectMemberships: ProjectMember[] | null;
 }
 
 export interface PromotedUser {
