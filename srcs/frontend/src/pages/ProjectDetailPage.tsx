@@ -249,9 +249,9 @@ export default function ProjectDetailPage() {
                   {colTasks.map(task => (
                     <Box key={task.id} bg="white" _dark={{ bg: "gray.800" }} p={3} borderRadius="lg" boxShadow="xs" borderWidth="1px" borderColor="gray.100" _hover={{ boxShadow: "sm" }}>
                       <Text fontSize="sm" fontWeight="medium" mb={2}>{task.title}</Text>
-                      {task.assignee && task.assignee.length > 0 && (
+                      {task.assignees && task.assignees.length > 0 && (
                         <Flex gap={1} mb={2}>
-                          {task.assignee.map((a, i) => (
+                          {task.assignees.map((a, i) => (
                             <Avatar.Root key={i} size="2xs" title={a.username}>
                               <Avatar.Fallback fontSize="8px">{a.username[0].toUpperCase()}</Avatar.Fallback>
                             </Avatar.Root>
@@ -281,9 +281,9 @@ export default function ProjectDetailPage() {
             {tasks.map(t => (
               <Flex key={t.id} align="center" gap={3} p={4}>
                 <Text fontSize="sm" flex={1}>{t.title}</Text>
-                {t.assignee && t.assignee.length > 0 && (
+                {t.assignees && t.assignees.length > 0 && (
                   <Flex gap={1}>
-                    {t.assignee.map((a, i) => <Avatar.Root key={i} size="xs" title={a.username}><Avatar.Fallback>{a.username[0].toUpperCase()}</Avatar.Fallback></Avatar.Root>)}
+                    {t.assignees.map((a, i) => <Avatar.Root key={i} size="xs" title={a.username}><Avatar.Fallback>{a.username[0].toUpperCase()}</Avatar.Fallback></Avatar.Root>)}
                   </Flex>
                 )}
                 <Badge colorPalette={taskStatusColor[t.status] ?? 'gray'} variant="subtle">{taskStatusLabel[t.status] ?? t.status}</Badge>

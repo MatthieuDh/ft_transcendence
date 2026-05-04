@@ -4,10 +4,10 @@ import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import DashboardPage from './pages/DashboardPage'
 import ProjectsPage from './pages/ProjectsPage'
-import ProjectDetailPage from './pages/ProjectDetailPage'
+import ProjectPage from './pages/ProjectPage'
+import { ProfilePage } from './pages/ProfilePage'
 import FriendsPage from './pages/FriendsPage'
 import NotificationsPage from './pages/NotificationsPage'
-import ProfilePage from './pages/ProfilePage'
 import AuthCallbackPage from './pages/AuthCallbackPage'
 
 function PrivateRoute({ children }: { children: React.ReactNode }) {
@@ -22,6 +22,7 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/auth/callback" element={<AuthCallbackPage />} />
+
         <Route
           path="/"
           element={<PrivateRoute><Layout /></PrivateRoute>}
@@ -29,11 +30,13 @@ export default function App() {
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard" element={<DashboardPage />} />
           <Route path="projects" element={<ProjectsPage />} />
-          <Route path="projects/:id" element={<ProjectDetailPage />} />
+          <Route path="projects/:id" element={<ProjectsPage />} />
+          <Route path="project/:projectId" element={<ProjectPage />} />
+          <Route path="profile/:userId" element={<ProfilePage />} />
           <Route path="friends" element={<FriendsPage />} />
           <Route path="notifications" element={<NotificationsPage />} />
-          <Route path="profile" element={<ProfilePage />} />
         </Route>
+
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>

@@ -1,6 +1,7 @@
 import { Link as RouterLink, useLocation } from 'react-router-dom'
 import { Flex, Box, VStack, Link, Text } from '@chakra-ui/react'
 import SigmaLogo from './logo'
+import { useAuth } from '../context/AuthContext'
 
 interface NavItemProps {
   to: string
@@ -41,6 +42,9 @@ function NavItem({ to, icon, label, active }: NavItemProps) {
 export default function Sidebar() {
   const location = useLocation()
   const path = location.pathname
+  const { currentUser } = useAuth()
+
+  const profilePath = currentUser ? `/profile/${currentUser.id}` : '/profile/0'
 
   return (
     <Flex
@@ -65,13 +69,13 @@ export default function Sidebar() {
 
       <VStack as="nav" gap={1} px={3} flex={1} align="stretch">
         <NavItem to="/dashboard" icon="📊" label="Dashboard" active={path === '/dashboard'} />
-        <NavItem to="/projects" icon="📁" label="Projecten" active={path.startsWith('/projects')} />
+        <NavItem to="/projects" icon="📁" label="Projecten" active={path.startsWith('/projects') || path.startsWith('/project/')} />
         <NavItem to="/friends" icon="👥" label="Vrienden" active={path === '/friends'} />
         <NavItem to="/notifications" icon="🔔" label="Notificaties" active={path === '/notifications'} />
       </VStack>
 
       <Box px={3} pb={4}>
-        <NavItem to="/profile" icon="👤" label="Profiel" active={path === '/profile'} />
+        <NavItem to={profilePath} icon="👤" label="Profiel" active={path.startsWith('/profile')} />
       </Box>
     </Flex>
   )

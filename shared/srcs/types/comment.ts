@@ -1,12 +1,13 @@
-import { User } from "./user";
-import { Task } from "./task";
+import type { User } from './user';
 
-export interface Comment{
-    user: User;
-    task: Task;
-    parrentComment?: Comment;
-    replies?: Comment[];
-    createdAt: Date;
-    attachments: string[];
-    content: string;
+export interface Comment {
+  id: number;
+  content: string;
+  attachments: string[];
+  createdAt: Date;
+  userId: number;
+  taskId: number;
+  user?: User;
+  parentId?: number;
+  replies?: Comment[];
 }

@@ -8,12 +8,6 @@ import { Field } from '../components/ui/field'
 const statusColor: Record<string, string> = { PLANNING: 'gray', ACTIVE: 'green', COMPLETED: 'blue' }
 const statusLabel: Record<string, string> = { PLANNING: 'Gepland', ACTIVE: 'Actief', COMPLETED: 'Afgerond' }
 
-function getUserId(): number | null {
-  const token = localStorage.getItem('access_token')
-  if (!token) return null
-  try { return JSON.parse(atob(token.split('.')[1])).sub } catch { return null }
-}
-
 export default function ProjectsPage() {
   const navigate = useNavigate()
   const [projects, setProjects] = useState<Project[]>([])
@@ -34,11 +28,10 @@ export default function ProjectsPage() {
     setCreating(true)
     setError('')
     try {
-      const userId = getUserId() ?? 0
       const payload: { name: string; description?: string; deadline?: string } = { name: form.name }
       if (form.description) payload.description = form.description
       if (form.deadline) payload.deadline = new Date(form.deadline).toISOString()
-      const res = await projectService.create(payload, userId)
+      const res = await projectService.create(payload)
       setProjects(prev => [res.data, ...prev])
       setShowForm(false)
       setForm({ name: '', description: '', deadline: '' })
@@ -96,7 +89,7 @@ export default function ProjectsPage() {
             cursor="pointer"
             _hover={{ boxShadow: "md", borderColor: "purple.200" }}
             transition="all 0.15s"
-            onClick={() => navigate(`/projects/${p.id}`)}
+            onClick={() => navigate(`/project/${p.id}`)}
           >
             <Flex justify="space-between" align="flex-start" mb={2}>
               <Heading size="sm" flex={1} mr={2}>{p.name}</Heading>

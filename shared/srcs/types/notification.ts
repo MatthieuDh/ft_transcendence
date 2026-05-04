@@ -1,7 +1,11 @@
-import { User } from "./user";
+import type { User } from './user';
 
-export interface Notification{
-    user: User;
-    message: string;
-    createdAt: Date;
+export interface Notification {
+  id: number;
+  userId: number;
+  type: string;
+  message: string;
+  isRead: boolean;
+  createdAt: Date;
+  user?: User;
 }
