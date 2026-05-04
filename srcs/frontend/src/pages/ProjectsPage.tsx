@@ -1,27 +1,17 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { Stack, Grid, Box, Heading, Text, Flex, Badge, Button, Input } from '@chakra-ui/react'
+import { projectService } from '../api/services'
 import type { Project } from '../../../../shared/srcs/types'
-import { ArrowLeft, Plus, FolderOpen } from 'lucide-react'
+import { Field } from '../components/ui/field'
 
-function getToken() { return localStorage.getItem('token') }
-function authHeaders() {
-  return { Authorization: `Bearer ${getToken()}`, 'Content-Type': 'application/json' }
-}
+const statusColor: Record<string, string> = { PLANNING: 'gray', ACTIVE: 'green', COMPLETED: 'blue' }
+const statusLabel: Record<string, string> = { PLANNING: 'Gepland', ACTIVE: 'Actief', COMPLETED: 'Afgerond' }
 
-const statusColor: Record<string, 'secondary' | 'default' | 'success'> = {
-  PLANNING: 'secondary',
-  ACTIVE: 'default',
-  COMPLETED: 'success',
-}
-const statusLabel: Record<string, string> = {
-  PLANNING: 'Gepland',
-  ACTIVE: 'Actief',
-  COMPLETED: 'Afgerond',
+function getUserId(): number | null {
+  const token = localStorage.getItem('access_token')
+  if (!token) return null
+  try { return JSON.parse(atob(token.split('.')[1])).sub } catch { return null }
 }
 
 export default function ProjectsPage() {
@@ -33,124 +23,90 @@ export default function ProjectsPage() {
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState('')
 
-  const base = import.meta.env.VITE_API_BASE_URL
-
   useEffect(() => {
-    if (!getToken()) { navigate('/login'); return }
-    fetch(`${base}/projects`, { headers: authHeaders() })
-      .then((r) => r.json())
-      .then((d) => setProjects(Array.isArray(d) ? d : []))
+    projectService.getAll()
+      .then(r => setProjects(Array.isArray(r.data) ? r.data : []))
       .finally(() => setLoading(false))
-  }, [navigate, base])
+  }, [])
 
   async function createProject(e: React.FormEvent) {
     e.preventDefault()
     setCreating(true)
     setError('')
     try {
-      const payload: Record<string, string> = { name: form.name }
+      const userId = getUserId() ?? 0
+      const payload: { name: string; description?: string; deadline?: string } = { name: form.name }
       if (form.description) payload.description = form.description
       if (form.deadline) payload.deadline = new Date(form.deadline).toISOString()
-
-      const res = await fetch(`${base}/projects`, {
-        method: 'POST',
-        headers: authHeaders(),
-        body: JSON.stringify(payload),
-      })
-      if (!res.ok) throw new Error('Aanmaken mislukt')
-      const created: Project = await res.json()
-      setProjects((prev) => [created, ...prev])
+      const res = await projectService.create(payload, userId)
+      setProjects(prev => [res.data, ...prev])
       setShowForm(false)
       setForm({ name: '', description: '', deadline: '' })
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Fout')
-    } finally {
-      setCreating(false)
-    }
+    } catch { setError('Aanmaken mislukt') }
+    finally { setCreating(false) }
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b px-6 py-3 flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => navigate('/dashboard')}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <span className="font-semibold">Projecten</span>
-      </header>
+    <Stack gap={6}>
+      <Flex justify="space-between" align="center">
+        <Heading size="lg">Projecten</Heading>
+        <Button colorPalette="purple" onClick={() => setShowForm(v => !v)}>+ Nieuw project</Button>
+      </Flex>
 
-      <main className="max-w-4xl mx-auto p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Alle projecten</h1>
-          <Button onClick={() => setShowForm((v) => !v)}>
-            <Plus className="mr-2 h-4 w-4" /> Nieuw project
-          </Button>
-        </div>
+      {showForm && (
+        <Box bg="white" _dark={{ bg: "gray.800" }} p={6} borderRadius="xl" boxShadow="sm" borderWidth="1px" borderColor="gray.100">
+          <Heading size="sm" mb={4}>Project aanmaken</Heading>
+          <form onSubmit={createProject}>
+            <Stack gap={4}>
+              {error && <Text color="red.500" fontSize="sm">{error}</Text>}
+              <Field label="Naam *">
+                <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required />
+              </Field>
+              <Field label="Omschrijving">
+                <Input value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} />
+              </Field>
+              <Field label="Deadline">
+                <Input type="date" value={form.deadline} onChange={e => setForm(p => ({ ...p, deadline: e.target.value }))} />
+              </Field>
+              <Flex gap={2}>
+                <Button type="submit" colorPalette="purple" loading={creating}>Aanmaken</Button>
+                <Button type="button" variant="ghost" onClick={() => setShowForm(false)}>Annuleren</Button>
+              </Flex>
+            </Stack>
+          </form>
+        </Box>
+      )}
 
-        {showForm && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Project aanmaken</CardTitle>
-            </CardHeader>
-            <form onSubmit={createProject}>
-              <CardContent className="space-y-4">
-                {error && (
-                  <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{error}</div>
-                )}
-                <div className="space-y-2">
-                  <Label htmlFor="name">Naam *</Label>
-                  <Input id="name" value={form.name} onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))} required />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="description">Omschrijving</Label>
-                  <Input id="description" value={form.description} onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="deadline">Deadline</Label>
-                  <Input id="deadline" type="date" value={form.deadline} onChange={(e) => setForm((p) => ({ ...p, deadline: e.target.value }))} />
-                </div>
-                <div className="flex gap-2">
-                  <Button type="submit" disabled={creating}>{creating ? 'Bezig...' : 'Aanmaken'}</Button>
-                  <Button type="button" variant="outline" onClick={() => setShowForm(false)}>Annuleren</Button>
-                </div>
-              </CardContent>
-            </form>
-          </Card>
-        )}
+      {loading && <Text color="gray.500">Laden...</Text>}
 
-        {loading ? (
-          <p className="text-muted-foreground">Laden...</p>
-        ) : projects.length === 0 ? (
-          <div className="text-center py-16 text-muted-foreground">
-            <FolderOpen className="h-12 w-12 mx-auto mb-3 opacity-30" />
-            <p>Nog geen projecten. Maak er een aan!</p>
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-2 gap-4">
-            {projects.map((p) => (
-              <Card
-                key={p.id}
-                className="cursor-pointer hover:shadow-md transition-shadow"
-                onClick={() => navigate(`/projects/${p.id}`)}
-              >
-                <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-base">{p.name}</CardTitle>
-                    <Badge variant={statusColor[p.status] ?? 'secondary'}>{statusLabel[p.status] ?? p.status}</Badge>
-                  </div>
-                  {p.description && <CardDescription className="line-clamp-2">{p.description}</CardDescription>}
-                </CardHeader>
-                {p.deadline && (
-                  <CardContent className="pt-0">
-                    <p className="text-xs text-muted-foreground">
-                      Deadline: {new Date(p.deadline).toLocaleDateString('nl-BE')}
-                    </p>
-                  </CardContent>
-                )}
-              </Card>
-            ))}
-          </div>
-        )}
-      </main>
-    </div>
+      {!loading && projects.length === 0 && (
+        <Box textAlign="center" py={16}>
+          <Text fontSize="4xl" mb={3}>📁</Text>
+          <Text color="gray.400">Nog geen projecten. Maak er een aan!</Text>
+        </Box>
+      )}
+
+      <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }} gap={4}>
+        {projects.map(p => (
+          <Box
+            key={p.id}
+            bg="white" _dark={{ bg: "gray.800" }}
+            p={6} borderRadius="xl" boxShadow="sm"
+            borderWidth="1px" borderColor="gray.100"
+            cursor="pointer"
+            _hover={{ boxShadow: "md", borderColor: "purple.200" }}
+            transition="all 0.15s"
+            onClick={() => navigate(`/projects/${p.id}`)}
+          >
+            <Flex justify="space-between" align="flex-start" mb={2}>
+              <Heading size="sm" flex={1} mr={2}>{p.name}</Heading>
+              <Badge colorPalette={statusColor[p.status] ?? 'gray'} variant="subtle" flexShrink={0}>{statusLabel[p.status] ?? p.status}</Badge>
+            </Flex>
+            {p.description && <Text fontSize="sm" color="gray.500" mb={2} style={{ overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{p.description}</Text>}
+            {p.deadline && <Text fontSize="xs" color="gray.400">📅 {new Date(p.deadline).toLocaleDateString('nl-BE')}</Text>}
+          </Box>
+        ))}
+      </Grid>
+    </Stack>
   )
 }

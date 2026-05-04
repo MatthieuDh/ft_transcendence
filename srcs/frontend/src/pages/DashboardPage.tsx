@@ -1,39 +1,20 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Progress } from '@/components/ui/progress'
-import { Separator } from '@/components/ui/separator'
+import { Grid, Box, Heading, Text, Stack, Flex, Badge, Progress } from '@chakra-ui/react'
+import { projectService, taskService } from '../api/services'
 import type { Project, Task } from '../../../../shared/srcs/types'
-import { FolderOpen, ListTodo, Plus, LogOut } from 'lucide-react'
 
-function getToken() {
-  return localStorage.getItem('token')
-}
+const statusLabel: Record<string, string> = { PLANNING: 'Gepland', ACTIVE: 'Actief', COMPLETED: 'Afgerond' }
+const taskStatusLabel: Record<string, string> = { TODO: 'Te doen', IN_PROGRESS: 'Bezig', PENDING_EVALUATION: 'Evaluatie', DONE: 'Klaar' }
+const taskStatusColor: Record<string, string> = { TODO: 'gray', IN_PROGRESS: 'blue', PENDING_EVALUATION: 'orange', DONE: 'green' }
 
-function authHeaders() {
-  return { Authorization: `Bearer ${getToken()}`, 'Content-Type': 'application/json' }
-}
-
-const statusLabel: Record<string, string> = {
-  PLANNING: 'Gepland',
-  ACTIVE: 'Actief',
-  COMPLETED: 'Afgerond',
-}
-
-const taskStatusColor: Record<string, 'default' | 'secondary' | 'warning' | 'success' | 'destructive'> = {
-  TODO: 'secondary',
-  IN_PROGRESS: 'default',
-  PENDING_EVALUATION: 'warning',
-  DONE: 'success',
-}
-
-const taskStatusLabel: Record<string, string> = {
-  TODO: 'Te doen',
-  IN_PROGRESS: 'Bezig',
-  PENDING_EVALUATION: 'Wacht op evaluatie',
-  DONE: 'Klaar',
+function StatCard({ label, value, color = 'purple' }: { label: string; value: number; color?: string }) {
+  return (
+    <Box bg="white" _dark={{ bg: "gray.800", borderColor: "gray.700" }} p={6} borderRadius="xl" boxShadow="sm" borderWidth="1px" borderColor="gray.100">
+      <Text fontSize="sm" color="gray.500" mb={1}>{label}</Text>
+      <Text fontSize="3xl" fontWeight="bold" color={`${color}.500`}>{value}</Text>
+    </Box>
+  )
 }
 
 export default function DashboardPage() {
@@ -43,141 +24,68 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!getToken()) { navigate('/login'); return }
-
-    const base = import.meta.env.VITE_API_BASE_URL
-    Promise.all([
-      fetch(`${base}/projects`, { headers: authHeaders() }).then((r) => r.json()),
-      fetch(`${base}/tasks/my`, { headers: authHeaders() }).then((r) => r.json()),
-    ])
-      .then(([p, t]) => {
-        setProjects(Array.isArray(p) ? p : [])
-        setMyTasks(Array.isArray(t) ? t : [])
-      })
+    if (!localStorage.getItem('access_token')) { navigate('/login'); return }
+    Promise.all([projectService.getAll(), taskService.getMyTasks()])
+      .then(([p, t]) => { setProjects(Array.isArray(p.data) ? p.data : []); setMyTasks(Array.isArray(t.data) ? t.data : []) })
       .finally(() => setLoading(false))
   }, [navigate])
 
-  function logout() {
-    localStorage.removeItem('token')
-    navigate('/login')
-  }
-
-  const doneTasks = myTasks.filter((t) => t.status === 'DONE').length
+  const doneTasks = myTasks.filter(t => t.status === 'DONE').length
   const progress = myTasks.length > 0 ? Math.round((doneTasks / myTasks.length) * 100) : 0
 
+  if (loading) return <Flex h="200px" align="center" justify="center"><Text color="gray.500">Laden...</Text></Flex>
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Navbar */}
-      <header className="border-b px-6 py-3 flex items-center justify-between">
-        <span className="font-semibold text-lg">Transcendence</span>
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="sm" onClick={() => navigate('/projects')}>
-            <FolderOpen className="mr-2 h-4 w-4" /> Projecten
-          </Button>
-          <Button variant="ghost" size="icon" onClick={logout}>
-            <LogOut className="h-4 w-4" />
-          </Button>
-        </div>
-      </header>
+    <Stack gap={6}>
+      <Heading size="lg">Goedendag 👋</Heading>
 
-      <main className="max-w-5xl mx-auto p-6 space-y-6">
-        <h1 className="text-3xl font-bold">Dashboard</h1>
+      <Grid templateColumns={{ base: "repeat(2, 1fr)", md: "repeat(4, 1fr)" }} gap={4}>
+        <StatCard label="Mijn projecten" value={projects.length} color="purple" />
+        <StatCard label="Mijn taken" value={myTasks.length} color="blue" />
+        <StatCard label="Klaar" value={doneTasks} color="green" />
+        <StatCard label="Bezig" value={myTasks.filter(t => t.status === 'IN_PROGRESS').length} color="orange" />
+      </Grid>
 
-        {loading ? (
-          <p className="text-muted-foreground">Laden...</p>
-        ) : (
-          <>
-            {/* Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <StatCard label="Projecten" value={projects.length} icon={<FolderOpen className="h-5 w-5 text-primary" />} />
-              <StatCard label="Mijn taken" value={myTasks.length} icon={<ListTodo className="h-5 w-5 text-primary" />} />
-              <StatCard label="Klaar" value={doneTasks} icon={<ListTodo className="h-5 w-5 text-green-500" />} />
-              <StatCard label="Bezig" value={myTasks.filter((t) => t.status === 'IN_PROGRESS').length} icon={<ListTodo className="h-5 w-5 text-yellow-500" />} />
-            </div>
+      {myTasks.length > 0 && (
+        <Box bg="white" _dark={{ bg: "gray.800" }} p={6} borderRadius="xl" boxShadow="sm" borderWidth="1px" borderColor="gray.100">
+          <Text fontWeight="semibold" mb={3}>Mijn voortgang</Text>
+          <Progress.Root value={progress} size="sm" colorPalette="purple">
+            <Progress.Track><Progress.Range /></Progress.Track>
+          </Progress.Root>
+          <Text fontSize="sm" color="gray.500" mt={2}>{progress}% voltooid ({doneTasks}/{myTasks.length} taken)</Text>
+        </Box>
+      )}
 
-            {/* Voortgang */}
-            {myTasks.length > 0 && (
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Mijn voortgang</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <Progress value={progress} className="h-2" />
-                  <p className="text-sm text-muted-foreground mt-1">{progress}% voltooid ({doneTasks}/{myTasks.length} taken)</p>
-                </CardContent>
-              </Card>
-            )}
+      <Grid templateColumns={{ base: "1fr", md: "repeat(2, 1fr)" }} gap={6}>
+        <Box bg="white" _dark={{ bg: "gray.800" }} p={6} borderRadius="xl" boxShadow="sm" borderWidth="1px" borderColor="gray.100">
+          <Flex justify="space-between" align="center" mb={4}>
+            <Text fontWeight="semibold">Mijn projecten</Text>
+            <Text fontSize="sm" color="purple.500" cursor="pointer" onClick={() => navigate('/projects')} _hover={{ textDecoration: 'underline' }}>Alles zien →</Text>
+          </Flex>
+          <Stack gap={2}>
+            {projects.length === 0 && <Text fontSize="sm" color="gray.400">Geen projecten.</Text>}
+            {projects.slice(0, 5).map(p => (
+              <Flex key={p.id} align="center" justify="space-between" p={3} borderRadius="md" _hover={{ bg: "gray.50", _dark: { bg: "gray.700" } }} cursor="pointer" onClick={() => navigate(`/projects/${p.id}`)}>
+                <Text fontSize="sm" fontWeight="medium">{p.name}</Text>
+                <Badge colorPalette="purple" variant="subtle">{statusLabel[p.status] ?? p.status}</Badge>
+              </Flex>
+            ))}
+          </Stack>
+        </Box>
 
-            <div className="grid md:grid-cols-2 gap-6">
-              {/* Projecten */}
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-base">Mijn projecten</CardTitle>
-                  <Button size="sm" variant="ghost" onClick={() => navigate('/projects')}>
-                    <Plus className="h-4 w-4 mr-1" /> Nieuw
-                  </Button>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {projects.length === 0 && (
-                    <p className="text-sm text-muted-foreground">Geen projecten gevonden.</p>
-                  )}
-                  {projects.slice(0, 5).map((p) => (
-                    <button
-                      key={p.id}
-                      className="w-full text-left flex items-center justify-between rounded-md px-3 py-2 hover:bg-muted transition-colors"
-                      onClick={() => navigate(`/projects/${p.id}`)}
-                    >
-                      <span className="text-sm font-medium truncate">{p.name}</span>
-                      <Badge variant="secondary" className="ml-2 shrink-0">
-                        {statusLabel[p.status] ?? p.status}
-                      </Badge>
-                    </button>
-                  ))}
-                </CardContent>
-              </Card>
-
-              {/* Taken */}
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base">Mijn taken</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  {myTasks.length === 0 && (
-                    <p className="text-sm text-muted-foreground">Geen taken toegewezen.</p>
-                  )}
-                  {myTasks.slice(0, 5).map((t, i) => (
-                    <div key={t.id}>
-                      {i > 0 && <Separator className="my-1" />}
-                      <div className="flex items-center justify-between py-1">
-                        <span className="text-sm truncate">{t.title}</span>
-                        <Badge variant={taskStatusColor[t.status] ?? 'secondary'} className="ml-2 shrink-0">
-                          {taskStatusLabel[t.status] ?? t.status}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            </div>
-          </>
-        )}
-      </main>
-    </div>
-  )
-}
-
-function StatCard({ label, value, icon }: { label: string; value: number; icon: React.ReactNode }) {
-  return (
-    <Card>
-      <CardContent className="pt-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-muted-foreground">{label}</p>
-            <p className="text-2xl font-bold">{value}</p>
-          </div>
-          {icon}
-        </div>
-      </CardContent>
-    </Card>
+        <Box bg="white" _dark={{ bg: "gray.800" }} p={6} borderRadius="xl" boxShadow="sm" borderWidth="1px" borderColor="gray.100">
+          <Text fontWeight="semibold" mb={4}>Mijn taken</Text>
+          <Stack gap={2}>
+            {myTasks.length === 0 && <Text fontSize="sm" color="gray.400">Geen taken toegewezen.</Text>}
+            {myTasks.slice(0, 5).map(t => (
+              <Flex key={t.id} align="center" justify="space-between" p={3} borderRadius="md">
+                <Text fontSize="sm">{t.title}</Text>
+                <Badge colorPalette={taskStatusColor[t.status] ?? 'gray'} variant="subtle">{taskStatusLabel[t.status] ?? t.status}</Badge>
+              </Flex>
+            ))}
+          </Stack>
+        </Box>
+      </Grid>
+    </Stack>
   )
 }

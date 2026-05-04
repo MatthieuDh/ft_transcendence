@@ -1,109 +1,76 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Separator } from '@/components/ui/separator'
+import { Link as RouterLink } from 'react-router-dom'
+import { Flex, Box, Heading, Text, Stack, Input, Button } from '@chakra-ui/react'
+import { useForm } from 'react-hook-form'
+import { useLogin } from '../hooks/useLogin'
+import { PasswordInput } from '../components/ui/password-input'
+import { Field } from '../components/ui/field'
+import SigmaLogo from '../components/logo'
+
+interface FormValues { username: string; password: string }
 
 export default function LoginPage() {
-  const navigate = useNavigate()
-  const [username, setUsername] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [loading, setLoading] = useState(false)
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    setError('')
-    setLoading(true)
-    try {
-      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password }),
-      })
-      if (!res.ok) throw new Error('Ongeldige gebruikersnaam of wachtwoord')
-      const data = await res.json()
-      localStorage.setItem('token', data.access_token)
-      navigate('/dashboard')
-    } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : 'Login mislukt')
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { login, error, isLoading } = useLogin()
+  const { register, handleSubmit, formState: { errors } } = useForm<FormValues>()
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Inloggen</CardTitle>
-          <CardDescription>Voer je gegevens in om verder te gaan</CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
-            {error && (
-              <div className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                {error}
-              </div>
-            )}
-            <div className="space-y-2">
-              <Label htmlFor="username">Gebruikersnaam</Label>
-              <Input
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                required
-                autoFocus
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Wachtwoord</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col gap-3">
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading ? 'Bezig...' : 'Inloggen'}
-            </Button>
-            <div className="flex items-center gap-2 w-full">
-              <Separator className="flex-1" />
-              <span className="text-xs text-muted-foreground">of</span>
-              <Separator className="flex-1" />
-            </div>
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full"
-              onClick={() => { window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/google` }}
-            >
-              <GoogleIcon /> Inloggen met Google
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              className="w-full text-sm"
-              onClick={() => navigate('/register')}
-            >
-              Nog geen account? Registreer
-            </Button>
-          </CardFooter>
-        </form>
-      </Card>
-    </div>
+    <Flex minH="100vh" align="center" justify="center" bg="gray.50" _dark={{ bg: "gray.900" }} p={4} position="relative">
+      <Box position="absolute" top={6} left={6}><SigmaLogo height="40px" /></Box>
+
+      <Box w="full" maxW="md" bg="white" _dark={{ bg: "gray.800", borderWidth: "1px", borderColor: "gray.700" }} p={8} borderRadius="xl" boxShadow="lg">
+        <Stack gap={6}>
+          <Box textAlign="center">
+            <Heading fontSize="3xl" mb={2}>Inloggen</Heading>
+            <Text color="gray.500" fontSize="md">Welkom bij Sigma. Het ultieme taakbeheersysteem.</Text>
+          </Box>
+
+          <form onSubmit={handleSubmit((d) => login(d.username, d.password))} style={{ width: '100%' }}>
+            <Stack gap={4}>
+              {error && <Text color="red.500" fontWeight="bold" textAlign="center" fontSize="sm">{error}</Text>}
+
+              <Field label="Gebruikersnaam" invalid={!!errors.username} errorText={errors.username?.message}>
+                <Input {...register('username', { required: 'Verplicht' })} size="lg" />
+              </Field>
+
+              <Field label="Wachtwoord" invalid={!!errors.password} errorText={errors.password?.message}>
+                <PasswordInput {...register('password', { required: 'Verplicht' })} size="lg" />
+              </Field>
+
+              <Button type="submit" loading={isLoading} colorPalette="purple" size="lg" width="full">
+                Inloggen
+              </Button>
+
+              <Box position="relative" textAlign="center" py={2}>
+                <Box position="absolute" top="50%" left={0} right={0} h="1px" bg="gray.200" _dark={{ bg: "gray.700" }} />
+                <Text position="relative" display="inline-block" px={3} bg="white" _dark={{ bg: "gray.800" }} color="gray.500" fontSize="sm">of</Text>
+              </Box>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                width="full"
+                onClick={() => { window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/google` }}
+              >
+                <GoogleIcon /> Inloggen met Google
+              </Button>
+            </Stack>
+          </form>
+
+          <Text textAlign="center" fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
+            Nog geen account?{' '}
+            <RouterLink to="/register" style={{ color: '#9f7aea', fontWeight: 'bold', textDecoration: 'none' }}>
+              Registreer hier
+            </RouterLink>
+          </Text>
+        </Stack>
+      </Box>
+    </Flex>
   )
 }
 
 function GoogleIcon() {
   return (
-    <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
+    <svg style={{ marginRight: 8, height: 18, width: 18 }} viewBox="0 0 24 24">
       <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
       <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
       <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
