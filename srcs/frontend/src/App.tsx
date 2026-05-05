@@ -5,26 +5,41 @@ import { ProfilePage } from './pages/ProfilePage';
 import ProjectPage from './pages/ProjectPage';
 import Layout from './components/layout';
 import MainPage from './pages/MainPage';
+import { useEffect, useState } from 'react';
+import { authService } from './api/services';
+import { Flex, Spinner } from '@chakra-ui/react'
+import  ProtectedRoute from './components/protectedRoute'
 
 export default function App() {
+
+  const [ready, setReady] = useState(false);
+  useEffect(() => {
+    authService.initialize().finally(() => setReady(true));
+  }, []);
+
+  if (!ready) return (
+    <Flex height="100vh" alignItems="center" justifyContent="center">
+    <Spinner size="xl" />
+  </Flex>
+  );
+
   return (
     <BrowserRouter>
       <Routes>
         
         {/* add pages here to add the sidebar and topbar */}
-        <Route element={<Layout />}>
+          
+        <Route element={<ProtectedRoute />}>
+          <Route element={<Layout />}>
           <Route path="/" element={<MainPage />} />
           <Route path="/profile/:userId" element={<ProfilePage />} />
           <Route path="/project/:projectId" element={<ProjectPage />} />
+          </Route>
+          
         </Route>
-
-        {/* normal pages like login and registern */}
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-
-        {/* standard route to register */} 
         <Route path="*" element={<Navigate to="/login" />} />
-        
       </Routes>
     </BrowserRouter>
   );

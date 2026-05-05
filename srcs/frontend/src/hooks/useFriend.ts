@@ -6,7 +6,7 @@ export function useFriend (userId: number){
     const [friends, setFriends] = useState<FriendUser[]>([]);
 
     useEffect(() => {
-        friendService.getMyFriends().then(response => {
+        friendService.getFriendsByUserId(userId).then(response => {
             setFriends(response.data);
         });
     }, [userId]);

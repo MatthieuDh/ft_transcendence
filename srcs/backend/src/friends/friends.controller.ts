@@ -14,6 +14,12 @@ export class FriendsController {
     return this.friendsService.getMyFriends(req.user.sub);
   }
 
+  @Get('user/:userId')
+  @UseGuards(JwtAuthGuard)
+  getFriendsByUserId(@Param('userId', ParseIntPipe) userId: number) {
+    return this.friendsService.getMyFriends(userId);
+  }
+
   @Get('requests')
   getPendingRequests(@Request() req) {
     return this.friendsService.getFriendRequests(req.user.sub);

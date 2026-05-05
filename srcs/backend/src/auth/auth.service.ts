@@ -8,6 +8,7 @@ import { GlobalRole } from '@prisma/client';
 interface JwtPayload {
   sub: number;
   username: string;
+  role: 'USER' | 'ADMIN';
 }
 
 export type SafeUser = {
@@ -55,9 +56,11 @@ async signInOAuth(user: SafeUser) {
 
 async refresh(refreshToken: string): Promise<{access_token: string}> {
    try {
-     const payload = await this.jwtService.verifyAsync<JwtPayload>(refreshToken, {secret: process.env.JWT_SECRET});
+     const payload = await this.jwtService.verifyAsync<JwtPayload>(refreshToken, {secret: process.env.JWT_REFRESH_SECRET});
      return {
-             access_token: await this.jwtService.signAsync(payload, {expiresIn: '15m'}),
+             access_token: await this.jwtService.signAsync(
+              {sub: payload.sub, username: payload.username, role: payload.role},
+              {secret: process.env.JWT_SECRET, expiresIn: '15m'}),
      }
    } catch {
      throw new UnauthorizedException();
