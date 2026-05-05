@@ -37,6 +37,17 @@ export function useComments(taskId: number | undefined, projectId: number | unde
         socketRef.current.on('new_task_comment', (newComment: Comment) => {
           if (newComment.taskId === taskId) {
             setComments(prev => {
+              if (newComment.parentId) {
+                return prev.map(c => {
+                  if (c.id === newComment.parentId) {
+                    const existingReplies = c.replies || [];
+                    if (existingReplies.some(r => r.id === newComment.id)) return c;
+                    return { ...c, replies: [...existingReplies, newComment] };
+                  }
+                  return c;
+                });
+              }
+
               if (prev.some(c => c.id === newComment.id)) return prev;
               return [...prev, newComment];
             });
@@ -53,12 +64,13 @@ export function useComments(taskId: number | undefined, projectId: number | unde
     };
   }, [taskId, projectId, isOpen, fetchComments]);
 
-  const postComment = async (content: string, file: File | null) => {
+  const postComment = async (content: string, file: File | null, parentId?: number) => {
     if (!taskId || !content.trim()) return false;
     setIsSubmitting(true);
     try {
       await commentService.create(taskId, {
         content,
+        parentId,
         files: file ? [file] : undefined,
       });
       await fetchComments();

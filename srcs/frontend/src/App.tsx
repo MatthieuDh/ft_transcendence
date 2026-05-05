@@ -4,6 +4,7 @@ import RegisterPage from './pages/RegisterPage';
 import { ProfilePage } from './pages/ProfilePage';
 import ProjectPage from './pages/ProjectPage';
 import Layout from './components/layout';
+import MainPage from './pages/MainPage';
 
 export default function App() {
   return (
@@ -12,6 +13,7 @@ export default function App() {
         
         {/* add pages here to add the sidebar and topbar */}
         <Route element={<Layout />}>
+          <Route path="/" element={<MainPage />} />
           <Route path="/profile/:userId" element={<ProfilePage />} />
           <Route path="/project/:projectId" element={<ProjectPage />} />
         </Route>

@@ -13,6 +13,7 @@ export interface Task {
     deadline?: Date;
     createdAt: Date;
     updatedAt: Date;
+    projectId: number;
     comments?: any[];
     assignees?: { id: number, username: string, avatar?: string }[];
     project?: { name: string };

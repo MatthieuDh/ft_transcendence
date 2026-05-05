@@ -12,6 +12,8 @@ export function useLogin() {
     try {
         const response = await authService.login(username, password);
         localStorage.setItem('access_token', response.data.access_token);
+
+        window.location.href = '/';
     }
     catch (err) {
         setError('login failed please check your credentials');

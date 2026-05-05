@@ -4,7 +4,7 @@ import { DialogRoot, DialogContent, DialogHeader, DialogTitle, DialogBody, Dialo
 import { useComments } from '../hooks/useComments';
 import { useEditTask } from '../hooks/useEditTask';
 import type { Task } from '../../../../shared/srcs/types';
-import { LuPaperclip, LuCalendar, LuPencil } from 'react-icons/lu';
+import { LuPaperclip, LuCalendar, LuPencil, LuX, LuMessageSquareReply } from 'react-icons/lu';
 
 interface TaskDetailsModalProps {
   isOpen: boolean;
@@ -18,6 +18,7 @@ interface TaskDetailsModalProps {
 export default function TaskDetailsModal({ isOpen, onClose, task, projectId, canEdit, onTaskUpdate }: TaskDetailsModalProps) {
   const [newComment, setNewComment] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [replyingTo, setReplyingTo] = useState<{id: number, username: string} | null>(null);
 
   const { comments, isLoading, isSubmitting, postComment } = useComments(task?.id, projectId, isOpen);
   
@@ -29,10 +30,11 @@ export default function TaskDetailsModal({ isOpen, onClose, task, projectId, can
   } = useEditTask(task, onTaskUpdate);
 
   const handleCommentSubmit = async () => {
-    const success = await postComment(newComment, selectedFile);
+    const success = await postComment(newComment, selectedFile, replyingTo?.id);
     if (success) {
       setNewComment('');
       setSelectedFile(null);
+      setReplyingTo(null);
     }
   };
 
@@ -153,7 +155,12 @@ export default function TaskDetailsModal({ isOpen, onClose, task, projectId, can
                     <Box bg="gray.100" _dark={{ bg: "gray.700" }} p={3} borderRadius="lg" flex={1}>
                       <HStack justify="space-between" mb={1}>
                         <Text fontSize="xs" fontWeight="bold">{comment.user?.username}</Text>
-                        <Text fontSize="xs" color="gray.500">{new Date(comment.createdAt).toLocaleString()}</Text>
+                        <HStack gap={3}>
+                          <Text fontSize="xs" color="gray.500">{new Date(comment.createdAt).toLocaleString()}</Text>
+                          <Button size="xs" variant="ghost" colorPalette="purple" h="auto" p={0} onClick={() => setReplyingTo({id: comment.id, username: comment.user?.username || 'User'})}>
+                            <LuMessageSquareReply /> Reply
+                          </Button>
+                        </HStack>
                       </HStack>
                       <Text fontSize="sm" whiteSpace="pre-wrap">{comment.content}</Text>
                       {comment.attachments && comment.attachments.length > 0 && (
@@ -167,6 +174,37 @@ export default function TaskDetailsModal({ isOpen, onClose, task, projectId, can
                           ))}
                         </VStack>
                       )}
+
+                      {comment.replies && comment.replies.length > 0 && (
+                        <VStack align="start" mt={3} gap={2} pl={3} borderLeft="2px solid" borderColor="gray.300" _dark={{ borderColor: "gray.600" }}>
+                          {comment.replies.map(reply => (
+                            <HStack key={reply.id} align="start" gap={2} w="full">
+                              <Avatar.Root size="xs" bg="gray.400" color="white" borderRadius="full" display="flex" alignItems="center" justifyContent="center" fontWeight="bold">
+                                <Avatar.Image src={reply.user?.avatar || undefined} borderRadius="full" />
+                                <Avatar.Fallback bg="transparent">{reply.user?.username?.charAt(0).toUpperCase() || '?'}</Avatar.Fallback>
+                              </Avatar.Root>
+                              <Box bg="white" _dark={{ bg: "gray.800" }} p={2} borderRadius="md" flex={1}>
+                                <HStack justify="space-between" mb={1}>
+                                  <Text fontSize="xs" fontWeight="bold">{reply.user?.username}</Text>
+                                  <Text fontSize="xs" color="gray.500">{new Date(reply.createdAt).toLocaleString()}</Text>
+                                </HStack>
+                                <Text fontSize="sm" whiteSpace="pre-wrap">{reply.content}</Text>
+                                {reply.attachments && reply.attachments.length > 0 && (
+                                  <VStack align="start" mt={2} gap={1}>
+                                    {reply.attachments.map((url, i) => (
+                                      <Button key={i} asChild size="xs" variant="outline" colorPalette="purple">
+                                        <a href={url} target="_blank" rel="noopener noreferrer">
+                                          <LuPaperclip /> {extractFileName(url)}
+                                        </a>
+                                      </Button>
+                                    ))}
+                                  </VStack>
+                                )}
+                              </Box>
+                            </HStack>
+                          ))}
+                        </VStack>
+                      )}
                     </Box>
                   </HStack>
                 ))
@@ -174,8 +212,18 @@ export default function TaskDetailsModal({ isOpen, onClose, task, projectId, can
             </VStack>
 
             <VStack align="stretch" gap={2}>
+              {replyingTo && (
+                <HStack justify="space-between" bg="purple.50" _dark={{ bg: "purple.900" }} p={2} borderRadius="md">
+                  <Text fontSize="xs" color="purple.700" _dark={{ color: "purple.200" }} fontWeight="bold">
+                    Replying to {replyingTo.username}...
+                  </Text>
+                  <Button size="xs" variant="ghost" colorPalette="purple" h="auto" p={0} onClick={() => setReplyingTo(null)}>
+                    <LuX size={16} />
+                  </Button>
+                </HStack>
+              )}
               <Textarea 
-                placeholder="Write a comment..." 
+                placeholder={replyingTo ? "Write your reply..." : "Write a comment..."}
                 value={newComment} 
                 onChange={(e) => setNewComment(e.target.value)} 
                 rows={3} 
@@ -188,7 +236,7 @@ export default function TaskDetailsModal({ isOpen, onClose, task, projectId, can
                   style={{ fontSize: '12px' }}
                 />
                 <Button size="sm" colorPalette="purple" onClick={handleCommentSubmit} loading={isSubmitting} disabled={!newComment.trim()}>
-                  Post Comment
+                  {replyingTo ? "Post Reply" : "Post Comment"}
                 </Button>
               </HStack>
             </VStack>

@@ -37,14 +37,29 @@ export default function Sidebar() {
           color="gray.700"
           _dark={{ color: "gray.200" }}
         >
+          <RouterLink to="/">
+            🏠 Dashboard
+          </RouterLink>
+        </Link>
+
+        <Link 
+          asChild
+          _hover={{ textDecoration: 'none', bg: 'gray.100', _dark: { bg: 'gray.800' } }}
+          p={3}
+          borderRadius="md"
+          fontWeight="medium"
+          display="flex"
+          alignItems="center"
+          gap={3}
+          color="gray.700"
+          _dark={{ color: "gray.200" }}
+        >
           <RouterLink to="/profile/1">
             👤 Profile
           </RouterLink>
         </Link>
         
       </VStack>
-      
-      
       
     </Flex>
   );

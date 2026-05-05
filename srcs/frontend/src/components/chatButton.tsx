@@ -1,18 +1,20 @@
 import { Box, IconButton, Flex, useDisclosure } from '@chakra-ui/react';
 import { IoChatbubbleEllipses } from 'react-icons/io5';
 import ChatWindow from './chatWindow';
+import { useChat } from '../hooks/useChat';
+
 interface ChatButtonProps {
   projectId: number;     
   currentUserId: number;
 }
 
 export default function ChatButton({ projectId, currentUserId }: ChatButtonProps) {
-  const unreadmessages = 2;
   const { open, onToggle } = useDisclosure();
+  const { messages, sendMessage, isSending, unreadCount } = useChat(projectId, currentUserId, open);
 
   return (
     <Box position="fixed" bottom="30px" right="30px" zIndex={1000}>
-      {unreadmessages > 0 && (
+      {unreadCount > 0 && !open && (
         <Flex
           position="absolute"
           top="-4px"
@@ -29,7 +31,7 @@ export default function ChatButton({ projectId, currentUserId }: ChatButtonProps
           zIndex={1001}
           boxShadow="md"
         >
-          {unreadmessages}
+          {unreadCount}
         </Flex>
       )}
 
@@ -43,7 +45,8 @@ export default function ChatButton({ projectId, currentUserId }: ChatButtonProps
         boxShadow="xl"
         onClick={onToggle}
       >
-          <IoChatbubbleEllipses size={24} />      </IconButton>
+          <IoChatbubbleEllipses size={24} />
+      </IconButton>
 
       {open && (
         <Box
@@ -59,7 +62,12 @@ export default function ChatButton({ projectId, currentUserId }: ChatButtonProps
           border="1px solid"
           borderColor="gray.200"
         >
-          <ChatWindow projectId={projectId} currentUserId={currentUserId} />
+          <ChatWindow 
+            messages={messages} 
+            sendMessage={sendMessage} 
+            isSending={isSending} 
+            currentUserId={currentUserId} 
+          />
         </Box>
       )}
     </Box>

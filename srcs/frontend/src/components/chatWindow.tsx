@@ -1,15 +1,15 @@
 import { Box, Flex, Input, Button, Text, VStack } from '@chakra-ui/react';
 import { useState, useEffect, useRef } from 'react';
-import { useChat } from '../hooks/useChat'; 
+import type { Message } from '../../../../shared/srcs/types/message';
 
 interface ChatWindowProps {
-  projectId: number;
+  messages: Message[];
+  sendMessage: (content: string) => Promise<boolean>;
+  isSending: boolean;
   currentUserId: number;
 }
 
-export default function ChatWindow({ projectId, currentUserId }: ChatWindowProps) {
-  const { messages, sendMessage, isSending } = useChat(projectId, currentUserId);
-  
+export default function ChatWindow({ messages, sendMessage, isSending, currentUserId }: ChatWindowProps) {
   const [inputValue, setInputValue] = useState('');
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
@@ -33,12 +33,10 @@ export default function ChatWindow({ projectId, currentUserId }: ChatWindowProps
   return (
     <Flex direction="column" h="100%">
       
-      {/* Header */}
       <Box p={3} bg="purple.500" color="white" borderTopRadius="lg">
         <Text fontWeight="bold">Project Chat</Text>
       </Box>
 
-      {/* Berichtenlijst */}
       <VStack flex={1} p={4} overflowY="auto" gap={3} bg="gray.50" _dark={{ bg: "gray.900" }} alignItems="flex-start">
         {messages.length === 0 ? (
           <Text color="gray.500" fontSize="sm" alignSelf="center" mt={4}>
@@ -76,7 +74,6 @@ export default function ChatWindow({ projectId, currentUserId }: ChatWindowProps
         <div ref={messagesEndRef} />
       </VStack>
 
-      {/* Inputveld onderaan */}
       <Flex p={3} bg="white" _dark={{ bg: "gray.800", borderColor: "gray.700" }} borderBottomRadius="lg" borderTop="1px solid" borderColor="gray.200">
         <Input 
           size="sm" 

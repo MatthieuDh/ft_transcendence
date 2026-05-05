@@ -3,10 +3,19 @@ import { io, Socket } from 'socket.io-client';
 import type { Message } from '../../../../shared/srcs/types/message';
 import { projectService } from '../api/services';
 
-export function useChat(projectId: number, currentUserId: number) {
+export function useChat(projectId: number, currentUserId: number, isOpen: boolean) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isSending, setIsSending] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const socketRef = useRef<Socket | null>(null);
+  const isOpenRef = useRef(isOpen);
+
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+    if (isOpen) {
+      setUnreadCount(0);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     const fetchHistory = async () => {
@@ -33,6 +42,10 @@ export function useChat(projectId: number, currentUserId: number) {
           if (prev.some((msg) => msg.id === data.id)) return prev;
           return [...prev, data];
         });
+        
+        if (data.userId !== currentUserId && !isOpenRef.current) {
+          setUnreadCount((prev) => prev + 1);
+        }
       }
     });
 
@@ -62,5 +75,5 @@ export function useChat(projectId: number, currentUserId: number) {
     }
   };
 
-  return { messages, sendMessage, isSending };
+  return { messages, sendMessage, isSending, unreadCount };
 }

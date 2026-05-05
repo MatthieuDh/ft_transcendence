@@ -69,6 +69,8 @@ srcs/
           migration.sql
         20260422112409_add_task_status_history/
           migration.sql
+        20260504081944_add_friendship/
+          migration.sql
         migration_lock.toml
       schema.prisma
     src/
@@ -212,10 +214,12 @@ srcs/
           provider.tsx
           toaster.tsx
           tooltip.tsx
+        addFriendButton.tsx
         addMember.tsx
         chatButton.tsx
         chatWindow.tsx
         createTaskModal.tsx
+        friends.tsx
         layout.tsx
         loginForm.tsx
         logo.tsx
@@ -223,10 +227,16 @@ srcs/
         registerForm.tsx
         sideBar.tsx
         taskAssigness.tsx
+        taskDetail.tsx
         topBar.tsx
+      context/
+        AuthContext.tsx
       hooks/
         useAddmember.ts
         useChat.ts
+        useComments.ts
+        useEditTask.ts
+        useFriend.ts
         useLogin.ts
         useNotification.ts
         useProfile.ts
@@ -234,6 +244,7 @@ srcs/
         useRegister.ts
       pages/
         LoginPage.tsx
+        MainPage.tsx
         ProfilePage.tsx
         ProjectPage.tsx
         RegisterPage.tsx
@@ -264,1107 +275,234 @@ README.md
 <files>
 This section contains the contents of the repository's files.
 
-<file path="srcs/frontend/src/components/ui/close-button.tsx">
-import type { ButtonProps } from "@chakra-ui/react"
-import { IconButton as ChakraIconButton } from "@chakra-ui/react"
-import * as React from "react"
-import { LuX } from "react-icons/lu"
+<file path="srcs/frontend/src/pages/MainPage.tsx">
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Box, Flex, Heading, Text, Button, Input, Textarea, VStack, HStack, SimpleGrid, Card, Badge, Spinner } from '@chakra-ui/react';
+import { DialogRoot, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogFooter, DialogCloseTrigger } from '../components/ui/dialog';
+import { projectService, taskService } from '../api/services';
+import type { Project, Task } from '../../../../shared/srcs/types';
+import { LuPlus, LuFolder, LuListTodo } from 'react-icons/lu';
 
-export type CloseButtonProps = ButtonProps
+export default function MainPage() {
+  const navigate = useNavigate();
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [myTasks, setMyTasks] = useState<Task[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-export const CloseButton = React.forwardRef<
-  HTMLButtonElement,
-  CloseButtonProps
->(function CloseButton(props, ref) {
-  return (
-    <ChakraIconButton variant="ghost" aria-label="Close" ref={ref} {...props}>
-      {props.children ?? <LuX />}
-    </ChakraIconButton>
-  )
-})
-</file>
-
-<file path="srcs/frontend/src/components/ui/dialog.tsx">
-import { Dialog as ChakraDialog, Portal } from "@chakra-ui/react"
-import { CloseButton } from "./close-button"
-import * as React from "react"
-
-interface DialogContentProps extends ChakraDialog.ContentProps {
-  portalled?: boolean
-  portalRef?: React.RefObject<HTMLElement | null>
-  backdrop?: boolean
-}
-
-export const DialogContent = React.forwardRef<
-  HTMLDivElement,
-  DialogContentProps
->(function DialogContent(props, ref) {
-  const {
-    children,
-    portalled = true,
-    portalRef,
-    backdrop = true,
-    ...rest
-  } = props
-
-  return (
-    <Portal disabled={!portalled} container={portalRef}>
-      {backdrop && <ChakraDialog.Backdrop />}
-      <ChakraDialog.Positioner>
-        <ChakraDialog.Content ref={ref} {...rest} asChild={false}>
-          {children}
-        </ChakraDialog.Content>
-      </ChakraDialog.Positioner>
-    </Portal>
-  )
-})
-
-export const DialogCloseTrigger = React.forwardRef<
-  HTMLButtonElement,
-  ChakraDialog.CloseTriggerProps
->(function DialogCloseTrigger(props, ref) {
-  return (
-    <ChakraDialog.CloseTrigger
-      position="absolute"
-      top="2"
-      insetEnd="2"
-      {...props}
-      asChild
-    >
-      <CloseButton size="sm" ref={ref}>
-        {props.children}
-      </CloseButton>
-    </ChakraDialog.CloseTrigger>
-  )
-})
-
-export const DialogRoot = ChakraDialog.Root
-export const DialogFooter = ChakraDialog.Footer
-export const DialogHeader = ChakraDialog.Header
-export const DialogBody = ChakraDialog.Body
-export const DialogBackdrop = ChakraDialog.Backdrop
-export const DialogTitle = ChakraDialog.Title
-export const DialogDescription = ChakraDialog.Description
-export const DialogTrigger = ChakraDialog.Trigger
-export const DialogActionTrigger = ChakraDialog.ActionTrigger
-</file>
-
-<file path="srcs/frontend/src/components/ui/popover.tsx">
-import { Popover as ChakraPopover, Portal } from "@chakra-ui/react"
-import { CloseButton } from "./close-button"
-import * as React from "react"
-
-interface PopoverContentProps extends ChakraPopover.ContentProps {
-  portalled?: boolean
-  portalRef?: React.RefObject<HTMLElement | null>
-}
-
-export const PopoverContent = React.forwardRef<
-  HTMLDivElement,
-  PopoverContentProps
->(function PopoverContent(props, ref) {
-  const { portalled = true, portalRef, ...rest } = props
-  return (
-    <Portal disabled={!portalled} container={portalRef}>
-      <ChakraPopover.Positioner>
-        <ChakraPopover.Content ref={ref} {...rest} />
-      </ChakraPopover.Positioner>
-    </Portal>
-  )
-})
-
-export const PopoverArrow = React.forwardRef<
-  HTMLDivElement,
-  ChakraPopover.ArrowProps
->(function PopoverArrow(props, ref) {
-  return (
-    <ChakraPopover.Arrow {...props} ref={ref}>
-      <ChakraPopover.ArrowTip />
-    </ChakraPopover.Arrow>
-  )
-})
-
-export const PopoverCloseTrigger = React.forwardRef<
-  HTMLButtonElement,
-  ChakraPopover.CloseTriggerProps
->(function PopoverCloseTrigger(props, ref) {
-  return (
-    <ChakraPopover.CloseTrigger
-      position="absolute"
-      top="1"
-      insetEnd="1"
-      {...props}
-      asChild
-      ref={ref}
-    >
-      <CloseButton size="sm" />
-    </ChakraPopover.CloseTrigger>
-  )
-})
-
-export const PopoverTitle = ChakraPopover.Title
-export const PopoverDescription = ChakraPopover.Description
-export const PopoverFooter = ChakraPopover.Footer
-export const PopoverHeader = ChakraPopover.Header
-export const PopoverRoot = ChakraPopover.Root
-export const PopoverBody = ChakraPopover.Body
-export const PopoverTrigger = ChakraPopover.Trigger
-</file>
-
-<file path="srcs/frontend/src/components/addMember.tsx">
-import { useState } from 'react';
-import { Flex, Button, IconButton } from '@chakra-ui/react';
-import { LuUserPlus, LuX } from "react-icons/lu";
-import { useAddMember } from '../hooks/useAddmember';
-import type { ProjectMember } from '../../../../shared/srcs/types';
-
-interface AddMemberMenuProps {
-  projectId: number;
-  existingMembers: ProjectMember[];
-  onMemberAdded: () => void;
-}
-
-export default function AddMemberMenu({ projectId, existingMembers, onMemberAdded }: AddMemberMenuProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<number | ''>('');
-  const { availableUsers, isAdding, addMember } = useAddMember(projectId, existingMembers);
-
-  const handleAdd = async () => {
-    if (!selectedUserId) return;
-    const success = await addMember(Number(selectedUserId));
-    if (success) {
-      setIsOpen(false);
-      setSelectedUserId('');
-      onMemberAdded();
-    }
-  };
-
-  if (!isOpen) {
-    return (
-      <Button size="sm" variant="surface" colorPalette="purple" onClick={() => setIsOpen(true)}>
-        <LuUserPlus /> Add Member
-      </Button>
-    );
-  }
-
-  return (
-    <Flex bg="gray.50" p={3} borderRadius="md" border="1px solid" borderColor="gray.200" _dark={{ bg: "gray.900", borderColor: "gray.700" }} align="center" gap={2}>
-      <select 
-        value={selectedUserId} 
-        onChange={(e) => setSelectedUserId(Number(e.target.value))}
-        style={{ padding: '6px', borderRadius: '4px', fontSize: '14px', border: '1px solid #ccc', outline: 'none' }}
-      >
-        <option value="">Select a user...</option>
-        {availableUsers.map(u => (
-          <option key={u.id} value={u.id}>{u.username}</option>
-        ))}
-      </select>
-      <Button size="sm" colorPalette="purple" onClick={handleAdd} loading={isAdding} disabled={!selectedUserId}>
-        Add
-      </Button>
-      <IconButton size="sm" variant="ghost" colorPalette="red" aria-label="Cancel" onClick={() => setIsOpen(false)}>
-        <LuX />
-      </IconButton>
-    </Flex>
-  );
-}
-</file>
-
-<file path="srcs/frontend/src/components/chatButton.tsx">
-import { Box, IconButton, Flex, useDisclosure } from '@chakra-ui/react';
-import { IoChatbubbleEllipses } from 'react-icons/io5';
-import ChatWindow from './chatWindow';
-interface ChatButtonProps {
-  projectId: number;     
-  currentUserId: number;
-}
-
-export default function ChatButton({ projectId, currentUserId }: ChatButtonProps) {
-  const unreadmessages = 2;
-  const { open, onToggle } = useDisclosure();
-
-  return (
-    <Box position="fixed" bottom="30px" right="30px" zIndex={1000}>
-      {unreadmessages > 0 && (
-        <Flex
-          position="absolute"
-          top="-4px"
-          right="-4px"
-          bg="red.500"
-          color="white"
-          w="24px"
-          h="24px"
-          borderRadius="full"
-          justify="center"
-          align="center"
-          fontSize="xs"
-          fontWeight="bold"
-          zIndex={1001}
-          boxShadow="md"
-        >
-          {unreadmessages}
-        </Flex>
-      )}
-
-      <IconButton
-        aria-label="Open chat"
-        size="lg"
-        w="64px"
-        h="64px"
-        colorPalette="purple"
-        borderRadius="full"
-        boxShadow="xl"
-        onClick={onToggle}
-      >
-          <IoChatbubbleEllipses size={24} />      </IconButton>
-
-      {open && (
-        <Box
-          position="absolute"
-          bottom="80px"
-          right="0"
-          w="320px"
-          h="450px"
-          bg="white"
-          _dark={{ bg: 'gray.800', borderColor: 'gray.700' }}
-          boxShadow="2xl"
-          borderRadius="lg"
-          border="1px solid"
-          borderColor="gray.200"
-        >
-          <ChatWindow projectId={projectId} currentUserId={currentUserId} />
-        </Box>
-      )}
-    </Box>
-  );
-}
-</file>
-
-<file path="srcs/frontend/src/components/chatWindow.tsx">
-import { Box, Flex, Input, Button, Text, VStack } from '@chakra-ui/react';
-import { useState, useEffect, useRef } from 'react';
-import { useChat } from '../hooks/useChat'; 
-
-interface ChatWindowProps {
-  projectId: number;
-  currentUserId: number;
-}
-
-export default function ChatWindow({ projectId, currentUserId }: ChatWindowProps) {
-  const { messages, sendMessage, isSending } = useChat(projectId, currentUserId);
-  
-  const [inputValue, setInputValue] = useState('');
-  const messagesEndRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  const handleSend = async () => {
-    const success = await sendMessage(inputValue);
-    if (success) {
-      setInputValue('');
-    }
-  };
-
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSend();
-    }
-  };
-
-  return (
-    <Flex direction="column" h="100%">
-      
-      {/* Header */}
-      <Box p={3} bg="purple.500" color="white" borderTopRadius="lg">
-        <Text fontWeight="bold">Project Chat</Text>
-      </Box>
-
-      {/* Berichtenlijst */}
-      <VStack flex={1} p={4} overflowY="auto" gap={3} bg="gray.50" _dark={{ bg: "gray.900" }} alignItems="flex-start">
-        {messages.length === 0 ? (
-          <Text color="gray.500" fontSize="sm" alignSelf="center" mt={4}>
-            no messages yet in this project.
-          </Text>
-        ) : (
-          messages.map((msg, index) => {
-            const isMine = msg.userId === currentUserId;
-            const timestamp = msg.Time || msg.createdAt || Date.now(); 
-            const timeString = new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-            return (
-              <Box 
-                key={msg.id || index} 
-                bg={isMine ? "purple.100" : "gray.200"} 
-                _dark={{ bg: isMine ? "purple.800" : "gray.700", color: "white" }} 
-                p={2} 
-                borderRadius="md" 
-                maxW="80%" 
-                alignSelf={isMine ? "flex-end" : "flex-start"}
-              >
-                {!isMine && (
-                  <Text fontSize="xs" fontWeight="bold" color="purple.600" _dark={{ color: "purple.300" }} mb={1}>
-                    {msg.user?.username || `User ${msg.userId}`}
-                  </Text>
-                )}
-                <Text fontSize="sm">{msg.content}</Text>
-                <Text fontSize="xs" color="gray.500" _dark={{ color: "gray.400" }} textAlign="right" mt={1}>
-                  {timeString}
-                </Text>
-              </Box>
-            );
-          })
-        )}
-        <div ref={messagesEndRef} />
-      </VStack>
-
-      {/* Inputveld onderaan */}
-      <Flex p={3} bg="white" _dark={{ bg: "gray.800", borderColor: "gray.700" }} borderBottomRadius="lg" borderTop="1px solid" borderColor="gray.200">
-        <Input 
-          size="sm" 
-          placeholder="Typ een bericht..." 
-          mr={2} 
-          borderRadius="full" 
-          focusRingColor="purple.500"
-          value={inputValue}
-          onChange={(e) => setInputValue(e.target.value)}
-          onKeyDown={handleKeyPress}
-          disabled={isSending}
-        />
-        <Button 
-          size="sm" 
-          colorPalette="purple" 
-          borderRadius="full"
-          onClick={handleSend}
-          loading={isSending}
-        >
-          send
-        </Button>
-      </Flex>
-      
-    </Flex>
-  );
-}
-</file>
-
-<file path="srcs/frontend/src/components/createTaskModal.tsx">
-import { useState } from 'react';
-import { Button, Input, Textarea, VStack, Text } from '@chakra-ui/react';
-import {
-  DialogRoot,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogBody,
-  DialogFooter,
-} from './ui/dialog';
-import { taskService } from '../api/services';
-import { TaskStatus } from '../../../../shared/srcs/types/task';
-
-interface CreateTaskModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  projectId: number;
-  initialStatus: TaskStatus;
-  onSuccess: () => void;
-}
-
-export default function CreateTaskModal({ isOpen, onClose, projectId, initialStatus, onSuccess }: CreateTaskModalProps) {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [deadline, setDeadline] = useState('');
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [newProjectName, setNewProjectName] = useState('');
+  const [newProjectDesc, setNewProjectDesc] = useState('');
+  const [newProjectDeadline, setNewProjectDeadline] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSave = async () => {
-    if (!title.trim()) return;
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const [projectsRes, tasksRes] = await Promise.all([
+        projectService.getAll(),
+        taskService.getMyTasks()
+      ]);
+      
+      const projectsData = Array.isArray(projectsRes.data) 
+        ? projectsRes.data 
+        : (projectsRes.data as any).data || [];
+      
+      const tasksData = Array.isArray(tasksRes.data)
+        ? tasksRes.data
+        : (tasksRes.data as any).data || [];
+
+      setProjects(projectsData);
+      setMyTasks(tasksData);
+    } catch (error) {
+      console.error("Failed to load dashboard data", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const handleCreateProject = async () => {
+    if (!newProjectName.trim()) return;
     setIsSubmitting(true);
     try {
-      await taskService.create({
-        title,
-        description: description || undefined,
-        status: initialStatus,
-        projectId,
-        deadline: deadline ? new Date(deadline) : undefined,
-        assigneeIds: [],
+      const res = await projectService.create({
+        name: newProjectName,
+        description: newProjectDesc || undefined,
+        deadline: newProjectDeadline ? new Date(newProjectDeadline).toISOString() : undefined,
       });
-      setTitle('');
-      setDescription('');
-      setDeadline('');
-      onSuccess();
+      
+      const newProject = res.data;
+      
+      setIsCreateModalOpen(false);
+      setNewProjectName('');
+      setNewProjectDesc('');
+      setNewProjectDeadline('');
+      
+      navigate(`/project/${newProject.id}`);
     } catch (error) {
-      console.error(error);
+      console.error("Failed to create project", error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleClose = () => {
-    setTitle('');
-    setDescription('');
-    setDeadline('');
-    onClose();
-  };
-
-  return (
-    <DialogRoot open={isOpen} onOpenChange={(e) => !e.open && handleClose()} placement="center">
-      <DialogContent _dark={{ bg: "gray.800" }}>
-        <DialogHeader>
-          <DialogTitle>Create New Task ({initialStatus.replace('_', ' ')})</DialogTitle>
-        </DialogHeader>
-        <DialogBody>
-          <VStack gap={4} align="stretch">
-            <VStack gap={1} align="stretch">
-              <Text fontSize="sm" fontWeight="bold">Title *</Text>
-              <Input 
-                placeholder="Task title..." 
-                value={title} 
-                onChange={(e) => setTitle(e.target.value)} 
-                _dark={{ borderColor: "gray.600" }}
-              />
-            </VStack>
-
-            <VStack gap={1} align="stretch">
-              <Text fontSize="sm" fontWeight="bold">Description</Text>
-              <Textarea 
-                placeholder="Add more details to this task..." 
-                value={description} 
-                onChange={(e) => setDescription(e.target.value)} 
-                rows={4}
-                _dark={{ borderColor: "gray.600" }}
-              />
-            </VStack>
-
-            <VStack gap={1} align="stretch">
-              <Text fontSize="sm" fontWeight="bold">Deadline</Text>
-              <Input 
-                type="date" 
-                value={deadline} 
-                onChange={(e) => setDeadline(e.target.value)} 
-                _dark={{ borderColor: "gray.600" }}
-              />
-            </VStack>
-          </VStack>
-        </DialogBody>
-        <DialogFooter>
-          <Button variant="ghost" mr={3} onClick={handleClose}>
-            Cancel
-          </Button>
-          <Button colorPalette="purple" onClick={handleSave} loading={isSubmitting} disabled={!title.trim()}>
-            Create Task
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </DialogRoot>
-  );
-}
-</file>
-
-<file path="srcs/frontend/src/components/taskAssigness.tsx">
-import { Box, HStack, Text, Avatar, IconButton, VStack } from '@chakra-ui/react';
-import { PopoverRoot, PopoverTrigger, PopoverContent, PopoverBody } from './ui/popover';
-import { LuPlus, LuCheck } from 'react-icons/lu';
-import { Tooltip } from './ui/tooltip';
-import type { User, ProjectMember } from '../../../../shared/srcs/types';
-
-interface TaskAssigneesProps {
-  taskId: number;
-  assignees: User[];
-  projectMembers: ProjectMember[];
-  onAssign: (taskId: number, userIds: number[]) => void;
-}
-
-export default function TaskAssignees({ taskId, assignees, projectMembers, onAssign }: TaskAssigneesProps) {
-  
-  const toggleAssignee = (userId: number) => {
-    const isAssigned = assignees.some(a => a.id === userId);
-    if (isAssigned) {
-      onAssign(taskId, assignees.filter(a => a.id !== userId).map(a => a.id));
-    } else {
-      onAssign(taskId, [...assignees.map(a => a.id), userId]);
-    }
-  };
-
-  return (
-    <HStack gap={2} mb={3} wrap="wrap" align="center">
-      
-      {assignees.map((user) => (
-        <Tooltip key={user.id} content={user.username} portalled>
-          <Box position="relative" cursor="pointer" onClick={() => toggleAssignee(user.id)} role="group">
-            <Avatar.Root size="sm">
-              <Avatar.Image src={user.avatar || undefined} />
-              <Avatar.Fallback boxSize="full" display="flex" alignItems="center" justifyContent="center" bg="purple.500" color="white" fontWeight="bold">
-                {user.username.charAt(0).toUpperCase()}
-              </Avatar.Fallback>
-            </Avatar.Root>
-            
-            <Box
-              position="absolute" top="0" left="0" w="full" h="full" bg="blackAlpha.600"
-              borderRadius="full" opacity="0" _groupHover={{ opacity: 1 }}
-              display="flex" alignItems="center" justifyContent="center" transition="all 0.2s"
-            >
-              <Text color="white" fontSize="xs" fontWeight="bold">✕</Text>
-            </Box>
-          </Box>
-        </Tooltip>
-      ))}
-
-      <PopoverRoot positioning={{ placement: "bottom-start" }}>
-        <PopoverTrigger asChild>
-          <IconButton 
-            size="xs" 
-            variant="outline" 
-            borderRadius="full" 
-            aria-label="Add assignee"
-            borderStyle="dashed"
-            color="gray.500"
-            _hover={{ bg: "purple.50", color: "purple.600", borderColor: "purple.400" }}
-          >
-            <LuPlus />
-          </IconButton>
-        </PopoverTrigger>
-
-        <PopoverContent w="200px" p={0} overflow="hidden" boxShadow="lg" _dark={{ bg: "gray.800" }}>
-          <Box p={2} borderBottom="1px solid" borderColor="gray.100" bg="gray.50" _dark={{ borderColor: "gray.700", bg: "gray.900" }}>
-            <Text fontSize="xs" fontWeight="bold" color="gray.500">Assign Members</Text>
-          </Box>
-          <PopoverBody p={0} maxH="200px" overflowY="auto">
-            <VStack gap={0} align="stretch">
-              
-              {projectMembers.length === 0 && (
-                <Text p={3} fontSize="sm" color="gray.500" textAlign="center">No members in project.</Text>
-              )}
-
-              {projectMembers.map(member => {
-                const isAssigned = assignees.some(a => a.id === member.userId);
-                
-                return (
-                  <HStack 
-                    key={member.userId} 
-                    p={2} 
-                    cursor="pointer" 
-                    _hover={{ bg: "gray.50", _dark: { bg: "gray.700" } }}
-                    onClick={() => toggleAssignee(member.userId)}
-                    justify="space-between"
-                  >
-                    <HStack gap={2}>
-                      <Avatar.Root size="xs">
-                        <Avatar.Image src={member.user?.avatar || undefined} />
-                        <Avatar.Fallback boxSize="full" display="flex" alignItems="center" justifyContent="center" bg="purple.500" color="white" fontWeight="bold">
-                          {member.user?.username?.charAt(0).toUpperCase()}
-                        </Avatar.Fallback>
-                      </Avatar.Root>
-                      <Text fontSize="sm" fontWeight={isAssigned ? "bold" : "normal"}>
-                        {member.user?.username || `User ${member.userId}`}
-                      </Text>
-                    </HStack>
-                    
-                    {isAssigned && <Box color="green.500"><LuCheck size={14}/></Box>}
-                  </HStack>
-                );
-              })}
-            </VStack>
-          </PopoverBody>
-        </PopoverContent>
-      </PopoverRoot>
-      
-    </HStack>
-  );
-}
-</file>
-
-<file path="srcs/frontend/src/hooks/useAddmember.ts">
-import { useState, useEffect } from 'react';
-import { projectService, userService } from '../api/services';
-import { ProjectRole } from '../../../../shared/srcs/types';
-import type { User, ProjectMember } from '../../../../shared/srcs/types';
-
-export function useAddMember(projectId: number, existingMembers: ProjectMember[] = []) {
-  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
-  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
-  const [isAdding, setIsAdding] = useState(false);
-
-  useEffect(() => {
-    const fetchUsers = async () => {
-      setIsLoadingUsers(true);
-      try {
-        const res = await userService.getAllUsers();
-        const filtered = res.data.filter(user => 
-          !existingMembers.some(member => member.userId === user.id)
-        );
-        setAvailableUsers(filtered);
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setIsLoadingUsers(false);
-      }
-    };
-    fetchUsers();
-  }, [existingMembers]);
-
-  const addMember = async (userId: number, role: ProjectRole = ProjectRole.MEMBER) => {
-    setIsAdding(true);
-    try {
-      await projectService.addMember(projectId, userId, role);
-      return true;
-    } catch (error) {
-      console.error(error);
-      return false;
-    } finally {
-      setIsAdding(false);
-    }
-  };
-
-  return { availableUsers, isLoadingUsers, isAdding, addMember };
-}
-</file>
-
-<file path="srcs/frontend/src/hooks/useChat.ts">
-import { useState, useEffect, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
-import type { Message } from '../../../../shared/srcs/types/message';
-import { projectService } from '../api/services';
-
-export function useChat(projectId: number, currentUserId: number) {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [isSending, setIsSending] = useState(false);
-  const socketRef = useRef<Socket | null>(null);
-
-  useEffect(() => {
-    const fetchHistory = async () => {
-      try {
-        const response = await projectService.getMessages(projectId);
-        setMessages(response.data);
-      } catch (error) {
-        console.error(error);
-      }
-    };
-    fetchHistory();
-
-    const token = localStorage.getItem('access_token');
-    socketRef.current = io('/', { auth: { token }, path: '/socket.io' });
-
-    socketRef.current.on('connect', () => {
-      socketRef.current?.emit('identify', currentUserId);
-      socketRef.current?.emit('joined project', { username: `User_${currentUserId}`, projectId });
-    });
-
-    socketRef.current.on('new_project_notification', (data: Message & { projectId: number }) => {
-      if (data.projectId === projectId) {
-        setMessages((prev) => {
-          if (prev.some((msg) => msg.id === data.id)) return prev;
-          return [...prev, data];
-        });
-      }
-    });
-
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.emit('left project', { username: `User_${currentUserId}`, projectId });
-        socketRef.current.disconnect();
-      }
-    };
-  }, [projectId, currentUserId]);
-
-  const sendMessage = async (content: string) => {
-    if (!content.trim() || isSending) return false;
-    setIsSending(true);
-    try {
-      const response = await projectService.createMessage(projectId, content);
-      setMessages((prev) => {
-        if (prev.some((msg) => msg.id === response.data.id)) return prev;
-        return [...prev, response.data];
-      });
-      return true;
-    } catch (error) {
-      console.error(error);
-      return false;
-    } finally {
-      setIsSending(false);
-    }
-  };
-
-  return { messages, sendMessage, isSending };
-}
-</file>
-
-<file path="srcs/frontend/src/hooks/useNotification.ts">
-import { useState, useEffect, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
-import { notificationService, authService } from '../api/services';
-import type { Notification, User } from '../../../../shared/srcs/types';
-
-export function useNotifications() {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const socketRef = useRef<Socket | null>(null);
-
-  useEffect(() => {
-    const init = async () => {
-      try {
-        const profileRes = await authService.getProfile();
-        setCurrentUser(profileRes.data);
-        
-        const notifsRes = await notificationService.getNotifications(profileRes.data.id);
-        setNotifications(notifsRes.data);
-
-        const token = localStorage.getItem('access_token');
-        if (token) {
-          socketRef.current = io('/', { auth: { token }, path: '/socket.io' });
-          
-          socketRef.current.on('connect', () => {
-            socketRef.current?.emit('identify', profileRes.data.id);
-          });
-          
-          socketRef.current.on('new_notification', (data: Notification) => {
-            setNotifications(prev => [data, ...prev]);
-          });
-        }
-      } catch (error) {
-        console.error(error);
-      }
-    };
-    
-    init();
-
-    return () => {
-      if (socketRef.current) socketRef.current.disconnect();
-    };
-  }, []);
-
-  const markAllAsRead = async () => {
-    if (!currentUser) return;
-    try {
-      await notificationService.markAsRead(currentUser.id);
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const unreadCount = notifications.filter(n => !n.isRead).length;
-
-  return { notifications, unreadCount, markAllAsRead, currentUser };
-}
-</file>
-
-<file path="srcs/frontend/src/hooks/useProjectDetails.ts">
-import { useState, useEffect, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
-import { projectService, taskService, authService } from '../api/services';
-import type { Project, Task, TaskStatus, User, ProjectStatus } from '../../../../shared/srcs/types';
-
-export function useProjectDetails(projectId: number) {
-  const [project, setProject] = useState<Project | null>(null);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const socketRef = useRef<Socket | null>(null);
-
-  useEffect(() => {
-    if (!projectId) return;
-
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        const [projectRes, profileRes] = await Promise.all([
-          projectService.getById(projectId),
-          authService.getProfile()
-        ]);
-        
-        setProject(projectRes.data);
-        setTasks(projectRes.data.tasks || []);
-        setCurrentUser(profileRes.data);
-
-        const token = localStorage.getItem('access_token');
-        if (token) {
-          socketRef.current = io('/', { auth: { token }, path: '/socket.io' });
-
-          socketRef.current.on('connect', () => {
-            socketRef.current?.emit('identify', profileRes.data.id);
-            socketRef.current?.emit('joined project', { username: profileRes.data.username, projectId });
-          });
-
-          socketRef.current.on('task_updated', (updatedTask: Task) => {
-            setTasks(prevTasks => 
-              prevTasks.map(t => t.id === updatedTask.id ? { ...t, ...updatedTask } : t)
-            );
-          });
-        }
-      } catch (error) {
-        console.error(error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.emit('left project', { username: currentUser?.username || 'User', projectId });
-        socketRef.current.disconnect();
-      }
-    };
-  }, [projectId, currentUser?.username]);
-
-  const reloadProject = async () => {
-    try {
-      const res = await projectService.getById(projectId);
-      setProject(res.data);
-      setTasks(res.data.tasks || []);
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  const changeTaskStatus = async (taskId: number, newStatus: TaskStatus) => {
-    setTasks(prevTasks => 
-      prevTasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t)
-    );
-
-    try {
-      await taskService.update(taskId, { status: newStatus });
-    } catch (error) {
-      console.error(error);
-      const res = await projectService.getById(projectId);
-      setTasks(res.data.tasks || []);
-    }
-  };
-
-  const assignTaskMember = async (taskId: number, userIds: number[]) => {
-    setTasks(prevTasks => 
-      prevTasks.map(t => {
-        if (t.id === taskId) {
-          const newAssignees = project?.members
-            ?.filter(m => userIds.includes(m.userId))
-            .map(m => m.user) || [];
-          return { ...t, assignees: newAssignees as any };
-        }
-        return t;
-      })
-    );
-
-    try {
-      await taskService.update(taskId, { assigneeIds: userIds });
-    } catch (error) {
-      console.error(error);
-      const res = await projectService.getById(projectId);
-      setTasks(res.data.tasks || []);
-    }
-  };
-
-  const changeProjectStatus = async (newStatus: ProjectStatus) => {
-    if (!project) return;
-    
-    setProject({ ...project, status: newStatus });
-
-    try {
-      await projectService.update(projectId, { status: newStatus });
-    } catch (error) {
-      console.error(error);
-      const res = await projectService.getById(projectId);
-      setProject(res.data);
-    }
-  };
-
-  return { project, tasks, currentUser, isLoading, reloadProject, changeTaskStatus, changeProjectStatus, assignTaskMember };
-}
-</file>
-
-<file path="srcs/frontend/src/pages/ProjectPage.tsx">
-import { useParams } from 'react-router-dom';
-import { useState } from 'react';
-import { Box, Flex, Heading, Text, Badge, Grid, Card, VStack, HStack, Spinner, Button } from '@chakra-ui/react';
-import { LuPlus } from 'react-icons/lu';
-import ChatButton from '../components/chatButton';
-import AddMemberMenu from '../components/addMember';
-import TaskAssignees from '../components/taskAssigness';
-import CreateTaskModal from '../components/createTaskModal';
-import { useProjectDetails } from '../hooks/useProjectDetails';
-import { TaskStatus } from '../../../../shared/srcs/types/task';
-import { ProjectStatus} from '../../../../shared/srcs/types/project';
-import type { ProjectMember } from '../../../../shared/srcs/types/project';
-import type { Task } from '../../../../shared/srcs/types';
-import { Tooltip } from '../components/ui/tooltip';
-
-const columns = [
-  { id: TaskStatus.TODO, label: 'To Do', color: 'gray' },
-  { id: TaskStatus.IN_PROGRESS, label: 'In Progress', color: 'blue' },
-  { id: TaskStatus.PENDING_EVALUATION, label: 'Review', color: 'orange' },
-  { id: TaskStatus.DONE, label: 'Done', color: 'green' },
-];
-
-const statusColors: Record<TaskStatus, string> = {
-  [TaskStatus.TODO]: 'gray',
-  [TaskStatus.IN_PROGRESS]: 'blue',
-  [TaskStatus.PENDING_EVALUATION]: 'orange',
-  [TaskStatus.DONE]: 'green',
-};
-
-export default function ProjectPage() {
-  const { projectId } = useParams();
-  const { project, tasks, currentUser, isLoading, reloadProject, changeTaskStatus, changeProjectStatus, assignTaskMember } = useProjectDetails(Number(projectId));
-  
-  const [createTaskStatus, setCreateTaskStatus] = useState<TaskStatus | null>(null);
-
   if (isLoading) {
     return (
-      <Flex h="100vh" justify="center" align="center">
+      <Flex h="100%" justify="center" align="center">
         <Spinner size="xl" color="purple.500" />
       </Flex>
     );
   }
 
-  if (!project || !currentUser) {
-    return (
-      <Flex h="100vh" justify="center" align="center">
-        <Text fontWeight="bold">Project not found or unauthorized.</Text>
-      </Flex>
-    );
-  }
-
-  const handleTaskCreated = async () => {
-    setCreateTaskStatus(null);
-    await reloadProject();
-  };
-
   return (
-    <Flex h="100%" direction="column" gap={6} position="relative" align="stretch">
-      <Box bg="white" p={6} borderRadius="xl" boxShadow="sm" border="1px solid" borderColor="gray.200" _dark={{ bg: "gray.800", borderColor: "gray.700" }}>
-        <Flex justify="space-between" align="flex-start" w="100%">
-          <Box textAlign="left">
-            <Heading size="lg" mb={1}>{project.name}</Heading>
-            <Text color="gray.500" fontSize="md" mb={4}>
-              {project.description || "No description available."}
-            </Text>
-            <HStack gap={2} flexWrap="wrap">
-              {project.members?.map(member => (
-                <Badge key={member.id} variant="subtle" colorPalette="gray" borderRadius="full" px={2} py={1}>
-                  {member.user?.username || `User ${member.userId}`}
-                  {member.role === 'PROJECT_LEADER' && ' 👑'}
-                </Badge>
-              ))}
-            </HStack>
+    <Flex direction="column" gap={8} h="100%">
+      
+      <Flex justify="space-between" align="center" bg="white" p={6} borderRadius="xl" boxShadow="sm" border="1px solid" borderColor="gray.200" _dark={{ bg: "gray.800", borderColor: "gray.700" }}>
+        <Box>
+          <Heading size="lg" mb={1}>My Workspace</Heading>
+          <Text color="gray.500">Manage your projects and tasks in one place.</Text>
+        </Box>
+        <Button colorPalette="purple" size="lg" onClick={() => setIsCreateModalOpen(true)}>
+          <LuPlus /> New Project
+        </Button>
+      </Flex>
+
+      <Box>
+        <HStack mb={4} gap={2}>
+          <LuFolder size={20} color="#aa3bff" />
+          <Heading size="md">My Projects</Heading>
+          <Badge colorPalette="purple" borderRadius="full">{projects.length}</Badge>
+        </HStack>
+        
+        {projects.length === 0 ? (
+          <Box p={8} textAlign="center" bg="gray.50" borderRadius="lg" border="1px dashed" borderColor="gray.300" _dark={{ bg: "gray.800", borderColor: "gray.600" }}>
+            <Text color="gray.500">No projects yet. Create one to get started!</Text>
           </Box>
-          
-          <VStack align="flex-end" gap={3}>
-            <Box bg="purple.100" color="purple.800" _dark={{ bg: "purple.900", color: "purple.200" }} px={3} py={1} borderRadius="md" display="inline-block">
-              <select 
-                value={project.status} 
-                onChange={(e) => changeProjectStatus(e.target.value as ProjectStatus)}
-                style={{ background: 'transparent', border: 'none', color: 'inherit', fontWeight: 'bold', cursor: 'pointer', outline: 'none', fontSize: '14px' }}
+        ) : (
+          <SimpleGrid columns={{ base: 1, md: 2, lg: 3, xl: 4 }} gap={4}>
+            {projects.map(project => (
+              <Card.Root 
+                key={project.id} 
+                onClick={() => navigate(`/project/${project.id}`)}
+                variant="elevated" 
+                cursor="pointer"
+                _hover={{ shadow: 'md', transform: 'translateY(-2px)', transition: 'all 0.2s', borderColor: 'purple.400' }}
+                border="1px solid"
+                borderColor="transparent"
               >
-                <option value={ProjectStatus.PLANNING} style={{color: 'black'}}>PLANNING</option>
-                <option value={ProjectStatus.ACTIVE} style={{color: 'black'}}>ACTIVE</option>
-                <option value={ProjectStatus.COMPLETED} style={{color: 'black'}}>COMPLETED</option>
-              </select>
-            </Box>
-            <AddMemberMenu 
-              projectId={project.id} 
-              existingMembers={project.members || []} 
-              onMemberAdded={reloadProject} 
-            />
-          </VStack>
-        </Flex>
+                <Card.Body>
+                  <Heading size="sm" mb={2} truncate>{project.name}</Heading>
+                  <Text fontSize="sm" color="gray.500" mb={4} lineClamp={2}>
+                    {project.description || "No description provided."}
+                  </Text>
+                  <HStack justify="space-between" mt="auto">
+                    <Badge variant="subtle" colorPalette={project.status === 'COMPLETED' ? 'green' : project.status === 'ACTIVE' ? 'blue' : 'gray'}>
+                      {project.status}
+                    </Badge>
+                  </HStack>
+                </Card.Body>
+              </Card.Root>
+            ))}
+          </SimpleGrid>
+        )}
       </Box>
 
-      <Grid templateColumns="repeat(4, 1fr)" gap={4} flex={1} alignItems="start">
-        {columns.map((column) => (
-          <VStack key={column.id} bg="gray.100" _dark={{ bg: "gray.900" }} p={4} borderRadius="lg" minH="500px" alignItems="stretch">
-            <Flex justify="space-between" align="center" mb={4}>
-              <Text fontWeight="bold" color={`${column.color}.600`} _dark={{ color: `${column.color}.300` }} textAlign="left">
-                {column.label}
-              </Text>
-              <Badge colorPalette={column.color} borderRadius="full">
-                {tasks.filter(t => t.status === column.id).length}
-              </Badge>
-            </Flex>
-            
-            {tasks.filter((task) => task.status === column.id).map((task) => (
-              <TaskCard key={task.id} task={task} projectMembers={project.members || []} onStatusChange={changeTaskStatus} onAssign={assignTaskMember} />
-            ))}
-
-            <Button 
-              variant="ghost" 
-              color="gray.500" 
-              justifyContent="flex-start" 
-              w="full" 
-              mt={2}
-              _hover={{ bg: "gray.200", color: "gray.800", _dark: { bg: "gray.800", color: "white" } }}
-              onClick={() => setCreateTaskStatus(column.id)}
-            >
-              <LuPlus /> Add Task
-            </Button>
-          </VStack>
-        ))}
-      </Grid>
-      
-      <CreateTaskModal 
-        isOpen={createTaskStatus !== null} 
-        onClose={() => setCreateTaskStatus(null)} 
-        projectId={project.id} 
-        initialStatus={createTaskStatus || TaskStatus.TODO} 
-        onSuccess={handleTaskCreated} 
-      />
-
-      <ChatButton projectId={project.id} currentUserId={currentUser.id} />
-    </Flex>
-  );
-}
-
-function TaskCard({ task, projectMembers, onStatusChange, onAssign }: { task: Task, projectMembers: ProjectMember[], onStatusChange: (id: number, s: TaskStatus) => void, onAssign: (taskId: number, userIds: number[]) => void }) {
-  const cardColor = statusColors[task.status] || 'gray';
-  const assignees = task.assignees || [];
-
-  const tooltipContent = (
-    <Box p={2} maxW="250px">
-      {task.description && <Text fontSize="sm" mb={task.deadline ? 2 : 0}>{task.description}</Text>}
-      {task.deadline && (
-        <Text fontSize="xs" fontWeight="bold" color="red.300">
-          Deadline: {new Date(task.deadline).toLocaleDateString()}
-        </Text>
-      )}
-      {!task.description && !task.deadline && <Text fontSize="sm" fontStyle="italic">No extra details</Text>}
-    </Box>
-  );
-
-  return (
-    <Card.Root size="sm" variant="elevated" borderLeft="4px solid" borderColor={`${cardColor}.500`} _hover={{ shadow: 'md', transform: 'translateY(-2px)', transition: 'all 0.2s' }}>
-      <Card.Body>
-        <Tooltip content={tooltipContent} positioning={{ placement: "top" }} showArrow portalled>
-          <Text fontWeight="medium" mb={3} textAlign="left" cursor="help" width="max-content">
-            {task.title}
-          </Text>
-        </Tooltip>
-        
-        <TaskAssignees 
-          taskId={task.id} 
-          assignees={assignees as any} 
-          projectMembers={projectMembers} 
-          onAssign={onAssign} 
-        />
-
-        <HStack justify="space-between" align="center">
-          <Badge variant="subtle" colorPalette={cardColor}>#{task.id}</Badge>
-          <Box 
-            color={`${cardColor}.600`} 
-            _dark={{ color: task.status === TaskStatus.TODO ? "white" : `${cardColor}.300` }} 
-            bg="transparent" 
-            _hover={{ bg: "gray.100", _dark: { bg: "gray.700" } }} 
-            px={2} py={1} borderRadius="md" transition="background 0.2s"
-          >
-            <select 
-              value={task.status} 
-              onChange={(e) => onStatusChange(task.id, e.target.value as TaskStatus)}
-              style={{ background: 'transparent', fontSize: '11px', cursor: 'pointer', outline: 'none', fontWeight: 'bold', color: 'inherit' }}
-            >
-              {Object.values(TaskStatus).map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
-            </select>
-          </Box>
+      <Box flex={1}>
+        <HStack mb={4} gap={2}>
+          <LuListTodo size={20} color="#aa3bff" />
+          <Heading size="md">My Active Tasks</Heading>
+          <Badge colorPalette="purple" borderRadius="full">{myTasks.filter(t => t.status !== 'DONE').length}</Badge>
         </HStack>
-      </Card.Body>
-    </Card.Root>
+
+        {myTasks.length === 0 ? (
+          <Box p={8} textAlign="center" bg="gray.50" borderRadius="lg" border="1px dashed" borderColor="gray.300" _dark={{ bg: "gray.800", borderColor: "gray.600" }}>
+            <Text color="gray.500">You don't have any assigned tasks.</Text>
+          </Box>
+        ) : (
+          <VStack align="stretch" gap={3}>
+            {myTasks.filter(t => t.status !== 'DONE').map(task => (
+              <Box 
+                key={task.id} 
+                p={4} 
+                bg="white" 
+                _dark={{ bg: "gray.800", borderColor: "gray.700" }} 
+                borderRadius="lg" 
+                border="1px solid" 
+                borderColor="gray.200"
+                display="flex"
+                justifyContent="space-between"
+                alignItems="center"
+              >
+                <Box>
+                  <Text fontWeight="bold">{task.title}</Text>
+                  <HStack fontSize="xs" color="gray.500" mt={1}>
+                    <Badge size="sm" variant="outline" colorPalette="gray">{task.project?.name || 'Unknown Project'}</Badge>
+                    {task.deadline && <Text color="red.400">Deadline: {new Date(task.deadline).toLocaleDateString()}</Text>}
+                  </HStack>
+                </Box>
+                <Button size="sm" variant="surface" colorPalette="purple" onClick={() => navigate(`/project/${task.projectId}`)}>
+                  View Project
+                </Button>
+              </Box>
+            ))}
+          </VStack>
+        )}
+      </Box>
+
+      <DialogRoot open={isCreateModalOpen} onOpenChange={(e) => !e.open && setIsCreateModalOpen(false)} placement="center">
+        <DialogContent _dark={{ bg: "gray.800" }}>
+          <DialogHeader>
+            <DialogTitle>Create New Project</DialogTitle>
+            <DialogCloseTrigger />
+          </DialogHeader>
+          <DialogBody pb={6}>
+            <VStack align="stretch" gap={4}>
+              <Box>
+                <Text fontSize="sm" fontWeight="bold" mb={1}>Project Name *</Text>
+                <Input 
+                  placeholder="e.g. Website Redesign" 
+                  value={newProjectName} 
+                  onChange={(e) => setNewProjectName(e.target.value)} 
+                  bg="white" _dark={{ bg: "gray.700", borderColor: "gray.600" }}
+                />
+              </Box>
+              <Box>
+                <Text fontSize="sm" fontWeight="bold" mb={1}>Description</Text>
+                <Textarea 
+                  placeholder="What is this project about?" 
+                  value={newProjectDesc} 
+                  onChange={(e) => setNewProjectDesc(e.target.value)} 
+                  rows={3}
+                  bg="white" _dark={{ bg: "gray.700", borderColor: "gray.600" }}
+                />
+              </Box>
+              <Box>
+                <Text fontSize="sm" fontWeight="bold" mb={1}>Deadline</Text>
+                <Input 
+                  type="datetime-local" 
+                  value={newProjectDeadline} 
+                  onChange={(e) => setNewProjectDeadline(e.target.value)} 
+                  bg="white" _dark={{ bg: "gray.700", borderColor: "gray.600" }}
+                />
+              </Box>
+            </VStack>
+          </DialogBody>
+          <DialogFooter>
+            <Button variant="ghost" mr={3} onClick={() => setIsCreateModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button colorPalette="purple" onClick={handleCreateProject} loading={isSubmitting} disabled={!newProjectName.trim()}>
+              Create Project
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </DialogRoot>
+
+    </Flex>
   );
 }
 </file>
@@ -1398,28 +536,6 @@ export * from './message';
 export * from './comment';
 export * from './dashboard';
 export * from './authToken';
-</file>
-
-<file path="shared/srcs/types/task.ts">
-export enum TaskStatus {
-    TODO = 'TODO',
-    IN_PROGRESS = 'IN_PROGRESS',
-    PENDING_EVALUATION = 'PENDING_EVALUATION',
-    DONE = 'DONE'
-}
-
-export interface Task {
-    id: number;
-    title: string;
-    description?: string;
-    status: TaskStatus;
-    deadline?: Date;
-    createdAt: Date;
-    updatedAt: Date;
-    comments?: any[];
-    assignees?: { id: number, username: string, avatar?: string }[];
-    project?: { name: string };
-}
 </file>
 
 <file path="srcs/backend/prisma/migrations/20260421111338_init/migration.sql">
@@ -1990,157 +1106,6 @@ describe('FriendsService', () => {
 });
 </file>
 
-<file path="srcs/backend/src/friends/friends.service.ts">
-import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service';
-import { NotificationsService } from '../notifications/notifications.service';
-import { IsBtcAddress } from 'class-validator';
-
-@Injectable()
-export class FriendsService {
-constructor(
-    private prisma: PrismaService,
-    private  notificationsService: NotificationsService,
-  ){}
-async sendrequest(requesterId: number, addresseeId: number) {
-    if (requesterId === addresseeId) {
-      throw new BadRequestException('You cannot send a friend request to yourself.');
-    }
-const targetUser = await this.prisma.user.findUnique({ where: { id: addresseeId } });
-    if (!targetUser) {
-      throw new NotFoundException('The user you are trying to send a friend request to does not exist.');
-    }
-    const existingRequest = await this.prisma.friendship.findFirst({
-      where: {
-        OR: [
-          { requesterId, addresseeId },
-          { requesterId: addresseeId, addresseeId: requesterId }
-        ]
-      }
-    });
-    if (existingRequest) {
-      throw new ConflictException('You have already sent a friend request to this user.');
-    }
-    const friendRequest = await this.prisma.friendship.create({
-        data: {
-            requesterId: requesterId,
-            addresseeId: addresseeId,
-            status: 'PENDING',
-        },
-    });
-    const sender = await this.prisma.user.findUnique({ where: { id: requesterId } });
-    if ( sender) {
-    await this.notificationsService.createNotification(
-      addresseeId,
-      'friend_request',
-      `${sender.username} has sent you a friend request!`,
-    );
-    return friendRequest;
-  }
-}
-async acceptrequest(loggedInUserId: number, requesterId: number) {
-    const friendRequest = await this.prisma.friendship.findFirst({
-      where: {
-        requesterId: requesterId,
-        addresseeId: loggedInUserId,
-        status: 'PENDING',
-      },
-    });
-    if (!friendRequest) {
-      throw new NotFoundException('Friend request not found.');
-    }
-    return await this.prisma.friendship.update({
-      where: {
-        id: friendRequest.id,
-      },
-      data: {
-        status: 'ACCEPTED',
-      },
-    });
-  }
-async rejectrequest(loggedInUserId: number, requesterId: number) {
-    const friendRequest = await this.prisma.friendship.findFirst({
-      where: {
-        requesterId: requesterId,
-        addresseeId: loggedInUserId,
-        status: 'PENDING',
-      },
-    });
-    if (!friendRequest) {
-      throw new NotFoundException('Friend request not found.');
-    }
-    return await this.prisma.friendship.update({
-      where: {
-        id: friendRequest.id,
-      },
-      data: {
-        status: 'REJECTED',
-      },
-    });
-  }
-async getfriends(userId: number) {
-    const friendships = await this.prisma.friendship.findMany({
-      where: {
-        OR: [
-          { requesterId: userId, status: 'ACCEPTED' },
-          { addresseeId: userId, status: 'ACCEPTED' }
-        ]
-      },
-      include: {
-        requester: true,
-        addressee: true,
-      },
-    });
-    return friendships.map(friendship => {
-      const friend = friendship.requesterId === userId ? friendship.addressee : friendship.requester;
-      return {
-        id: friend.id,
-        username: friend.username,
-        email: friend.email,
-      };
-    });
-  }
-  async getFriendRequests(userId: number) {
-    return this.prisma.friendship.findMany({
-      where: {
-        addresseeId: userId,
-        status: 'PENDING', },
-        include: {
-            requester: {select: {id: true, username: true, email: true}}
-        }
-    });
-    }
-
-    async getMyFriends(userId: number) {
-    const friendships = await this.prisma.friendship.findMany({
-      where: {
-        status: 'ACCEPTED',
-        OR: [{ requesterId: userId }, { addresseeId: userId }]
-      },
-      include: {
-        requester: { select: { id: true, username: true, avatar: true } },
-        addressee: { select: { id: true, username: true, avatar: true } }
-      }
-    });
-    return friendships.map(f => f.requesterId === userId ? f.addressee : f.requester);
-  }
-  async removefriendship(loggedInUserId: number, friendshipId: number) {
-    const friendship = await this.prisma.friendship.findUnique({
-      where: { id: friendshipId },
-    });
-    if (!friendship) {
-      throw new NotFoundException('Friendship not found.');
-    }
-    if (friendship.requesterId !== loggedInUserId && friendship.addresseeId !== loggedInUserId) {
-      throw new BadRequestException('You can only remove friendships you are part of.');
-    }
-    return await this.prisma.friendship.delete({
-       where: { id: friendshipId },
-     });
-    }
-}
-</file>
-
 <file path="srcs/backend/src/notifications/dto/create-notification.dto.ts">
 import { IsInt, IsNotEmpty, IsString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
@@ -2216,19 +1181,6 @@ import { PrismaService } from "./prisma.service";
 export class PrismaModule {}
 </file>
 
-<file path="srcs/backend/src/projects/dto/update-project.dto.ts">
-import { PartialType } from '@nestjs/swagger';
-import { CreateProjectDto } from './create-project.dto';
-import { IsEnum, IsOptional } from 'class-validator';
-import { ProjectStatus } from '@prisma/client';
-
-export class UpdateProjectDto extends PartialType(CreateProjectDto) {
-  @IsOptional()
-  @IsEnum(ProjectStatus)
-  status?: ProjectStatus;
-}
-</file>
-
 <file path="srcs/backend/src/projects/projects.controller.spec.ts">
 import { Test, TestingModule } from '@nestjs/testing';
 import { ProjectsController } from './projects.controller';
@@ -2271,13 +1223,6 @@ describe('ProjectsService', () => {
     expect(service).toBeDefined();
   });
 });
-</file>
-
-<file path="srcs/backend/src/tasks/dto/update-task.dto.ts">
-import { PartialType } from '@nestjs/swagger';
-import { CreateTaskDto } from './create-task.dto';
-
-export class UpdateTaskDto extends PartialType(CreateTaskDto) {}
 </file>
 
 <file path="srcs/backend/src/tasks/tasks.controller.spec.ts">
@@ -3042,6 +1987,91 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 )
 </file>
 
+<file path="srcs/frontend/src/components/ui/close-button.tsx">
+import type { ButtonProps } from "@chakra-ui/react"
+import { IconButton as ChakraIconButton } from "@chakra-ui/react"
+import * as React from "react"
+import { LuX } from "react-icons/lu"
+
+export type CloseButtonProps = ButtonProps
+
+export const CloseButton = React.forwardRef<
+  HTMLButtonElement,
+  CloseButtonProps
+>(function CloseButton(props, ref) {
+  return (
+    <ChakraIconButton variant="ghost" aria-label="Close" ref={ref} {...props}>
+      {props.children ?? <LuX />}
+    </ChakraIconButton>
+  )
+})
+</file>
+
+<file path="srcs/frontend/src/components/ui/dialog.tsx">
+import { Dialog as ChakraDialog, Portal } from "@chakra-ui/react"
+import { CloseButton } from "./close-button"
+import * as React from "react"
+
+interface DialogContentProps extends ChakraDialog.ContentProps {
+  portalled?: boolean
+  portalRef?: React.RefObject<HTMLElement | null>
+  backdrop?: boolean
+}
+
+export const DialogContent = React.forwardRef<
+  HTMLDivElement,
+  DialogContentProps
+>(function DialogContent(props, ref) {
+  const {
+    children,
+    portalled = true,
+    portalRef,
+    backdrop = true,
+    ...rest
+  } = props
+
+  return (
+    <Portal disabled={!portalled} container={portalRef}>
+      {backdrop && <ChakraDialog.Backdrop />}
+      <ChakraDialog.Positioner>
+        <ChakraDialog.Content ref={ref} {...rest} asChild={false}>
+          {children}
+        </ChakraDialog.Content>
+      </ChakraDialog.Positioner>
+    </Portal>
+  )
+})
+
+export const DialogCloseTrigger = React.forwardRef<
+  HTMLButtonElement,
+  ChakraDialog.CloseTriggerProps
+>(function DialogCloseTrigger(props, ref) {
+  return (
+    <ChakraDialog.CloseTrigger
+      position="absolute"
+      top="2"
+      insetEnd="2"
+      {...props}
+      asChild
+    >
+      <CloseButton size="sm" ref={ref}>
+        {props.children}
+      </CloseButton>
+    </ChakraDialog.CloseTrigger>
+  )
+})
+
+export const DialogRoot = ChakraDialog.Root
+export const DialogFooter = ChakraDialog.Footer
+export const DialogHeader = ChakraDialog.Header
+export const DialogBody = ChakraDialog.Body
+export const DialogBackdrop = ChakraDialog.Backdrop
+export const DialogTitle = ChakraDialog.Title
+export const DialogDescription = ChakraDialog.Description
+export const DialogTrigger = ChakraDialog.Trigger
+export const DialogActionTrigger = ChakraDialog.ActionTrigger
+</file>
+
 <file path="srcs/frontend/src/components/ui/field.tsx">
 import { Field as ChakraField } from "@chakra-ui/react"
 import * as React from "react"
@@ -3240,6 +2270,474 @@ function getColorPalette(percent: number) {
 }
 </file>
 
+<file path="srcs/frontend/src/components/ui/popover.tsx">
+import { Popover as ChakraPopover, Portal } from "@chakra-ui/react"
+import { CloseButton } from "./close-button"
+import * as React from "react"
+
+interface PopoverContentProps extends ChakraPopover.ContentProps {
+  portalled?: boolean
+  portalRef?: React.RefObject<HTMLElement | null>
+}
+
+export const PopoverContent = React.forwardRef<
+  HTMLDivElement,
+  PopoverContentProps
+>(function PopoverContent(props, ref) {
+  const { portalled = true, portalRef, ...rest } = props
+  return (
+    <Portal disabled={!portalled} container={portalRef}>
+      <ChakraPopover.Positioner>
+        <ChakraPopover.Content ref={ref} {...rest} />
+      </ChakraPopover.Positioner>
+    </Portal>
+  )
+})
+
+export const PopoverArrow = React.forwardRef<
+  HTMLDivElement,
+  ChakraPopover.ArrowProps
+>(function PopoverArrow(props, ref) {
+  return (
+    <ChakraPopover.Arrow {...props} ref={ref}>
+      <ChakraPopover.ArrowTip />
+    </ChakraPopover.Arrow>
+  )
+})
+
+export const PopoverCloseTrigger = React.forwardRef<
+  HTMLButtonElement,
+  ChakraPopover.CloseTriggerProps
+>(function PopoverCloseTrigger(props, ref) {
+  return (
+    <ChakraPopover.CloseTrigger
+      position="absolute"
+      top="1"
+      insetEnd="1"
+      {...props}
+      asChild
+      ref={ref}
+    >
+      <CloseButton size="sm" />
+    </ChakraPopover.CloseTrigger>
+  )
+})
+
+export const PopoverTitle = ChakraPopover.Title
+export const PopoverDescription = ChakraPopover.Description
+export const PopoverFooter = ChakraPopover.Footer
+export const PopoverHeader = ChakraPopover.Header
+export const PopoverRoot = ChakraPopover.Root
+export const PopoverBody = ChakraPopover.Body
+export const PopoverTrigger = ChakraPopover.Trigger
+</file>
+
+<file path="srcs/frontend/src/components/addFriendButton.tsx">
+import { Button } from "@chakra-ui/react";
+import { useAddFriend } from "../hooks/useFriend";
+
+function AddFriendButton({ targetUserId }: { targetUserId: number }) {
+  const { sendRequest, isLoading } = useAddFriend();
+
+  return (
+    <Button 
+      onClick={() => sendRequest(targetUserId)}
+      loading={isLoading}
+    >
+      Add Friend
+    </Button>
+  );
+}
+
+export default AddFriendButton;
+</file>
+
+<file path="srcs/frontend/src/components/addMember.tsx">
+import { useState } from 'react';
+import { Flex, Button, IconButton } from '@chakra-ui/react';
+import { LuUserPlus, LuX } from "react-icons/lu";
+import { useAddMember } from '../hooks/useAddmember';
+import type { ProjectMember } from '../../../../shared/srcs/types';
+
+interface AddMemberMenuProps {
+  projectId: number;
+  existingMembers: ProjectMember[];
+  onMemberAdded: () => void;
+}
+
+export default function AddMemberMenu({ projectId, existingMembers, onMemberAdded }: AddMemberMenuProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<number | ''>('');
+  const { availableUsers, isAdding, addMember } = useAddMember(projectId, existingMembers);
+
+  const handleAdd = async () => {
+    if (!selectedUserId) return;
+    const success = await addMember(Number(selectedUserId));
+    if (success) {
+      setIsOpen(false);
+      setSelectedUserId('');
+      onMemberAdded();
+    }
+  };
+
+  if (!isOpen) {
+    return (
+      <Button size="sm" variant="surface" colorPalette="purple" onClick={() => setIsOpen(true)}>
+        <LuUserPlus /> Add Member
+      </Button>
+    );
+  }
+
+  return (
+    <Flex bg="gray.50" p={3} borderRadius="md" border="1px solid" borderColor="gray.200" _dark={{ bg: "gray.900", borderColor: "gray.700" }} align="center" gap={2}>
+      <select 
+        value={selectedUserId} 
+        onChange={(e) => setSelectedUserId(Number(e.target.value))}
+        style={{ padding: '6px', borderRadius: '4px', fontSize: '14px', border: '1px solid #ccc', outline: 'none' }}
+      >
+        <option value="">Select a user...</option>
+        {availableUsers.map(u => (
+          <option key={u.id} value={u.id}>{u.username}</option>
+        ))}
+      </select>
+      <Button size="sm" colorPalette="purple" onClick={handleAdd} loading={isAdding} disabled={!selectedUserId}>
+        Add
+      </Button>
+      <IconButton size="sm" variant="ghost" colorPalette="red" aria-label="Cancel" onClick={() => setIsOpen(false)}>
+        <LuX />
+      </IconButton>
+    </Flex>
+  );
+}
+</file>
+
+<file path="srcs/frontend/src/components/chatButton.tsx">
+import { Box, IconButton, Flex, useDisclosure } from '@chakra-ui/react';
+import { IoChatbubbleEllipses } from 'react-icons/io5';
+import ChatWindow from './chatWindow';
+import { useChat } from '../hooks/useChat';
+
+interface ChatButtonProps {
+  projectId: number;     
+  currentUserId: number;
+}
+
+export default function ChatButton({ projectId, currentUserId }: ChatButtonProps) {
+  const { open, onToggle } = useDisclosure();
+  const { messages, sendMessage, isSending, unreadCount } = useChat(projectId, currentUserId, open);
+
+  return (
+    <Box position="fixed" bottom="30px" right="30px" zIndex={1000}>
+      {unreadCount > 0 && !open && (
+        <Flex
+          position="absolute"
+          top="-4px"
+          right="-4px"
+          bg="red.500"
+          color="white"
+          w="24px"
+          h="24px"
+          borderRadius="full"
+          justify="center"
+          align="center"
+          fontSize="xs"
+          fontWeight="bold"
+          zIndex={1001}
+          boxShadow="md"
+        >
+          {unreadCount}
+        </Flex>
+      )}
+
+      <IconButton
+        aria-label="Open chat"
+        size="lg"
+        w="64px"
+        h="64px"
+        colorPalette="purple"
+        borderRadius="full"
+        boxShadow="xl"
+        onClick={onToggle}
+      >
+          <IoChatbubbleEllipses size={24} />
+      </IconButton>
+
+      {open && (
+        <Box
+          position="absolute"
+          bottom="80px"
+          right="0"
+          w="320px"
+          h="450px"
+          bg="white"
+          _dark={{ bg: 'gray.800', borderColor: 'gray.700' }}
+          boxShadow="2xl"
+          borderRadius="lg"
+          border="1px solid"
+          borderColor="gray.200"
+        >
+          <ChatWindow 
+            messages={messages} 
+            sendMessage={sendMessage} 
+            isSending={isSending} 
+            currentUserId={currentUserId} 
+          />
+        </Box>
+      )}
+    </Box>
+  );
+}
+</file>
+
+<file path="srcs/frontend/src/components/chatWindow.tsx">
+import { Box, Flex, Input, Button, Text, VStack } from '@chakra-ui/react';
+import { useState, useEffect, useRef } from 'react';
+import type { Message } from '../../../../shared/srcs/types/message';
+
+interface ChatWindowProps {
+  messages: Message[];
+  sendMessage: (content: string) => Promise<boolean>;
+  isSending: boolean;
+  currentUserId: number;
+}
+
+export default function ChatWindow({ messages, sendMessage, isSending, currentUserId }: ChatWindowProps) {
+  const [inputValue, setInputValue] = useState('');
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const handleSend = async () => {
+    const success = await sendMessage(inputValue);
+    if (success) {
+      setInputValue('');
+    }
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSend();
+    }
+  };
+
+  return (
+    <Flex direction="column" h="100%">
+      
+      <Box p={3} bg="purple.500" color="white" borderTopRadius="lg">
+        <Text fontWeight="bold">Project Chat</Text>
+      </Box>
+
+      <VStack flex={1} p={4} overflowY="auto" gap={3} bg="gray.50" _dark={{ bg: "gray.900" }} alignItems="flex-start">
+        {messages.length === 0 ? (
+          <Text color="gray.500" fontSize="sm" alignSelf="center" mt={4}>
+            no messages yet in this project.
+          </Text>
+        ) : (
+          messages.map((msg, index) => {
+            const isMine = msg.userId === currentUserId;
+            const timestamp = msg.Time || msg.createdAt || Date.now(); 
+            const timeString = new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            return (
+              <Box 
+                key={msg.id || index} 
+                bg={isMine ? "purple.100" : "gray.200"} 
+                _dark={{ bg: isMine ? "purple.800" : "gray.700", color: "white" }} 
+                p={2} 
+                borderRadius="md" 
+                maxW="80%" 
+                alignSelf={isMine ? "flex-end" : "flex-start"}
+              >
+                {!isMine && (
+                  <Text fontSize="xs" fontWeight="bold" color="purple.600" _dark={{ color: "purple.300" }} mb={1}>
+                    {msg.user?.username || `User ${msg.userId}`}
+                  </Text>
+                )}
+                <Text fontSize="sm">{msg.content}</Text>
+                <Text fontSize="xs" color="gray.500" _dark={{ color: "gray.400" }} textAlign="right" mt={1}>
+                  {timeString}
+                </Text>
+              </Box>
+            );
+          })
+        )}
+        <div ref={messagesEndRef} />
+      </VStack>
+
+      <Flex p={3} bg="white" _dark={{ bg: "gray.800", borderColor: "gray.700" }} borderBottomRadius="lg" borderTop="1px solid" borderColor="gray.200">
+        <Input 
+          size="sm" 
+          placeholder="Typ een bericht..." 
+          mr={2} 
+          borderRadius="full" 
+          focusRingColor="purple.500"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          onKeyDown={handleKeyPress}
+          disabled={isSending}
+        />
+        <Button 
+          size="sm" 
+          colorPalette="purple" 
+          borderRadius="full"
+          onClick={handleSend}
+          loading={isSending}
+        >
+          send
+        </Button>
+      </Flex>
+      
+    </Flex>
+  );
+}
+</file>
+
+<file path="srcs/frontend/src/components/createTaskModal.tsx">
+import { useState } from 'react';
+import { Button, Input, Textarea, VStack, Text } from '@chakra-ui/react';
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogBody,
+  DialogFooter,
+} from './ui/dialog';
+import { taskService } from '../api/services';
+import { TaskStatus } from '../../../../shared/srcs/types/task';
+
+interface CreateTaskModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  projectId: number;
+  initialStatus: TaskStatus;
+  onSuccess: () => void;
+}
+
+export default function CreateTaskModal({ isOpen, onClose, projectId, initialStatus, onSuccess }: CreateTaskModalProps) {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [deadline, setDeadline] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSave = async () => {
+    if (!title.trim()) return;
+    setIsSubmitting(true);
+    try {
+      await taskService.create({
+        title,
+        description: description || undefined,
+        status: initialStatus,
+        projectId,
+        deadline: deadline ? new Date(deadline) : undefined,
+        assigneeIds: [],
+      });
+      setTitle('');
+      setDescription('');
+      setDeadline('');
+      onSuccess();
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleClose = () => {
+    setTitle('');
+    setDescription('');
+    setDeadline('');
+    onClose();
+  };
+
+  return (
+    <DialogRoot open={isOpen} onOpenChange={(e) => !e.open && handleClose()} placement="center">
+      <DialogContent _dark={{ bg: "gray.800" }}>
+        <DialogHeader>
+          <DialogTitle>Create New Task ({initialStatus.replace('_', ' ')})</DialogTitle>
+        </DialogHeader>
+        <DialogBody>
+          <VStack gap={4} align="stretch">
+            <VStack gap={1} align="stretch">
+              <Text fontSize="sm" fontWeight="bold">Title *</Text>
+              <Input 
+                placeholder="Task title..." 
+                value={title} 
+                onChange={(e) => setTitle(e.target.value)} 
+                _dark={{ borderColor: "gray.600" }}
+              />
+            </VStack>
+
+            <VStack gap={1} align="stretch">
+              <Text fontSize="sm" fontWeight="bold">Description</Text>
+              <Textarea 
+                placeholder="Add more details to this task..." 
+                value={description} 
+                onChange={(e) => setDescription(e.target.value)} 
+                rows={4}
+                _dark={{ borderColor: "gray.600" }}
+              />
+            </VStack>
+
+            <VStack gap={1} align="stretch">
+              <Text fontSize="sm" fontWeight="bold">Deadline</Text>
+              <Input 
+                type="date" 
+                value={deadline} 
+                onChange={(e) => setDeadline(e.target.value)} 
+                _dark={{ borderColor: "gray.600" }}
+              />
+            </VStack>
+          </VStack>
+        </DialogBody>
+        <DialogFooter>
+          <Button variant="ghost" mr={3} onClick={handleClose}>
+            Cancel
+          </Button>
+          <Button colorPalette="purple" onClick={handleSave} loading={isSubmitting} disabled={!title.trim()}>
+            Create Task
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </DialogRoot>
+  );
+}
+</file>
+
+<file path="srcs/frontend/src/components/friends.tsx">
+import { Avatar, Card, Heading, HStack, VStack, Text } from "@chakra-ui/react";
+import type { FriendUser } from "@transcendence/shared";
+
+function FriendList({ friends }: { friends: FriendUser[] }) {
+  return (
+    <Card.Root>
+      <Card.Header>
+        <Heading size="sm">Friends</Heading>
+      </Card.Header>
+      <Card.Body>
+        {friends.length > 0 ? (
+          <VStack align="stretch">
+            {friends.map(friend => (
+              <HStack key={friend.id}>
+                <Avatar.Root size="sm">
+                  <Avatar.Fallback>{friend.username.charAt(0).toUpperCase()}</Avatar.Fallback>
+                </Avatar.Root>
+                <Text>{friend.username}</Text>
+              </HStack>
+            ))}
+          </VStack>
+        ) : (
+          <Text color="fg.muted">No friends yet</Text>
+        )}
+      </Card.Body>
+    </Card.Root>
+  );
+}
+export default FriendList;
+</file>
+
 <file path="srcs/frontend/src/components/layout.tsx">
 import { Outlet } from 'react-router-dom';
 import { Flex, Box } from '@chakra-ui/react';
@@ -3436,6 +2934,23 @@ export default function Sidebar() {
           color="gray.700"
           _dark={{ color: "gray.200" }}
         >
+          <RouterLink to="/">
+            🏠 Dashboard
+          </RouterLink>
+        </Link>
+
+        <Link 
+          asChild
+          _hover={{ textDecoration: 'none', bg: 'gray.100', _dark: { bg: 'gray.800' } }}
+          p={3}
+          borderRadius="md"
+          fontWeight="medium"
+          display="flex"
+          alignItems="center"
+          gap={3}
+          color="gray.700"
+          _dark={{ color: "gray.200" }}
+        >
           <RouterLink to="/profile/1">
             👤 Profile
           </RouterLink>
@@ -3443,96 +2958,700 @@ export default function Sidebar() {
         
       </VStack>
       
-      
-      
     </Flex>
   );
 }
 </file>
 
-<file path="srcs/frontend/src/components/topBar.tsx">
-import { Flex, HStack, Box, Heading, Text, VStack } from "@chakra-ui/react";
-import { ColorModeButton } from "./ui/color-mode";
-import { useLocation } from "react-router-dom";
-import { useState, useRef, useEffect } from "react";
-import { useNotifications } from "../hooks/useNotification";
-import { LuBell } from "react-icons/lu";
+<file path="srcs/frontend/src/components/taskAssigness.tsx">
+import { Box, HStack, Text, Avatar, IconButton, VStack } from '@chakra-ui/react';
+import { PopoverRoot, PopoverTrigger, PopoverContent, PopoverBody } from './ui/popover';
+import { LuPlus, LuCheck } from 'react-icons/lu';
+import { Tooltip } from './ui/tooltip';
+import type { User, ProjectMember } from '../../../../shared/srcs/types';
 
-export default function TopBar() {
-  const location = useLocation();
-  const { notifications, unreadCount, markAllAsRead, currentUser } = useNotifications();
-  const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+interface TaskAssigneesProps {
+  taskId: number;
+  assignees: User[];
+  projectMembers: ProjectMember[];
+  onAssign: (taskId: number, userIds: number[]) => void;
+}
 
-  const getPageTitle = (path: string) => {
-    if (path === '/' || path === '') return 'Dashboard';
-    const parts = path.split('/').filter(Boolean);
-    const mainPath = parts[0];
-    return mainPath.charAt(0).toUpperCase() + mainPath.slice(1);
+export default function TaskAssignees({ taskId, assignees, projectMembers, onAssign }: TaskAssigneesProps) {
+  
+  const toggleAssignee = (userId: number) => {
+    const isAssigned = assignees.some(a => a.id === userId);
+    if (isAssigned) {
+      onAssign(taskId, assignees.filter(a => a.id !== userId).map(a => a.id));
+    } else {
+      onAssign(taskId, [...assignees.map(a => a.id), userId]);
+    }
   };
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setIsOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+  return (
+    <HStack gap={2} mb={3} wrap="wrap" align="center">
+      
+      {assignees.map((user) => (
+        <Tooltip key={user.id} content={user.username} portalled>
+          <Box position="relative" cursor="pointer" onClick={() => toggleAssignee(user.id)} role="group">
+            <Avatar.Root size="sm">
+              <Avatar.Image src={user.avatar || undefined} />
+              <Avatar.Fallback boxSize="full" display="flex" alignItems="center" justifyContent="center" bg="purple.500" color="white" fontWeight="bold">
+                {user.username.charAt(0).toUpperCase()}
+              </Avatar.Fallback>
+            </Avatar.Root>
+            
+            <Box
+              position="absolute" top="0" left="0" w="full" h="full" bg="blackAlpha.600"
+              borderRadius="full" opacity="0" _groupHover={{ opacity: 1 }}
+              display="flex" alignItems="center" justifyContent="center" transition="all 0.2s"
+            >
+              <Text color="white" fontSize="xs" fontWeight="bold">✕</Text>
+            </Box>
+          </Box>
+        </Tooltip>
+      ))}
+
+      <PopoverRoot positioning={{ placement: "bottom-start" }}>
+        <PopoverTrigger asChild>
+          <IconButton 
+            size="xs" 
+            variant="outline" 
+            borderRadius="full" 
+            aria-label="Add assignee"
+            borderStyle="dashed"
+            color="gray.500"
+            _hover={{ bg: "purple.50", color: "purple.600", borderColor: "purple.400" }}
+          >
+            <LuPlus />
+          </IconButton>
+        </PopoverTrigger>
+
+        <PopoverContent w="200px" p={0} overflow="hidden" boxShadow="lg" _dark={{ bg: "gray.800" }}>
+          <Box p={2} borderBottom="1px solid" borderColor="gray.100" bg="gray.50" _dark={{ borderColor: "gray.700", bg: "gray.900" }}>
+            <Text fontSize="xs" fontWeight="bold" color="gray.500">Assign Members</Text>
+          </Box>
+          <PopoverBody p={0} maxH="200px" overflowY="auto">
+            <VStack gap={0} align="stretch">
+              
+              {projectMembers.length === 0 && (
+                <Text p={3} fontSize="sm" color="gray.500" textAlign="center">No members in project.</Text>
+              )}
+
+              {projectMembers.map(member => {
+                const isAssigned = assignees.some(a => a.id === member.userId);
+                
+                return (
+                  <HStack 
+                    key={member.userId} 
+                    p={2} 
+                    cursor="pointer" 
+                    _hover={{ bg: "gray.50", _dark: { bg: "gray.700" } }}
+                    onClick={() => toggleAssignee(member.userId)}
+                    justify="space-between"
+                  >
+                    <HStack gap={2}>
+                      <Avatar.Root size="xs">
+                        <Avatar.Image src={member.user?.avatar || undefined} />
+                        <Avatar.Fallback boxSize="full" display="flex" alignItems="center" justifyContent="center" bg="purple.500" color="white" fontWeight="bold">
+                          {member.user?.username?.charAt(0).toUpperCase()}
+                        </Avatar.Fallback>
+                      </Avatar.Root>
+                      <Text fontSize="sm" fontWeight={isAssigned ? "bold" : "normal"}>
+                        {member.user?.username || `User ${member.userId}`}
+                      </Text>
+                    </HStack>
+                    
+                    {isAssigned && <Box color="green.500"><LuCheck size={14}/></Box>}
+                  </HStack>
+                );
+              })}
+            </VStack>
+          </PopoverBody>
+        </PopoverContent>
+      </PopoverRoot>
+      
+    </HStack>
+  );
+}
+</file>
+
+<file path="srcs/frontend/src/components/taskDetail.tsx">
+import { useState } from 'react';
+import { Box, Text, Textarea, Button, VStack, HStack, Avatar, Spinner, Input } from '@chakra-ui/react';
+import { DialogRoot, DialogContent, DialogHeader, DialogTitle, DialogBody, DialogCloseTrigger } from './ui/dialog';
+import { useComments } from '../hooks/useComments';
+import { useEditTask } from '../hooks/useEditTask';
+import type { Task } from '../../../../shared/srcs/types';
+import { LuPaperclip, LuCalendar, LuPencil, LuX, LuMessageSquareReply } from 'react-icons/lu';
+
+interface TaskDetailsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  task: Task | null;
+  projectId: number;
+  canEdit: boolean;
+  onTaskUpdate: () => void;
+}
+
+export default function TaskDetailsModal({ isOpen, onClose, task, projectId, canEdit, onTaskUpdate }: TaskDetailsModalProps) {
+  const [newComment, setNewComment] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [replyingTo, setReplyingTo] = useState<{id: number, username: string} | null>(null);
+
+  const { comments, isLoading, isSubmitting, postComment } = useComments(task?.id, projectId, isOpen);
+  
+  const {
+    isEditingTitle, setIsEditingTitle, editTitle, setEditTitle,
+    isEditingDesc, setIsEditingDesc, editDesc, setEditDesc,
+    isEditingDeadline, setIsEditingDeadline, editDeadline, setEditDeadline,
+    handleUpdate, cancelEdit
+  } = useEditTask(task, onTaskUpdate);
+
+  const handleCommentSubmit = async () => {
+    const success = await postComment(newComment, selectedFile, replyingTo?.id);
+    if (success) {
+      setNewComment('');
+      setSelectedFile(null);
+      setReplyingTo(null);
+    }
+  };
+
+  const extractFileName = (url: string) => {
+    const parts = url.split('/');
+    const fullName = parts[parts.length - 1];
+    const nameParts = fullName.split('-');
+    if (nameParts.length > 2) {
+      return nameParts.slice(2).join('-');
+    }
+    return fullName;
+  };
+
+  if (!task) return null;
 
   return (
-    <Flex as="header" w="full" h="72px" align="center" justify="space-between" px={8} bg="white" borderBottom="1px solid" borderColor="gray.200" _dark={{ bg: "gray.900", borderColor: "gray.700" }}>
-      <Heading size="lg" fontWeight="bold" color="gray.800" _dark={{ color: "white" }}>
-        {getPageTitle(location.pathname)}
-      </Heading>
-
-      <HStack gap={6}>
-        <Box position="relative" ref={menuRef}>
-          <Box cursor="pointer" position="relative" onClick={() => setIsOpen(!isOpen)}>
-            <LuBell size={24} />
-            {unreadCount > 0 && (
-              <Flex position="absolute" top="-4px" right="-4px" bg="red.500" color="white" w="18px" h="18px" borderRadius="full" justify="center" align="center" fontSize="10px" fontWeight="bold">
-                {unreadCount}
-              </Flex>
-            )}
-          </Box>
-
-          {isOpen && (
-            <Box position="absolute" top="40px" right="-10px" w="320px" bg="white" _dark={{ bg: "gray.800", borderColor: "gray.700" }} boxShadow="xl" borderRadius="lg" border="1px solid" borderColor="gray.200" zIndex={1000} overflow="hidden">
-              <Flex justify="space-between" align="center" p={3} borderBottom="1px solid" borderColor="gray.100" bg="gray.50" _dark={{ borderColor: "gray.700", bg: "gray.900" }}>
-                <Text fontWeight="bold" fontSize="sm">Notifications</Text>
-                {unreadCount > 0 && (
-                  <Text fontSize="xs" color="purple.500" cursor="pointer" onClick={markAllAsRead} _hover={{ textDecoration: "underline" }}>
-                    Mark all as read
-                  </Text>
-                )}
-              </Flex>
-              <VStack maxH="300px" overflowY="auto" align="stretch" gap={0}>
-                {notifications.length === 0 ? (
-                  <Text p={4} textAlign="center" fontSize="sm" color="gray.500">No notifications</Text>
-                ) : (
-                  notifications.map(notif => (
-                    <Box key={notif.id} p={3} borderBottom="1px solid" borderColor="gray.100" bg={notif.isRead ? "transparent" : "purple.50"} _dark={{ borderColor: "gray.700", bg: notif.isRead ? "transparent" : "purple.900" }} _hover={{ bg: "gray.50", _dark: { bg: "gray.700" } }}>
-                      <Text fontSize="sm" color={notif.isRead ? "gray.600" : "gray.800"} _dark={{ color: notif.isRead ? "gray.400" : "white" }}>
-                        {notif.message}
-                      </Text>
-                    </Box>
-                  ))
-                )}
-              </VStack>
-            </Box>
+    <DialogRoot open={isOpen} onOpenChange={(e) => !e.open && onClose()} placement="center" size="lg">
+      <DialogContent _dark={{ bg: "gray.800" }}>
+        <DialogHeader>
+          {isEditingTitle && canEdit ? (
+            <HStack w="full" mr={8}>
+              <Input value={editTitle} onChange={e => setEditTitle(e.target.value)} size="sm" bg="white" _dark={{bg: "gray.700"}} />
+              <Button size="xs" colorPalette="green" onClick={() => handleUpdate('title')}>Save</Button>
+              <Button size="xs" variant="ghost" onClick={() => cancelEdit('title')}>Cancel</Button>
+            </HStack>
+          ) : (
+            <DialogTitle 
+              cursor={canEdit ? "pointer" : "default"} 
+              onClick={() => canEdit && setIsEditingTitle(true)}
+              _hover={canEdit ? { color: "purple.500" } : {}}
+              display="flex"
+              alignItems="center"
+              gap={2}
+            >
+              {task.title} {canEdit && <LuPencil size={16} style={{opacity: 0.5}} />}
+            </DialogTitle>
           )}
-        </Box>
+          <DialogCloseTrigger />
+        </DialogHeader>
 
-        <ColorModeButton />
+        <DialogBody pb={6}>
+          <VStack align="stretch" gap={6}>
+            
+            <Box bg="gray.50" _dark={{ bg: "gray.900" }} p={4} borderRadius="md" borderLeft="4px solid" borderColor="purple.500">
+              
+              {isEditingDeadline && canEdit ? (
+                <HStack mb={2}>
+                  <Input type="date" value={editDeadline} onChange={e => setEditDeadline(e.target.value)} size="sm" w="auto" bg="white" _dark={{bg: "gray.700"}} />
+                  <Button size="xs" colorPalette="green" onClick={() => handleUpdate('deadline')}>Save</Button>
+                  <Button size="xs" variant="ghost" onClick={() => cancelEdit('deadline')}>Cancel</Button>
+                </HStack>
+              ) : (
+                <HStack 
+                  color={task.deadline ? "red.500" : "gray.400"} 
+                  _dark={{ color: task.deadline ? "red.400" : "gray.500" }} 
+                  mb={task.description || isEditingDesc ? 2 : 0}
+                  cursor={canEdit ? "pointer" : "default"} 
+                  onClick={() => canEdit && setIsEditingDeadline(true)}
+                  _hover={canEdit ? { opacity: 0.8 } : {}}
+                >
+                  <LuCalendar size={16} />
+                  <Text fontSize="sm" fontWeight="bold">
+                    {task.deadline ? `Deadline: ${new Date(task.deadline).toLocaleDateString()}` : (canEdit ? 'Set deadline...' : 'No deadline')}
+                  </Text>
+                  {canEdit && <LuPencil size={14} style={{opacity: 0.5}} />}
+                </HStack>
+              )}
 
-        <Box w="40px" h="40px" bg="purple.500" color="white" borderRadius="full" display="flex" alignItems="center" justifyContent="center" fontWeight="bold" cursor="pointer" _hover={{ bg: "purple.600" }}>
-          {currentUser?.username?.charAt(0).toUpperCase() || 'S'}
-        </Box>
-      </HStack>
-    </Flex>
+              {isEditingDesc && canEdit ? (
+                <VStack align="start" mt={2} gap={2}>
+                  <Textarea value={editDesc} onChange={e => setEditDesc(e.target.value)} size="sm" bg="white" _dark={{bg: "gray.700"}} rows={4} />
+                  <HStack>
+                    <Button size="xs" colorPalette="green" onClick={() => handleUpdate('description')}>Save</Button>
+                    <Button size="xs" variant="ghost" onClick={() => cancelEdit('description')}>Cancel</Button>
+                  </HStack>
+                </VStack>
+              ) : (
+                <Text 
+                  fontSize="sm" 
+                  cursor={canEdit ? "pointer" : "default"} 
+                  onClick={() => canEdit && setIsEditingDesc(true)}
+                  _hover={canEdit ? { bg: "gray.100", _dark: { bg: "gray.800" }, borderRadius: "md" } : {}}
+                  p={canEdit ? 1 : 0}
+                  mt={canEdit ? -1 : 0}
+                  color={task.description ? "inherit" : "gray.400"}
+                >
+                  {task.description || (canEdit ? 'Click to add a description...' : '')}
+                </Text>
+              )}
+
+            </Box>
+
+            <VStack align="stretch" gap={4} maxH="350px" overflowY="auto" p={1}>
+              <Text fontWeight="bold" fontSize="sm" color="gray.500">Comments</Text>
+              {isLoading ? (
+                <Spinner size="sm" alignSelf="center" />
+              ) : comments.length === 0 ? (
+                <Text fontSize="sm" color="gray.500" fontStyle="italic">No comments yet.</Text>
+              ) : (
+                comments.map(comment => (
+                  <HStack key={comment.id} align="start" gap={3}>
+                    <Avatar.Root 
+                      size="sm" 
+                      bg="purple.500" 
+                      color="white" 
+                      borderRadius="full" 
+                      display="flex" 
+                      alignItems="center" 
+                      justifyContent="center" 
+                      fontWeight="bold"
+                    >
+                      <Avatar.Image src={comment.user?.avatar || undefined} borderRadius="full" />
+                      <Avatar.Fallback bg="transparent">
+                        {comment.user?.username?.charAt(0).toUpperCase() || '?'}
+                      </Avatar.Fallback>
+                    </Avatar.Root>
+                    
+                    <Box bg="gray.100" _dark={{ bg: "gray.700" }} p={3} borderRadius="lg" flex={1}>
+                      <HStack justify="space-between" mb={1}>
+                        <Text fontSize="xs" fontWeight="bold">{comment.user?.username}</Text>
+                        <HStack gap={3}>
+                          <Text fontSize="xs" color="gray.500">{new Date(comment.createdAt).toLocaleString()}</Text>
+                          <Button size="xs" variant="ghost" colorPalette="purple" h="auto" p={0} onClick={() => setReplyingTo({id: comment.id, username: comment.user?.username || 'User'})}>
+                            <LuMessageSquareReply /> Reply
+                          </Button>
+                        </HStack>
+                      </HStack>
+                      <Text fontSize="sm" whiteSpace="pre-wrap">{comment.content}</Text>
+                      {comment.attachments && comment.attachments.length > 0 && (
+                        <VStack align="start" mt={2} gap={1}>
+                          {comment.attachments.map((url, i) => (
+                            <Button key={i} asChild size="xs" variant="outline" colorPalette="purple">
+                              <a href={url} target="_blank" rel="noopener noreferrer">
+                                <LuPaperclip /> {extractFileName(url)}
+                              </a>
+                            </Button>
+                          ))}
+                        </VStack>
+                      )}
+
+                      {comment.replies && comment.replies.length > 0 && (
+                        <VStack align="start" mt={3} gap={2} pl={3} borderLeft="2px solid" borderColor="gray.300" _dark={{ borderColor: "gray.600" }}>
+                          {comment.replies.map(reply => (
+                            <HStack key={reply.id} align="start" gap={2} w="full">
+                              <Avatar.Root size="xs" bg="gray.400" color="white" borderRadius="full" display="flex" alignItems="center" justifyContent="center" fontWeight="bold">
+                                <Avatar.Image src={reply.user?.avatar || undefined} borderRadius="full" />
+                                <Avatar.Fallback bg="transparent">{reply.user?.username?.charAt(0).toUpperCase() || '?'}</Avatar.Fallback>
+                              </Avatar.Root>
+                              <Box bg="white" _dark={{ bg: "gray.800" }} p={2} borderRadius="md" flex={1}>
+                                <HStack justify="space-between" mb={1}>
+                                  <Text fontSize="xs" fontWeight="bold">{reply.user?.username}</Text>
+                                  <Text fontSize="xs" color="gray.500">{new Date(reply.createdAt).toLocaleString()}</Text>
+                                </HStack>
+                                <Text fontSize="sm" whiteSpace="pre-wrap">{reply.content}</Text>
+                                {reply.attachments && reply.attachments.length > 0 && (
+                                  <VStack align="start" mt={2} gap={1}>
+                                    {reply.attachments.map((url, i) => (
+                                      <Button key={i} asChild size="xs" variant="outline" colorPalette="purple">
+                                        <a href={url} target="_blank" rel="noopener noreferrer">
+                                          <LuPaperclip /> {extractFileName(url)}
+                                        </a>
+                                      </Button>
+                                    ))}
+                                  </VStack>
+                                )}
+                              </Box>
+                            </HStack>
+                          ))}
+                        </VStack>
+                      )}
+                    </Box>
+                  </HStack>
+                ))
+              )}
+            </VStack>
+
+            <VStack align="stretch" gap={2}>
+              {replyingTo && (
+                <HStack justify="space-between" bg="purple.50" _dark={{ bg: "purple.900" }} p={2} borderRadius="md">
+                  <Text fontSize="xs" color="purple.700" _dark={{ color: "purple.200" }} fontWeight="bold">
+                    Replying to {replyingTo.username}...
+                  </Text>
+                  <Button size="xs" variant="ghost" colorPalette="purple" h="auto" p={0} onClick={() => setReplyingTo(null)}>
+                    <LuX size={16} />
+                  </Button>
+                </HStack>
+              )}
+              <Textarea 
+                placeholder={replyingTo ? "Write your reply..." : "Write a comment..."}
+                value={newComment} 
+                onChange={(e) => setNewComment(e.target.value)} 
+                rows={3} 
+                _dark={{ borderColor: "gray.600" }}
+              />
+              <HStack justify="space-between">
+                <input 
+                  type="file" 
+                  onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} 
+                  style={{ fontSize: '12px' }}
+                />
+                <Button size="sm" colorPalette="purple" onClick={handleCommentSubmit} loading={isSubmitting} disabled={!newComment.trim()}>
+                  {replyingTo ? "Post Reply" : "Post Comment"}
+                </Button>
+              </HStack>
+            </VStack>
+          </VStack>
+        </DialogBody>
+      </DialogContent>
+    </DialogRoot>
   );
+}
+</file>
+
+<file path="srcs/frontend/src/hooks/useAddmember.ts">
+import { useState, useEffect } from 'react';
+import { projectService, userService } from '../api/services';
+import { ProjectRole } from '../../../../shared/srcs/types';
+import type { User, ProjectMember } from '../../../../shared/srcs/types';
+
+export function useAddMember(projectId: number, existingMembers: ProjectMember[] = []) {
+  const [availableUsers, setAvailableUsers] = useState<User[]>([]);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setIsLoadingUsers(true);
+      try {
+        const res = await userService.getAllUsers();
+        const filtered = res.data.filter(user => 
+          !existingMembers.some(member => member.userId === user.id)
+        );
+        setAvailableUsers(filtered);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setIsLoadingUsers(false);
+      }
+    };
+    fetchUsers();
+  }, [existingMembers]);
+
+  const addMember = async (userId: number, role: ProjectRole = ProjectRole.MEMBER) => {
+    setIsAdding(true);
+    try {
+      await projectService.addMember(projectId, userId, role);
+      return true;
+    } catch (error) {
+      console.error(error);
+      return false;
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  return { availableUsers, isLoadingUsers, isAdding, addMember };
+}
+</file>
+
+<file path="srcs/frontend/src/hooks/useChat.ts">
+import { useState, useEffect, useRef } from 'react';
+import { io, Socket } from 'socket.io-client';
+import type { Message } from '../../../../shared/srcs/types/message';
+import { projectService } from '../api/services';
+
+export function useChat(projectId: number, currentUserId: number, isOpen: boolean) {
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [isSending, setIsSending] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const socketRef = useRef<Socket | null>(null);
+  const isOpenRef = useRef(isOpen);
+
+  useEffect(() => {
+    isOpenRef.current = isOpen;
+    if (isOpen) {
+      setUnreadCount(0);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const response = await projectService.getMessages(projectId);
+        setMessages(response.data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    fetchHistory();
+
+    const token = localStorage.getItem('access_token');
+    socketRef.current = io('/', { auth: { token }, path: '/socket.io' });
+
+    socketRef.current.on('connect', () => {
+      socketRef.current?.emit('identify', currentUserId);
+      socketRef.current?.emit('joined project', { username: `User_${currentUserId}`, projectId });
+    });
+
+    socketRef.current.on('new_project_notification', (data: Message & { projectId: number }) => {
+      if (data.projectId === projectId) {
+        setMessages((prev) => {
+          if (prev.some((msg) => msg.id === data.id)) return prev;
+          return [...prev, data];
+        });
+        
+        if (data.userId !== currentUserId && !isOpenRef.current) {
+          setUnreadCount((prev) => prev + 1);
+        }
+      }
+    });
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.emit('left project', { username: `User_${currentUserId}`, projectId });
+        socketRef.current.disconnect();
+      }
+    };
+  }, [projectId, currentUserId]);
+
+  const sendMessage = async (content: string) => {
+    if (!content.trim() || isSending) return false;
+    setIsSending(true);
+    try {
+      const response = await projectService.createMessage(projectId, content);
+      setMessages((prev) => {
+        if (prev.some((msg) => msg.id === response.data.id)) return prev;
+        return [...prev, response.data];
+      });
+      return true;
+    } catch (error) {
+      console.error(error);
+      return false;
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  return { messages, sendMessage, isSending, unreadCount };
+}
+</file>
+
+<file path="srcs/frontend/src/hooks/useComments.ts">
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { io, Socket } from 'socket.io-client';
+import { commentService } from '../api/services';
+import type { Comment } from '../../../../shared/srcs/types';
+
+export function useComments(taskId: number | undefined, projectId: number | undefined, isOpen: boolean) {
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const socketRef = useRef<Socket | null>(null);
+
+  const fetchComments = useCallback(async () => {
+    if (!taskId) return;
+    setIsLoading(true);
+    try {
+      const res = await commentService.getByTaskId(taskId);
+      setComments(res.data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [taskId]);
+
+  useEffect(() => {
+    if (isOpen && taskId && projectId) {
+      fetchComments();
+
+      const token = localStorage.getItem('access_token');
+      if (token) {
+        socketRef.current = io('/', { auth: { token }, path: '/socket.io' });
+
+        socketRef.current.on('connect', () => {
+          socketRef.current?.emit('joined project', { username: 'viewer', projectId });
+        });
+
+        socketRef.current.on('new_task_comment', (newComment: Comment) => {
+          if (newComment.taskId === taskId) {
+            setComments(prev => {
+              if (newComment.parentId) {
+                return prev.map(c => {
+                  if (c.id === newComment.parentId) {
+                    const existingReplies = c.replies || [];
+                    if (existingReplies.some(r => r.id === newComment.id)) return c;
+                    return { ...c, replies: [...existingReplies, newComment] };
+                  }
+                  return c;
+                });
+              }
+
+              if (prev.some(c => c.id === newComment.id)) return prev;
+              return [...prev, newComment];
+            });
+          }
+        });
+      }
+    }
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.emit('left project', { username: 'viewer', projectId });
+        socketRef.current.disconnect();
+      }
+    };
+  }, [taskId, projectId, isOpen, fetchComments]);
+
+  const postComment = async (content: string, file: File | null, parentId?: number) => {
+    if (!taskId || !content.trim()) return false;
+    setIsSubmitting(true);
+    try {
+      await commentService.create(taskId, {
+        content,
+        parentId,
+        files: file ? [file] : undefined,
+      });
+      await fetchComments();
+      return true;
+    } catch (error) {
+      console.error(error);
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return { comments, isLoading, isSubmitting, postComment };
+}
+</file>
+
+<file path="srcs/frontend/src/hooks/useEditTask.ts">
+import { useState, useEffect } from 'react';
+import { taskService } from '../api/services';
+import type { Task } from '../../../../shared/srcs/types';
+
+export function useEditTask(task: Task | null, onTaskUpdate: () => void) {
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [editTitle, setEditTitle] = useState('');
+  
+  const [isEditingDesc, setIsEditingDesc] = useState(false);
+  const [editDesc, setEditDesc] = useState('');
+
+  const [isEditingDeadline, setIsEditingDeadline] = useState(false);
+  const [editDeadline, setEditDeadline] = useState('');
+
+  useEffect(() => {
+    if (task) {
+      setEditTitle(task.title);
+      setEditDesc(task.description || '');
+      setEditDeadline(task.deadline ? new Date(task.deadline).toISOString().split('T')[0] : '');
+    }
+  }, [task]);
+  
+  const handleUpdate = async (field: 'title' | 'description' | 'deadline') => {
+    if (!task)
+        return;
+    const data: any = {};
+    if (field === 'title')
+    {
+        if (!editTitle.trim())
+            return;
+        data.tile = editTitle;
+    }
+    if (field === 'description') 
+        data.description = editDesc;
+    if (field === 'deadline') 
+    {
+      data.deadline = editDeadline ? new Date(editDeadline).toISOString() : null;
+    }
+    try {
+      await taskService.update(task.id, data);
+      onTaskUpdate();
+      setIsEditingTitle(false);
+      setIsEditingDesc(false);
+      setIsEditingDeadline(false);
+    } catch (error) {
+      console.error("Failed to update task", error);
+    }
+  };
+
+  const cancelEdit = (field: 'title' | 'description' | 'deadline') => {
+    if (!task) return;
+    if (field === 'title') {
+      setIsEditingTitle(false);
+      setEditTitle(task.title);
+    }
+    if (field === 'description') {
+      setIsEditingDesc(false);
+      setEditDesc(task.description || '');
+    }
+    if (field === 'deadline') {
+      setIsEditingDeadline(false);
+      setEditDeadline(task.deadline ? new Date(task.deadline).toISOString().split('T')[0] : '');
+    }
+  };
+
+  return {
+    isEditingTitle, setIsEditingTitle, editTitle, setEditTitle,
+    isEditingDesc, setIsEditingDesc, editDesc, setEditDesc,
+    isEditingDeadline, setIsEditingDeadline, editDeadline, setEditDeadline,
+    handleUpdate, cancelEdit
+  };
+}
+</file>
+
+<file path="srcs/frontend/src/hooks/useFriend.ts">
+import { friendService } from "../api/services";
+import{ type FriendUser } from "@transcendence/shared";
+import { useEffect, useState } from "react";
+
+export function useFriend (userId: number){
+    const [friends, setFriends] = useState<FriendUser[]>([]);
+
+    useEffect(() => {
+        friendService.getMyFriends().then(response => {
+            setFriends(response.data);
+        });
+    }, [userId]);
+    return {friends}
+}
+
+export function useAddFriend() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  const sendRequest = async (userId: number) => {
+    setIsLoading(true);
+    try {
+      await friendService.sendRequest(userId);
+    } catch (e) {
+      setError('Failed to send friend request');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return { sendRequest, isLoading, error };
 }
 </file>
 
@@ -3551,6 +3670,8 @@ export function useLogin() {
     try {
         const response = await authService.login(username, password);
         localStorage.setItem('access_token', response.data.access_token);
+
+        window.location.href = '/';
     }
     catch (err) {
         setError('login failed please check your credentials');
@@ -3559,6 +3680,208 @@ export function useLogin() {
         finally {setIsLoading(false);}
     }
     return{ login, error, isLoading}
+}
+</file>
+
+<file path="srcs/frontend/src/hooks/useNotification.ts">
+import { useState, useEffect, useRef } from 'react';
+import { io, Socket } from 'socket.io-client';
+import { notificationService, authService } from '../api/services';
+import type { Notification, User } from '../../../../shared/srcs/types';
+
+export function useNotifications() {
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const socketRef = useRef<Socket | null>(null);
+
+  useEffect(() => {
+    const init = async () => {
+      try {
+        const profileRes = await authService.getProfile();
+        setCurrentUser(profileRes.data);
+        
+        const notifsRes = await notificationService.getNotifications(profileRes.data.id);
+        setNotifications(notifsRes.data);
+
+        const token = localStorage.getItem('access_token');
+        if (token) {
+          socketRef.current = io('/', { auth: { token }, path: '/socket.io' });
+          
+          socketRef.current.on('connect', () => {
+            socketRef.current?.emit('identify', profileRes.data.id);
+          });
+          
+          socketRef.current.on('new_notification', (data: Notification) => {
+            setNotifications(prev => [data, ...prev]);
+          });
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    };
+    
+    init();
+
+    return () => {
+      if (socketRef.current) socketRef.current.disconnect();
+    };
+  }, []);
+
+  const markAllAsRead = async () => {
+    if (!currentUser) return;
+    try {
+      await notificationService.markAsRead(currentUser.id);
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const unreadCount = notifications.filter(n => !n.isRead).length;
+
+  return { notifications, unreadCount, markAllAsRead, currentUser };
+}
+</file>
+
+<file path="srcs/frontend/src/hooks/useProjectDetails.ts">
+import { useState, useEffect, useRef } from 'react';
+import { io, Socket } from 'socket.io-client';
+import { projectService, taskService, authService } from '../api/services';
+import type { Project, Task, TaskStatus, User, ProjectStatus } from '../../../../shared/srcs/types';
+
+export function useProjectDetails(projectId: number) {
+  const [project, setProject] = useState<Project | null>(null);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const socketRef = useRef<Socket | null>(null);
+
+  useEffect(() => {
+    if (!projectId) return;
+
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        const [projectRes, profileRes] = await Promise.all([
+          projectService.getById(projectId),
+          authService.getProfile()
+        ]);
+        
+        setProject(projectRes.data);
+        setTasks(projectRes.data.tasks || []);
+        setCurrentUser(profileRes.data);
+
+        const token = localStorage.getItem('access_token');
+        if (token) {
+          socketRef.current = io('/', { auth: { token }, path: '/socket.io' });
+
+          socketRef.current.on('connect', () => {
+            socketRef.current?.emit('identify', profileRes.data.id);
+            socketRef.current?.emit('joined project', { username: profileRes.data.username, projectId });
+          });
+
+          socketRef.current.on('task_updated', (updatedTask: Task) => {
+            setTasks(prevTasks => 
+              prevTasks.map(t => t.id === updatedTask.id ? { ...t, ...updatedTask } : t)
+            );
+          });
+        }
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.emit('left project', { username: currentUser?.username || 'User', projectId });
+        socketRef.current.disconnect();
+      }
+    };
+  }, [projectId, currentUser?.username]);
+
+  const reloadProject = async () => {
+    try {
+      const res = await projectService.getById(projectId);
+      setProject(res.data);
+      setTasks(res.data.tasks || []);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const changeTaskStatus = async (taskId: number, newStatus: TaskStatus) => {
+    setTasks(prevTasks => 
+      prevTasks.map(t => t.id === taskId ? { ...t, status: newStatus } : t)
+    );
+
+    try {
+      await taskService.update(taskId, { status: newStatus });
+    } catch (error) {
+      console.error(error);
+      const res = await projectService.getById(projectId);
+      setTasks(res.data.tasks || []);
+    }
+  };
+
+  const assignTaskMember = async (taskId: number, userIds: number[]) => {
+    setTasks(prevTasks => 
+      prevTasks.map(t => {
+        if (t.id === taskId) {
+          const newAssignees = project?.members
+            ?.filter(m => userIds.includes(m.userId))
+            .map(m => m.user) || [];
+          return { ...t, assignees: newAssignees as any };
+        }
+        return t;
+      })
+    );
+
+    try {
+      await taskService.update(taskId, { assigneeIds: userIds });
+    } catch (error) {
+      console.error(error);
+      const res = await projectService.getById(projectId);
+      setTasks(res.data.tasks || []);
+    }
+  };
+
+  const changeProjectStatus = async (newStatus: ProjectStatus) => {
+    if (!project) return;
+    
+    setProject({ ...project, status: newStatus });
+
+    try {
+      await projectService.update(projectId, { status: newStatus });
+    } catch (error) {
+      console.error(error);
+      const res = await projectService.getById(projectId);
+      setProject(res.data);
+    }
+  };
+
+  const removeProjectMember = async (userId: number) => {
+    try {
+      await projectService.removeMember(projectId, userId);
+      await reloadProject();
+    } catch (error) {
+      console.error("Failed to remove member:", error);
+    }
+  };
+
+  const removeTask = async (taskId: number) => {
+    try {
+      await taskService.delete(taskId);
+      await reloadProject();
+    } catch (error) {
+      console.error("Failed to delete task:", error);
+    }
+  };
+
+  return { project, tasks, currentUser, isLoading, reloadProject, changeTaskStatus, changeProjectStatus, assignTaskMember, removeProjectMember, removeTask };
 }
 </file>
 
@@ -3629,6 +3952,304 @@ export function useRegister() {
 
   return { register, error, isLoading };
 };
+</file>
+
+<file path="srcs/frontend/src/pages/ProjectPage.tsx">
+import { useParams } from 'react-router-dom';
+import { useState } from 'react';
+import { Box, Flex, Heading, Text, Badge, Grid, Card, VStack, HStack, Spinner, Button } from '@chakra-ui/react';
+import { LuPlus, LuX } from 'react-icons/lu';
+import ChatButton from '../components/chatButton';
+import AddMemberMenu from '../components/addMember';
+import TaskAssignees from '../components/taskAssigness';
+import CreateTaskModal from '../components/createTaskModal';
+import TaskDetailsModal from '../components/taskDetail';
+import { useProjectDetails } from '../hooks/useProjectDetails';
+import { TaskStatus } from '../../../../shared/srcs/types/task';
+import { ProjectStatus } from '../../../../shared/srcs/types/project';
+import type { ProjectMember } from '../../../../shared/srcs/types/project';
+import type { Task } from '../../../../shared/srcs/types';
+import { Tooltip } from '../components/ui/tooltip';
+
+const columns = [
+  { id: TaskStatus.TODO, label: 'To Do', color: 'gray' },
+  { id: TaskStatus.IN_PROGRESS, label: 'In Progress', color: 'blue' },
+  { id: TaskStatus.PENDING_EVALUATION, label: 'Review', color: 'orange' },
+  { id: TaskStatus.DONE, label: 'Done', color: 'green' },
+];
+
+const statusColors: Record<TaskStatus, string> = {
+  [TaskStatus.TODO]: 'gray',
+  [TaskStatus.IN_PROGRESS]: 'blue',
+  [TaskStatus.PENDING_EVALUATION]: 'orange',
+  [TaskStatus.DONE]: 'green',
+};
+
+export default function ProjectPage() {
+  const { projectId } = useParams();
+  const { project, tasks, currentUser, isLoading, reloadProject, changeTaskStatus, changeProjectStatus, assignTaskMember, removeProjectMember, removeTask } = useProjectDetails(Number(projectId));
+  
+  const [createTaskStatus, setCreateTaskStatus] = useState<TaskStatus | null>(null);
+  const [selectedTaskForComments, setSelectedTaskForComments] = useState<Task | null>(null);
+
+  if (isLoading) {
+    return (
+      <Flex h="100vh" justify="center" align="center">
+        <Spinner size="xl" color="purple.500" />
+      </Flex>
+    );
+  }
+
+  if (!project || !currentUser) {
+    return (
+      <Flex h="100vh" justify="center" align="center">
+        <Text fontWeight="bold">Project not found or unauthorized.</Text>
+      </Flex>
+    );
+  }
+
+  const handleTaskCreated = async () => {
+    setCreateTaskStatus(null);
+    await reloadProject();
+  };
+
+  const isProjectLeader = project?.members?.find(m => m.userId === currentUser?.id)?.role === 'PROJECT_LEADER';
+  const isAdmin = currentUser?.globalRole === 'ADMIN';
+  const canManage = isProjectLeader || isAdmin;
+
+  const liveTask = selectedTaskForComments ? tasks.find(t => t.id === selectedTaskForComments.id) || selectedTaskForComments : null;
+
+  return (
+    <Flex h="100%" direction="column" gap={6} position="relative" align="stretch">
+      <Box bg="white" p={6} borderRadius="xl" boxShadow="sm" border="1px solid" borderColor="gray.200" _dark={{ bg: "gray.800", borderColor: "gray.700" }}>
+        <Flex justify="space-between" align="flex-start" w="100%">
+          <Box textAlign="left">
+            <Heading size="lg" mb={1}>{project.name}</Heading>
+            <Text color="gray.500" fontSize="md" mb={4}>
+              {project.description || "No description available."}
+            </Text>
+            <HStack gap={2} flexWrap="wrap">
+              {project.members?.map(member => (
+                <Badge 
+                  key={member.id} 
+                  variant="subtle" 
+                  colorPalette="gray" 
+                  borderRadius="full" 
+                  px={3} 
+                  py={1}
+                  display="flex"
+                  alignItems="center"
+                  gap={2}
+                >
+                  <Text>{member.user?.username || `User ${member.userId}`}</Text>
+                  {member.role === 'PROJECT_LEADER' && <Text>👑</Text>}
+                  
+                  {canManage && (
+                    <Box
+                      as="span"
+                      color="gray.400"
+                      _hover={{ color: "red.500" }}
+                      cursor="pointer"
+                      onClick={() => removeProjectMember(member.userId)}
+                      display="flex"
+                      alignItems="center"
+                    >
+                      <LuX size={14} />
+                    </Box>
+                  )}
+                </Badge>
+              ))}
+            </HStack>
+          </Box>
+          
+          <VStack align="flex-end" gap={3}>
+            <Box bg="purple.100" color="purple.800" _dark={{ bg: "purple.900", color: "purple.200" }} px={3} py={1} borderRadius="md" display="inline-block">
+              <select 
+                value={project.status} 
+                onChange={(e) => changeProjectStatus(e.target.value as ProjectStatus)}
+                style={{ background: 'transparent', border: 'none', color: 'inherit', fontWeight: 'bold', cursor: 'pointer', outline: 'none', fontSize: '14px' }}
+                disabled={!canManage}
+              >
+                <option value={ProjectStatus.PLANNING} style={{color: 'black'}}>PLANNING</option>
+                <option value={ProjectStatus.ACTIVE} style={{color: 'black'}}>ACTIVE</option>
+                <option value={ProjectStatus.COMPLETED} style={{color: 'black'}}>COMPLETED</option>
+              </select>
+            </Box>
+            {canManage && (
+              <AddMemberMenu 
+                projectId={project.id} 
+                existingMembers={project.members || []} 
+                onMemberAdded={reloadProject} 
+              />
+            )}
+          </VStack>
+        </Flex>
+      </Box>
+
+      <Grid templateColumns="repeat(4, 1fr)" gap={4} flex={1} alignItems="start">
+        {columns.map((column) => (
+          <VStack key={column.id} bg="gray.100" _dark={{ bg: "gray.900" }} p={4} borderRadius="lg" minH="500px" alignItems="stretch">
+            <Flex justify="space-between" align="center" mb={4}>
+              <Text fontWeight="bold" color={`${column.color}.600`} _dark={{ color: `${column.color}.300` }} textAlign="left">
+                {column.label}
+              </Text>
+              <Badge colorPalette={column.color} borderRadius="full">
+                {tasks.filter(t => t.status === column.id).length}
+              </Badge>
+            </Flex>
+            
+            {tasks.filter((task) => task.status === column.id).map((task) => (
+              <TaskCard 
+                key={task.id} 
+                task={task} 
+                projectMembers={project.members || []} 
+                canDelete={canManage}
+                onStatusChange={changeTaskStatus} 
+                onAssign={assignTaskMember} 
+                onDelete={removeTask}
+                onOpenComments={() => setSelectedTaskForComments(task)}
+              />
+            ))}
+
+            <Button 
+              variant="ghost" 
+              color="gray.500" 
+              justifyContent="flex-start" 
+              w="full" 
+              mt={2}
+              _hover={{ bg: "gray.200", color: "gray.800", _dark: { bg: "gray.800", color: "white" } }}
+              onClick={() => setCreateTaskStatus(column.id)}
+            >
+              <LuPlus /> Add Task
+            </Button>
+          </VStack>
+        ))}
+      </Grid>
+      
+      <CreateTaskModal 
+        isOpen={createTaskStatus !== null} 
+        onClose={() => setCreateTaskStatus(null)} 
+        projectId={project.id} 
+        initialStatus={createTaskStatus || TaskStatus.TODO} 
+        onSuccess={handleTaskCreated} 
+      />
+
+      <TaskDetailsModal 
+        isOpen={selectedTaskForComments !== null} 
+        onClose={() => setSelectedTaskForComments(null)} 
+        task={liveTask} 
+        projectId={project.id}
+        canEdit={canManage}
+        onTaskUpdate={reloadProject}
+      />
+
+      <ChatButton projectId={project.id} currentUserId={currentUser.id} />
+    </Flex>
+  );
+}
+
+function TaskCard({ 
+  task, 
+  projectMembers, 
+  canDelete,
+  onStatusChange, 
+  onAssign, 
+  onDelete,
+  onOpenComments
+}: { 
+  task: Task, 
+  projectMembers: ProjectMember[], 
+  canDelete: boolean,
+  onStatusChange: (id: number, s: TaskStatus) => void, 
+  onAssign: (taskId: number, userIds: number[]) => void,
+  onDelete: (id: number) => void,
+  onOpenComments: () => void
+}) {
+  const cardColor = statusColors[task.status] || 'gray';
+  const assignees = task.assignees || [];
+
+  const tooltipContent = (
+    <Box p={2} maxW="250px">
+      {task.description && <Text fontSize="sm" mb={task.deadline ? 2 : 0}>{task.description}</Text>}
+      {task.deadline && (
+        <Text fontSize="xs" fontWeight="bold" color="red.300">
+          Deadline: {new Date(task.deadline).toLocaleDateString()}
+        </Text>
+      )}
+      {!task.description && !task.deadline && <Text fontSize="sm" fontStyle="italic">No extra details</Text>}
+    </Box>
+  );
+
+  return (
+    <Card.Root 
+      size="sm" 
+      variant="elevated" 
+      borderLeft="4px solid" 
+      borderColor={`${cardColor}.500`} 
+      _hover={{ shadow: 'md', transform: 'translateY(-2px)', transition: 'all 0.2s' }} 
+      position="relative"
+      cursor="pointer"
+      onClick={onOpenComments}
+    >
+      <Card.Body>
+        
+        {canDelete && (
+          <Box 
+            position="absolute" 
+            top={2} 
+            right={2} 
+            color="gray.300" 
+            _hover={{ color: "red.500" }} 
+            zIndex={2}
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(task.id);
+            }}
+          >
+            <LuX size={18} />
+          </Box>
+        )}
+
+        <Tooltip content={tooltipContent} positioning={{ placement: "top" }} showArrow portalled>
+          <Text fontWeight="medium" mb={3} pr={5} textAlign="left" width="max-content" maxW="90%" truncate>
+            {task.title}
+          </Text>
+        </Tooltip>
+        
+        <Box onClick={(e) => e.stopPropagation()}>
+          <TaskAssignees 
+            taskId={task.id} 
+            assignees={assignees as any} 
+            projectMembers={projectMembers} 
+            onAssign={onAssign} 
+          />
+        </Box>
+
+        <HStack justify="space-between" align="center" mt={2}>
+          <Badge variant="subtle" colorPalette={cardColor}>#{task.id}</Badge>
+          
+          <Box 
+            onClick={(e) => e.stopPropagation()}
+            color={`${cardColor}.600`} 
+            _dark={{ color: task.status === TaskStatus.TODO ? "white" : `${cardColor}.300` }} 
+            bg="transparent" 
+            _hover={{ bg: "gray.100", _dark: { bg: "gray.700" } }} 
+            px={2} py={1} borderRadius="md" transition="background 0.2s"
+          >
+            <select 
+              value={task.status} 
+              onChange={(e) => onStatusChange(task.id, e.target.value as TaskStatus)}
+              onClick={(e) => e.stopPropagation()}
+              style={{ background: 'transparent', fontSize: '11px', cursor: 'pointer', outline: 'none', fontWeight: 'bold', color: 'inherit' }}
+            >
+              {Object.values(TaskStatus).map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+            </select>
+          </Box>
+        </HStack>
+      </Card.Body>
+    </Card.Root>
+  );
+}
 </file>
 
 <file path="srcs/frontend/src/pages/RegisterPage.tsx">
@@ -4683,52 +5304,6 @@ jobs:
             docker compose up -d --build
 </file>
 
-<file path="nginx/nginx.conf">
-server {
-    listen 80;
-    server_name _;
-    return 301 https://$host$request_uri;
-}
-
-server {
-    listen 443 ssl;
-    server_name _;
-
-    ssl_certificate /etc/ssl/certs/selfsigned.crt;
-    ssl_certificate_key /etc/ssl/private/selfsigned.key;
-    ssl_protocols TLSv1.2 TLSv1.3;
-
-    location /api/ {
-        proxy_pass http://backend:3000/api/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-
-    location /docs {
-        proxy_pass http://backend:3000/docs;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-
-    location /socket.io/ {
-        proxy_pass http://backend:3000/socket.io/;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "Upgrade";
-        proxy_set_header Host $host;
-    }
-
-    location / {
-        proxy_pass http://frontend:5173;
-        proxy_set_header Host $host;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection "Upgrade";
-        proxy_intercept_errors on;
-        error_page 404 = /index.html;
-    }
-}
-</file>
-
 <file path="shared/srcs/types/comment.ts">
 export interface Comment {
   id: number;
@@ -4797,16 +5372,97 @@ export interface FriendRequest {
 }
 </file>
 
-<file path="shared/srcs/types/message.ts">
-export interface Message {
-  id: number;
-  content: string;
-  projectId: number;
-  userId: number;
-  Time: Date;
-  createdAt: Date;
-  user: { username: string; avatar: string };
+<file path="shared/srcs/types/task.ts">
+export enum TaskStatus {
+    TODO = 'TODO',
+    IN_PROGRESS = 'IN_PROGRESS',
+    PENDING_EVALUATION = 'PENDING_EVALUATION',
+    DONE = 'DONE'
 }
+
+export interface Task {
+    id: number;
+    title: string;
+    description?: string;
+    status: TaskStatus;
+    deadline?: Date;
+    createdAt: Date;
+    updatedAt: Date;
+    projectId: number;
+    comments?: any[];
+    assignees?: { id: number, username: string, avatar?: string }[];
+    project?: { name: string };
+}
+</file>
+
+<file path="srcs/backend/prisma/migrations/20260504081944_add_friendship/migration.sql">
+-- CreateEnum
+CREATE TYPE "FriendshipStatus" AS ENUM ('PENDING', 'ACCEPTED', 'REJECTED');
+
+-- DropForeignKey
+ALTER TABLE "Task" DROP CONSTRAINT "Task_projectId_fkey";
+
+-- CreateTable
+CREATE TABLE "Message" (
+    "id" SERIAL NOT NULL,
+    "content" TEXT NOT NULL,
+    "Time" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "userId" INTEGER NOT NULL,
+    "projectId" INTEGER NOT NULL,
+
+    CONSTRAINT "Message_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Friendship" (
+    "id" SERIAL NOT NULL,
+    "requesterId" INTEGER NOT NULL,
+    "addresseeId" INTEGER NOT NULL,
+    "status" "FriendshipStatus" NOT NULL DEFAULT 'PENDING',
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "Friendship_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "Comment" (
+    "id" SERIAL NOT NULL,
+    "content" TEXT NOT NULL,
+    "attachments" TEXT[],
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "userId" INTEGER NOT NULL,
+    "taskId" INTEGER NOT NULL,
+    "parentId" INTEGER,
+
+    CONSTRAINT "Comment_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Friendship_requesterId_addresseeId_key" ON "Friendship"("requesterId", "addresseeId");
+
+-- AddForeignKey
+ALTER TABLE "Task" ADD CONSTRAINT "Task_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Message" ADD CONSTRAINT "Message_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Message" ADD CONSTRAINT "Message_projectId_fkey" FOREIGN KEY ("projectId") REFERENCES "Project"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Friendship" ADD CONSTRAINT "Friendship_requesterId_fkey" FOREIGN KEY ("requesterId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Friendship" ADD CONSTRAINT "Friendship_addresseeId_fkey" FOREIGN KEY ("addresseeId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Comment" ADD CONSTRAINT "Comment_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Comment" ADD CONSTRAINT "Comment_taskId_fkey" FOREIGN KEY ("taskId") REFERENCES "Task"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Comment" ADD CONSTRAINT "Comment_parentId_fkey" FOREIGN KEY ("parentId") REFERENCES "Comment"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 </file>
 
 <file path="srcs/backend/src/auth/strategies/jwt.strategy.ts">
@@ -4865,75 +5521,6 @@ import { NotificationsModule } from '../notifications/notifications.module';
 export class CommentsModule {}
 </file>
 
-<file path="srcs/backend/src/comments/comments.service.ts">
-import { Injectable } from '@nestjs/common';
-import { PrismaService } from 'src/prisma/prisma.service';
-import { CreateCommentDto } from './dto/create-command.dto';
-import { NotificationsGateway } from 'src/notifications/notifications.gateway';
-import { find } from 'rxjs';
-import { assign } from 'nodemailer/lib/shared';
-import { privateDecrypt } from 'crypto';
-
-@Injectable()
-export class CommentsService {
-    constructor(private prisma: PrismaService,
-        private notificationGateway: NotificationsGateway) {}
-
-    async createcomment(taskid: number, userId: number, createCommentDto: CreateCommentDto, files: string[] = []) {
-        const task = await this.prisma.task.findUnique({
-            where: { id: taskid },
-            include: { assignees: true ,
-            project: { include: { members: { where: { role : 'PROJECT_LEADER' } } } } },
-        });
-        if (!task)
-            throw new Error('Task not found');
-        const isAssignee = task.assignees.some(a => a.id === userId);
-        const isLeader = task.project.members.some(m => m.userId === userId);
-        if (!isAssignee && !isLeader)
-            throw new Error('You are not authorized to comment on this task');
-        const comment = await this.prisma.comment.create({
-            data: {
-                content: createCommentDto.content,
-                userId: userId,
-                taskId: taskid,
-                attachments: files,
-                parentId: createCommentDto.parentId,
-            },
-        });
-        let notificationTargets: number[] = [];
-        if (isLeader) {
-            notificationTargets = task.assignees.map(a => a.id);
-        }
-        else if (isAssignee) {
-            const leaderIds = task.project.members.map(m => m.userId);
-            const otherAssignees = task.assignees
-                .map(a => a.id)
-                .filter(id => id !== userId);
-            notificationTargets = [...leaderIds, ...otherAssignees];
-        }
-        const uniqueTargets = [...new Set(notificationTargets)].filter(id => id !== userId);
-        uniqueTargets.forEach(targetId => {
-            this.notificationGateway.server.to(`user_${targetId}`).emit('new_notification', {
-                type: 'NEW_COMMENT',
-                taskId: taskid,
-                message: 'a new comment has been added to a task you are involved in.',
-            });
-        });
-        return comment;
-    }
-    async findallcomments(taskid: number) {
-        const comments = await this.prisma.comment.findMany({
-            where: { taskId: taskid, parentId: null },
-            include: { user: { select: { id: true, username: true, avatar: true } },
-            replies: { include: { user: { select: { id: true, username: true, avatar: true } } } },
-                },
-            orderBy: { createdAt: 'asc' },
-        });
-        return comments;
-    }
-}
-</file>
-
 <file path="srcs/backend/src/dashboard/dashboard.module.ts">
 import { Module } from '@nestjs/common';
 import { DashboardController } from './dashboard.controller';
@@ -4953,47 +5540,155 @@ import { ExportModule } from 'src/export/export.module';
 export class DashboardModule {}
 </file>
 
-<file path="srcs/backend/src/friends/friends.controller.ts">
-import { Controller, Post, Patch, Delete, Get, Param, ParseIntPipe, UseGuards, Request } from '@nestjs/common';
-import { FriendsService } from './friends.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { ApiBearerAuth } from '@nestjs/swagger';
+<file path="srcs/backend/src/friends/friends.service.ts">
+import { Injectable, ConflictException, NotFoundException, BadRequestException } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
+import { IsBtcAddress } from 'class-validator';
 
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
-@Controller('friends')
-export class FriendsController {
-  constructor(private readonly friendsService: FriendsService) {}
-
-  @Get()
-  getMyFriends(@Request() req) {
-    return this.friendsService.getMyFriends(req.user.sub);
+@Injectable()
+export class FriendsService {
+constructor(
+    private prisma: PrismaService,
+    private  notificationsService: NotificationsService,
+  ){}
+async sendrequest(requesterId: number, addresseeId: number) {
+    console.log('sendRequest called:', { requesterId, addresseeId });
+    if (requesterId === addresseeId) {
+      throw new BadRequestException('You cannot send a friend request to yourself.');
+    }
+const targetUser = await this.prisma.user.findUnique({ where: { id: addresseeId } });
+    if (!targetUser) {
+      throw new NotFoundException('The user you are trying to send a friend request to does not exist.');
+    }
+    const existingRequest = await this.prisma.friendship.findFirst({
+      where: {
+        OR: [
+          { requesterId, addresseeId },
+          { requesterId: addresseeId, addresseeId: requesterId }
+        ]
+      }
+    });
+    if (existingRequest) {
+      throw new ConflictException('You have already sent a friend request to this user.');
+    }
+    const friendRequest = await this.prisma.friendship.create({
+        data: {
+            requesterId: requesterId,
+            addresseeId: addresseeId,
+            status: 'PENDING',
+        },
+    });
+    const sender = await this.prisma.user.findUnique({ where: { id: requesterId } });
+    if ( sender) {
+    await this.notificationsService.createNotification(
+      addresseeId,
+      'friend_request',
+      `${sender.username} has sent you a friend request!`,
+    );
+    return friendRequest;
   }
-
-  @Get('requests')
-  getPendingRequests(@Request() req) {
-    return this.friendsService.getFriendRequests(req.user.sub);
+}
+async acceptrequest(loggedInUserId: number, requesterId: number) {
+    const friendRequest = await this.prisma.friendship.findFirst({
+      where: {
+        requesterId: requesterId,
+        addresseeId: loggedInUserId,
+        status: 'PENDING',
+      },
+    });
+    if (!friendRequest) {
+      throw new NotFoundException('Friend request not found.');
+    }
+    return await this.prisma.friendship.update({
+      where: {
+        id: friendRequest.id,
+      },
+      data: {
+        status: 'ACCEPTED',
+      },
+    });
   }
-
-  @Post('request/:userId')
-  sendRequest(@Request() req, @Param('targetUserId', ParseIntPipe) targetUserId: number) {
-    return this.friendsService.sendrequest(req.user.sub, targetUserId);
+async rejectrequest(loggedInUserId: number, requesterId: number) {
+    const friendRequest = await this.prisma.friendship.findFirst({
+      where: {
+        requesterId: requesterId,
+        addresseeId: loggedInUserId,
+        status: 'PENDING',
+      },
+    });
+    if (!friendRequest) {
+      throw new NotFoundException('Friend request not found.');
+    }
+    return await this.prisma.friendship.update({
+      where: {
+        id: friendRequest.id,
+      },
+      data: {
+        status: 'REJECTED',
+      },
+    });
   }
-
-  @Patch('accept/:friendshipId')
-  acceptRequest(@Request() req, @Param('friendshipId', ParseIntPipe) friendshipId: number) {
-    return this.friendsService.acceptrequest(req.user.sub, friendshipId);
+async getfriends(userId: number) {
+    const friendships = await this.prisma.friendship.findMany({
+      where: {
+        OR: [
+          { requesterId: userId, status: 'ACCEPTED' },
+          { addresseeId: userId, status: 'ACCEPTED' }
+        ]
+      },
+      include: {
+        requester: true,
+        addressee: true,
+      },
+    });
+    return friendships.map(friendship => {
+      const friend = friendship.requesterId === userId ? friendship.addressee : friendship.requester;
+      return {
+        id: friend.id,
+        username: friend.username,
+        email: friend.email,
+      };
+    });
   }
+  async getFriendRequests(userId: number) {
+    return this.prisma.friendship.findMany({
+      where: {
+        addresseeId: userId,
+        status: 'PENDING', },
+        include: {
+            requester: {select: {id: true, username: true, email: true}}
+        }
+    });
+    }
 
-  @Patch('reject/:friendshipId')
-  rejectRequest(@Request() req, @Param('friendshipId', ParseIntPipe) friendshipId: number) {
-    return this.friendsService.rejectrequest(req.user.sub, friendshipId);
+    async getMyFriends(userId: number) {
+    const friendships = await this.prisma.friendship.findMany({
+      where: {
+        status: 'ACCEPTED',
+        OR: [{ requesterId: userId }, { addresseeId: userId }]
+      },
+      include: {
+        requester: { select: { id: true, username: true, avatar: true } },
+        addressee: { select: { id: true, username: true, avatar: true } }
+      }
+    });
+    return friendships.map(f => f.requesterId === userId ? f.addressee : f.requester);
   }
-
-  @Delete('remove/:friendshipId')
-  removeFriendship(@Request() req, @Param('friendshipId', ParseIntPipe) friendshipId: number) {
-    return this.friendsService.removefriendship(req.user.sub, friendshipId);
-  }
+  async removefriendship(loggedInUserId: number, friendshipId: number) {
+    const friendship = await this.prisma.friendship.findUnique({
+      where: { id: friendshipId },
+    });
+    if (!friendship) {
+      throw new NotFoundException('Friendship not found.');
+    }
+    if (friendship.requesterId !== loggedInUserId && friendship.addresseeId !== loggedInUserId) {
+      throw new BadRequestException('You can only remove friendships you are part of.');
+    }
+    return await this.prisma.friendship.delete({
+       where: { id: friendshipId },
+     });
+    }
 }
 </file>
 
@@ -5080,6 +5775,21 @@ export class CreateMessageDto {
 }
 </file>
 
+<file path="srcs/backend/src/projects/dto/update-project.dto.ts">
+import { PartialType } from '@nestjs/swagger';
+import { CreateProjectDto } from './create-project.dto';
+import { IsEnum, IsOptional } from 'class-validator';
+import { ProjectStatus } from '@prisma/client';
+
+export class UpdateProjectDto extends PartialType(CreateProjectDto) {
+    
+
+  @IsOptional()
+  @IsEnum(ProjectStatus)
+  status?: ProjectStatus;
+}
+</file>
+
 <file path="srcs/backend/src/projects/project-leader.guard.ts">
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
@@ -5150,6 +5860,31 @@ import { NotificationsModule } from '../notifications/notifications.module';
   providers: [ProjectsService],
 })
 export class ProjectsModule {}
+</file>
+
+<file path="srcs/backend/src/tasks/dto/update-task.dto.ts">
+import { IsString, IsOptional, IsArray, IsNumber } from 'class-validator';
+
+export class UpdateTaskDto {
+  @IsOptional()
+  @IsString()
+  title?: string;
+
+  @IsOptional()
+  @IsString()
+  description?: string;
+
+  @IsOptional()
+  status?: any;
+
+  @IsOptional()
+  deadline?: string | Date | null;
+
+  @IsOptional()
+  @IsArray()
+  @IsNumber({}, { each: true })
+  assigneeIds?: number[];
+}
 </file>
 
 <file path="srcs/backend/src/users/dto/update-user.dto.ts">
@@ -5548,6 +6283,135 @@ export default function LoginForm({ onSubmit, error, isLoading }: LoginFormProps
 }
 </file>
 
+<file path="srcs/frontend/src/components/topBar.tsx">
+import { Flex, HStack, Box, Heading, Text, VStack } from "@chakra-ui/react";
+import { ColorModeButton } from "./ui/color-mode";
+import { useLocation } from "react-router-dom";
+import { useState, useRef, useEffect } from "react";
+import { useNotifications } from "../hooks/useNotification";
+import { LuBell } from "react-icons/lu";
+
+export default function TopBar() {
+  const location = useLocation();
+  const { notifications, unreadCount, markAllAsRead, currentUser } = useNotifications();
+  const [isOpen, setIsOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const getPageTitle = (path: string) => {
+    if (path === '/' || path === '') return 'Dashboard';
+    const parts = path.split('/').filter(Boolean);
+    const mainPath = parts[0];
+    return mainPath.charAt(0).toUpperCase() + mainPath.slice(1);
+  };
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  return (
+    <Flex as="header" w="full" h="72px" align="center" justify="space-between" px={8} bg="white" borderBottom="1px solid" borderColor="gray.200" _dark={{ bg: "gray.900", borderColor: "gray.700" }}>
+      <Heading size="lg" fontWeight="bold" color="gray.800" _dark={{ color: "white" }}>
+        {getPageTitle(location.pathname)}
+      </Heading>
+
+      <HStack gap={6}>
+        <Box position="relative" ref={menuRef}>
+          <Box cursor="pointer" position="relative" onClick={() => setIsOpen(!isOpen)}>
+            <LuBell size={24} />
+            {unreadCount > 0 && (
+              <Flex position="absolute" top="-4px" right="-4px" bg="red.500" color="white" w="18px" h="18px" borderRadius="full" justify="center" align="center" fontSize="10px" fontWeight="bold">
+                {unreadCount}
+              </Flex>
+            )}
+          </Box>
+
+          {isOpen && (
+            <Box position="absolute" top="40px" right="-10px" w="320px" bg="white" _dark={{ bg: "gray.800", borderColor: "gray.700" }} boxShadow="xl" borderRadius="lg" border="1px solid" borderColor="gray.200" zIndex={1000} overflow="hidden">
+              <Flex justify="space-between" align="center" p={3} borderBottom="1px solid" borderColor="gray.100" bg="gray.50" _dark={{ borderColor: "gray.700", bg: "gray.900" }}>
+                <Text fontWeight="bold" fontSize="sm">Notifications</Text>
+                {unreadCount > 0 && (
+                  <Text fontSize="xs" color="purple.500" cursor="pointer" onClick={markAllAsRead} _hover={{ textDecoration: "underline" }}>
+                    Mark all as read
+                  </Text>
+                )}
+              </Flex>
+              <VStack maxH="300px" overflowY="auto" align="stretch" gap={0}>
+                {notifications.length === 0 ? (
+                  <Text p={4} textAlign="center" fontSize="sm" color="gray.500">No notifications</Text>
+                ) : (
+                  notifications.map(notif => (
+                    <Box key={notif.id} p={3} borderBottom="1px solid" borderColor="gray.100" bg={notif.isRead ? "transparent" : "purple.50"} _dark={{ borderColor: "gray.700", bg: notif.isRead ? "transparent" : "purple.900" }} _hover={{ bg: "gray.50", _dark: { bg: "gray.700" } }}>
+                      <Text fontSize="sm" color={notif.isRead ? "gray.600" : "gray.800"} _dark={{ color: notif.isRead ? "gray.400" : "white" }}>
+                        {notif.message}
+                      </Text>
+                    </Box>
+                  ))
+                )}
+              </VStack>
+            </Box>
+          )}
+        </Box>
+
+        <ColorModeButton />
+
+        <Box w="40px" h="40px" bg="purple.500" color="white" borderRadius="full" display="flex" alignItems="center" justifyContent="center" fontWeight="bold" cursor="pointer" _hover={{ bg: "purple.600" }}>
+          {currentUser?.username?.charAt(0).toUpperCase() || 'S'}
+        </Box>
+      </HStack>
+    </Flex>
+  );
+}
+</file>
+
+<file path="srcs/frontend/src/context/AuthContext.tsx">
+import { createContext, useContext, useEffect, useState } from "react";
+import type { User } from "@transcendence/shared";
+import { userService } from "../api/services";
+
+interface AuthContextType {
+  currentUser: User | null;
+  isLoading: boolean;
+}
+
+const AuthContext = createContext<AuthContextType>({
+  currentUser: null,
+  isLoading: true,
+});
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem('access_token');
+    if (!token){
+      setIsLoading(false);
+      return;
+    }
+
+    userService.getMe()  // ← endpoint that returns the logged in user
+      .then(response => setCurrentUser(response.data))
+      .finally(() => setIsLoading(false));
+  }, []);
+
+  return (
+    <AuthContext.Provider value={{ currentUser, isLoading }}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  return useContext(AuthContext);
+}
+</file>
+
 <file path="srcs/frontend/src/hooks/useProfile.ts">
 import { useEffect, useState } from "react";
 import { userService } from "../api/services";
@@ -5705,6 +6569,64 @@ dist
 }
 </file>
 
+<file path="nginx/nginx.conf">
+server {
+    listen 80;
+    server_name _;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name _;
+
+    ssl_certificate /etc/ssl/certs/selfsigned.crt;
+    ssl_certificate_key /etc/ssl/private/selfsigned.key;
+    ssl_protocols TLSv1.2 TLSv1.3;
+
+    location /api/ {
+        proxy_pass http://backend:3000/api/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    location /docs {
+        proxy_pass http://backend:3000/docs;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    location /socket.io/ {
+        proxy_pass http://backend:3000/socket.io/;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "Upgrade";
+        proxy_set_header Host $host;
+    }
+
+    location / {
+        proxy_pass http://frontend:5173;
+        proxy_set_header Host $host;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "Upgrade";
+        proxy_intercept_errors on;
+        error_page 404 = /index.html;
+    }
+}
+</file>
+
+<file path="shared/srcs/types/message.ts">
+export interface Message {
+  id: number;
+  content: string;
+  projectId: number;
+  userId: number;
+  Time: Date;
+  createdAt: Date;
+  user: { username: string; avatar: string };
+}
+</file>
+
 <file path="shared/srcs/types/notification.ts">
 export interface Notification{
     id: number;
@@ -5713,73 +6635,6 @@ export interface Notification{
     isRead: boolean;
     message: string;
     createdAt: Date;
-}
-</file>
-
-<file path="shared/srcs/types/project.ts">
-import type { Task } from "./task";
-import type { Message } from "./message";
-
-export enum ProjectStatus{
-    PLANNING = 'PLANNING',
-    ACTIVE = 'ACTIVE',
-    COMPLETED = 'COMPLETED'
-}
-
-export enum ProjectRole{
-    PROJECT_LEADER = 'PROJECT_LEADER',
-    MEMBER = 'MEMBER',
-    GUEST = 'GUEST'
-}
-
-export interface ProjectMember{
-    id: number;
-    userId: number;
-    role: ProjectRole;
-    projectId: number;
-    user?: {
-        id?: number;
-        username: string;
-        avatar?: string | null;
-    };
-    project?: {name: string};
-}
-
-export interface Project {
-    id: number;
-    name: string;
-    description?: string;
-    deadline?: Date;
-    createdAt: Date;
-    status: ProjectStatus;
-    members?: ProjectMember[];
-    tasks?: Task[];
-    messages?: Message[];
-}
-</file>
-
-<file path="shared/srcs/types/user.ts">
-import type { ProjectMember } from "./project";
-
-export enum GlobalRole{
-    USER = 'USER',
-    ADMIN = 'ADMIN'
-}
-
-export interface User{
-    id: number;
-    username: string;
-    email: string;
-    avatar: string | null;
-    globalRole: GlobalRole;
-    createdAt: Date;
-    projectMembership: ProjectMember[] | null;
-}
-
-export interface PromotedUser {
-  id: number;
-  username: string;
-  globalRole: GlobalRole;
 }
 </file>
 
@@ -5809,6 +6664,131 @@ export interface PromotedUser {
     "erasableSyntaxOnly": false
   },
   "include": ["srcs", "../srcs/frontend/src/api"]
+}
+</file>
+
+<file path="srcs/backend/src/comments/comments.service.ts">
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from 'src/prisma/prisma.service';
+import { CreateCommentDto } from './dto/create-command.dto';
+import { NotificationsGateway } from 'src/notifications/notifications.gateway';
+
+@Injectable()
+export class CommentsService {
+    constructor(private prisma: PrismaService,
+        private notificationGateway: NotificationsGateway) {}
+
+    async createcomment(taskid: number, userId: number, createCommentDto: CreateCommentDto, files: string[] = []) {
+        const task = await this.prisma.task.findUnique({
+            where: { id: taskid },
+            include: { assignees: true ,
+            project: { include: { members: { where: { role : 'PROJECT_LEADER' } } } } },
+        });
+        
+        if (!task)
+            throw new Error('Task not found');
+            
+        const isAssignee = task.assignees.some(a => a.id === userId);
+        const isLeader = task.project.members.some(m => m.userId === userId);
+        
+        if (!isAssignee && !isLeader)
+            throw new Error('You are not authorized to comment on this task');
+
+        const comment = await this.prisma.comment.create({
+            data: {
+                content: createCommentDto.content,
+                userId: userId,
+                taskId: taskid,
+                attachments: files,
+                parentId: createCommentDto.parentId,
+            },
+            include: {
+                user: { select: { id: true, username: true, avatar: true } },
+                replies: { include: { user: { select: { id: true, username: true, avatar: true } } } },
+            }
+        });
+
+        let notificationTargets: number[] = [];
+        if (isLeader) {
+            notificationTargets = task.assignees.map(a => a.id);
+        }
+        else if (isAssignee) {
+            const leaderIds = task.project.members.map(m => m.userId);
+            const otherAssignees = task.assignees
+                .map(a => a.id)
+                .filter(id => id !== userId);
+            notificationTargets = [...leaderIds, ...otherAssignees];
+        }
+        const uniqueTargets = [...new Set(notificationTargets)].filter(id => id !== userId);
+        uniqueTargets.forEach(targetId => {
+            this.notificationGateway.server.to(`user_${targetId}`).emit('new_notification', {
+                type: 'NEW_COMMENT',
+                taskId: taskid,
+                message: 'A new comment has been added to a task you are involved in.',
+            });
+        });
+
+        this.notificationGateway.server.to(`project_${task.projectId}`).emit('new_task_comment', comment);
+
+        return comment;
+    }
+
+    async findallcomments(taskid: number) {
+        const comments = await this.prisma.comment.findMany({
+            where: { taskId: taskid, parentId: null },
+            include: { user: { select: { id: true, username: true, avatar: true } },
+            replies: { include: { user: { select: { id: true, username: true, avatar: true } } } },
+                },
+            orderBy: { createdAt: 'asc' },
+        });
+        return comments;
+    }
+}
+</file>
+
+<file path="srcs/backend/src/friends/friends.controller.ts">
+import { Controller, Post, Patch, Delete, Get, Param, ParseIntPipe, UseGuards, Request } from '@nestjs/common';
+import { FriendsService } from './friends.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ApiBearerAuth } from '@nestjs/swagger';
+
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard)
+@Controller('friends')
+export class FriendsController {
+  constructor(private readonly friendsService: FriendsService) {}
+
+  @Get()
+  getMyFriends(@Request() req) {
+    return this.friendsService.getMyFriends(req.user.sub);
+  }
+
+  @Get('requests')
+  getPendingRequests(@Request() req) {
+    return this.friendsService.getFriendRequests(req.user.sub);
+  }
+
+  @Post('request/:userId')
+  sendRequest(@Request() req, @Param('userId', ParseIntPipe) targetUserId: number) {
+    console.log('friend request sent by:', req.user);
+    console.log('to user:', targetUserId);
+    return this.friendsService.sendrequest(req.user.sub, targetUserId);
+  }
+
+  @Patch('accept/:friendshipId')
+  acceptRequest(@Request() req, @Param('friendshipId', ParseIntPipe) friendshipId: number) {
+    return this.friendsService.acceptrequest(req.user.sub, friendshipId);
+  }
+
+  @Patch('reject/:friendshipId')
+  rejectRequest(@Request() req, @Param('friendshipId', ParseIntPipe) friendshipId: number) {
+    return this.friendsService.rejectrequest(req.user.sub, friendshipId);
+  }
+
+  @Delete('remove/:friendshipId')
+  removeFriendship(@Request() req, @Param('friendshipId', ParseIntPipe) friendshipId: number) {
+    return this.friendsService.removefriendship(req.user.sub, friendshipId);
+  }
 }
 </file>
 
@@ -6190,171 +7170,6 @@ export class UsersModule {}
 }
 </file>
 
-<file path="srcs/frontend/src/api/services.ts">
-import client from './client';
-import type { AuthToken, DashboardMetrics, Comment, Message, FriendRequest, FriendUser, Notification, Project, ProjectMember, ProjectRole, Task, User, PromotedUser, TaskStatus, DashboardFilters, ProjectStatus } from '../../../../shared/srcs/types';
-
-export const authService = {
-  login: async (username: string, password: string) => {
-    const response = await client.post<AuthToken>('/auth/login', { username, password });
-    localStorage.setItem('access_token', response.data.access_token);
-    return response;
-  },
-  googleLogin: () => {
-    window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/google`;
-  },
-  refresh: async (refreshToken: string) => {
-    const response = await client.post<{ access_token: string }>('/auth/refresh', { refresh_token: refreshToken });
-    localStorage.setItem('access_token', response.data.access_token);
-    return response;
-  },
-  getProfile: () => client.get<User>('/auth/profile'),
-};
-
-export const commentService = {
-  create: (taskId: number, data: { content: string; parentId?: number; files?: File[] }) => {
-    const formData = new FormData();
-    formData.append('content', data.content);
-    if (data.parentId) formData.append('parentId', String(data.parentId));
-    if (data.files) data.files.forEach(file => formData.append('files', file));
-    return client.post<Comment>(`/tasks/${taskId}/comments`, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-  },
-  getByTaskId: (taskId: number) =>
-    client.get<Comment[]>(`/tasks/${taskId}/comments`),
-};
-
-export const taskService = {
-  getAllAdmin: () => client.get<Task[]>('/tasks/all'),
-  getMyTasks: () => client.get<Task[]>('/tasks/my'),
-  getTaskById: (taskId: number) => client.get<Task>(`/tasks/${taskId}`),
-  create: (data: { title: string; description?: string; projectId: number; status?: TaskStatus; deadline?: Date; assigneeIds: number[] }) =>
-    client.post<Task>('/tasks', data),
-  update: (taskId: number, data: { title?: string; status?: TaskStatus; assigneeIds?: number[] }) =>
-    client.patch<Task>(`/tasks/${taskId}`, data),
-  delete: (taskId: number) => client.delete<Task>(`/tasks/${taskId}`),
-};
-
-export const projectService = {
-  create: (data: { name: string; description?: string; deadline?: string }) =>
-    client.post<Project>('/projects', data),
-  getAll: () => client.get<Project[]>('/projects'),
-  getById: (projectId: number) => client.get<Project>(`/projects/${projectId}`),
-  update: (projectId: number, data: { name?: string; description?: string; deadline?: string; status?: ProjectStatus }) =>
-    client.patch<Project>(`/projects/${projectId}`, data),
-  delete: (projectId: number) => client.delete<{ message: string }>(`/projects/${projectId}`),
-  addMember: (projectId: number, userId: number, role: ProjectRole) =>
-    client.post<ProjectMember>(`/projects/${projectId}/members`, { userId, role }),
-  createMessage: (projectId: number, content: string) =>
-    client.post<Message>(`/projects/${projectId}/messages`, { content }),
-  getMessages: (projectId: number) => client.get<Message[]>(`/projects/${projectId}/messages`),
-};
-
-export const friendService = {
-  getMyFriends: () => client.get<FriendUser[]>('/friends'),
-  getRequests: () => client.get<FriendRequest[]>('/friends/requests'),
-  sendRequest: (addressee: number) => client.post<FriendRequest>(`/friends/requests/${addressee}`),
-  acceptRequest: (requesterId: number) => client.patch<FriendRequest>(`/friends/accept/${requesterId}`),
-  rejectRequest: (requesterId: number) => client.patch<FriendRequest>(`/friends/reject/${requesterId}`),
-  removeFriend: (friendshipId: number) => client.delete<void>(`/friends/remove/${friendshipId}`),
-};
-
-export const notificationService = {
-  getNotifications: (userId: number) => client.get<Notification[]>(`/notifications/user/${userId}`),
-  markAsRead: (userId: number) => client.patch<{ count: number}>(`/notifications/user/${userId}/read`),
-};
-
-export const dashboardMetrics = {
-  getGlobalMetrics: (filters: DashboardFilters) =>
-    client.get<DashboardMetrics>('/dashboard', {params: filters}),
-  getProjectMetrics: (projectId: number, filters: DashboardFilters) => 
-    client.get<DashboardMetrics>(`/dashboard/projects/${projectId}`, {params: filters}),
-  exportMetrics: (filters: DashboardFilters, format: 'csv' | 'pdf') =>
-    client.get('dashboard/export', {params: {...filters, format}, responseType: 'blob'}),
-};
-
-export const userService = {
-  create: (data: { username: string; email: string; password: string; avatar?: string }) =>
-    client.post<User>('/users', data),
-  getAllUsers: () => client.get<User[]>('/users'),
-  getUser: (userId: number) => client.get<User>(`/users/${userId}`),
-  delete: (userId: number) => client.delete<void>(`/users/${userId}`),
-  updateUser: (data: { username?: string; email?: string; password?: string; avatar?: string }) =>
-    client.patch<User>('/users/me', data),
-  promoteUser: (username: string) => client.patch<PromotedUser>(`/users/promote/${username}`),
-  demoteUser: (username: string) => client.patch<PromotedUser>(`/users/demote/${username}`),
-};
-</file>
-
-<file path="srcs/frontend/src/components/profile.tsx">
-import type { User } from '@transcendence/shared/srcs/types/user';
-import { Card, HStack, VStack, Avatar, Text, Heading, List } from '@chakra-ui/react';
-
-interface ProfileProps {
-  user: User;
-}
-
-function Profile({ user }: ProfileProps) {
-  return (
-    <Card.Root>
-      <Card.Body>
-
-        <HStack gap={4}>
-          {/* left: avatar */}
-          <Avatar.Root size="2xl">
-            <Avatar.Image src={user.avatar ?? undefined} />
-            <Avatar.Fallback>{user.username?.charAt(0).toUpperCase()}</Avatar.Fallback>
-          </Avatar.Root>
-
-          {/* right: info stacked */}
-          <VStack align="start" gap={10}>
-            <Heading size="md" color="fg.default">{user.username}</Heading>
-            <Text color="fg.muted">{user.email}</Text>
-          </VStack>
-        </HStack>
-
-        {/* projects */}
-        {user.projectMembership && user.projectMembership.length > 0 ? (
-          <List.Root mt={4}>
-            {user.projectMembership.map((membership) => (
-              <List.Item key={membership.id}>
-                {membership.project?.name ?? 'Unknown project'}
-              </List.Item>
-            ))}
-          </List.Root>
-        ) : (
-          <Text mt={4}>No projects yet</Text>
-        )}
-
-      </Card.Body>
-    </Card.Root>
-  );
-}
-
-export default Profile;
-</file>
-
-<file path="srcs/frontend/src/pages/ProfilePage.tsx">
-import { useParams } from "react-router-dom";
-import { useProfile } from "../hooks/useProfile";
-import Profile from "../components/profile";
-import { Container } from "@chakra-ui/react";
-
-export function ProfilePage() {
-  const { userId } = useParams();
-  const { user } = useProfile(Number(userId));
-
-  if (!user) return <p>Loading...</p>;
-
-  return (
-    <Container maxW="600px" mt={8}>
-      <Profile user={user} />
-    </Container>
-  );
-}
-</file>
-
 <file path="srcs/frontend/src/index.css">
 :root {
   --text: #6b6375;
@@ -6493,6 +7308,73 @@ EXPOSE 5173
 CMD ["serve", "-s", "dist", "-l", "5173"]
 </file>
 
+<file path="shared/srcs/types/project.ts">
+import type { Task } from "./task";
+import type { Message } from "./message";
+
+export enum ProjectStatus{
+    PLANNING = 'PLANNING',
+    ACTIVE = 'ACTIVE',
+    COMPLETED = 'COMPLETED'
+}
+
+export enum ProjectRole{
+    PROJECT_LEADER = 'PROJECT_LEADER',
+    MEMBER = 'MEMBER',
+    GUEST = 'GUEST'
+}
+
+export interface ProjectMember{
+    id: number;
+    userId: number;
+    role: ProjectRole;
+    projectId: number;
+    user?: {
+        id?: number;
+        username: string;
+        avatar?: string | null;
+    };
+    project?: {name: string};
+}
+
+export interface Project {
+    id: number;
+    name: string;
+    description?: string;
+    deadline?: Date;
+    createdAt: Date;
+    status: ProjectStatus;
+    members?: ProjectMember[];
+    tasks?: Task[];
+    messages?: Message[];
+}
+</file>
+
+<file path="shared/srcs/types/user.ts">
+import type { ProjectMember } from "./project";
+
+export enum GlobalRole{
+    USER = 'USER',
+    ADMIN = 'ADMIN'
+}
+
+export interface User{
+    id: number;
+    username: string;
+    email: string;
+    avatar: string | null;
+    globalRole: GlobalRole;
+    createdAt: Date;
+    projectMemberships: ProjectMember[] | null;
+}
+
+export interface PromotedUser {
+  id: number;
+  username: string;
+  globalRole: GlobalRole;
+}
+</file>
+
 <file path="srcs/backend/src/auth/dto/sign-in.dto.ts">
 import { IsString, MinLength } from 'class-validator';
 
@@ -6546,90 +7428,41 @@ EXPOSE 3000
 CMD ["npm", "run", "dev"]
 </file>
 
-<file path="srcs/frontend/src/api/client.ts">
-import axios from 'axios';
+<file path="srcs/frontend/src/pages/ProfilePage.tsx">
+import { useParams } from "react-router-dom";
+import { useProfile } from "../hooks/useProfile";
+import Profile from "../components/profile";
+import { useFriend } from "../hooks/useFriend";
+import FriendList from "../components/friends";
+import { HStack, Box, Container, VStack  } from "@chakra-ui/react";
+import { useAuth } from "../context/AuthContext";
+import AddFriendButton from "../components/addFriendButton";
 
-const client = axios.create({
-    baseURL: '/api',
-    withCredentials: true,
-});
+export function ProfilePage() {
+  const { userId } = useParams();
+  const { user } = useProfile(Number(userId));
+  const { friends } = useFriend(Number(userId));
+  const { currentUser, isLoading: authLoading } = useAuth();
 
-client.interceptors.request.use((config) => {
-    const token = localStorage.getItem('access_token');
-    if (token) config.headers.Authorization = `Bearer ${token}`;
-    return config;
-});
+  const isOwnProfile = currentUser?.id === Number(userId);
 
-client.interceptors.response.use(
-  (res) => res,
-  async (err) => {
-    const isUnauthorized = err.response?.status === 401;
-    const isLoginRequest = err.config?.url?.includes('/auth/login');
-    const isRefreshRequest = err.config?.url?.includes('/auth/refresh');
+  if (!user || authLoading) return <p>Loading...</p>;
 
-    if (isUnauthorized && !isLoginRequest && !isRefreshRequest) {
-      try {
-        await axios.post('/api/auth/refresh', {}, { withCredentials: true });
-        return client.request(err.config);
-      } catch {
-        localStorage.removeItem('access_token');
-        window.location.href = '/login';
-      }
-    }
-
-    return Promise.reject(err);
-  }
-);
-
-export default client;
-</file>
-
-<file path="srcs/frontend/src/App.tsx">
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import LoginPage from './pages/LoginPage';
-import RegisterPage from './pages/RegisterPage';
-import { ProfilePage } from './pages/ProfilePage';
-import ProjectPage from './pages/ProjectPage';
-import Layout from './components/layout';
-
-export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        
-        {/* add pages here to add the sidebar and topbar */}
-        <Route element={<Layout />}>
-          <Route path="/profile/:userId" element={<ProfilePage />} />
-          <Route path="/project/:projectId" element={<ProjectPage />} />
-        </Route>
-
-        {/* normal pages like login and registern */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-
-        {/* standard route to register */} 
-        <Route path="*" element={<Navigate to="/login" />} />
-        
-      </Routes>
-    </BrowserRouter>
+    <Container maxW="1200px" mt={8}>
+      <HStack gap={4} align="start">
+        <Box flex={2}><Profile user={user} /></Box>
+        <VStack>
+          <Box flex={1}>
+            <FriendList friends={friends} /></Box>
+            {!isOwnProfile && (
+              <AddFriendButton targetUserId={Number(userId)} />
+            )}
+        </VStack>
+      </HStack>
+    </Container>
   );
 }
-</file>
-
-<file path="srcs/frontend/src/main.tsx">
-import './index.css'
-import App from './App.tsx'
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import { Provider } from './components/ui/provider' 
-
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <Provider>  
-      <App />
-    </Provider>
-  </React.StrictMode>
-)
 </file>
 
 <file path="srcs/backend/src/auth/auth.controller.ts">
@@ -6759,6 +7592,159 @@ export class DashboardController {
 }
 </file>
 
+<file path="srcs/frontend/src/api/services.ts">
+import client from './client';
+import type { AuthToken, DashboardMetrics, Comment, Message, FriendRequest, FriendUser, Notification, Project, ProjectMember, ProjectRole, Task, User, PromotedUser, TaskStatus, DashboardFilters, ProjectStatus } from '../../../../shared/srcs/types';
+
+export const authService = {
+  login: async (username: string, password: string) => {
+    const response = await client.post<AuthToken>('/auth/login', { username, password });
+    localStorage.setItem('access_token', response.data.access_token);
+    return response;
+  },
+  googleLogin: () => {
+    window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/google`;
+  },
+  refresh: async (refreshToken: string) => {
+    const response = await client.post<{ access_token: string }>('/auth/refresh', { refresh_token: refreshToken });
+    localStorage.setItem('access_token', response.data.access_token);
+    return response;
+  },
+  getProfile: () => client.get<User>('/auth/profile'),
+};
+
+export const commentService = {
+  create: (taskId: number, data: { content: string; parentId?: number; files?: File[] }) => {
+    const formData = new FormData();
+    formData.append('content', data.content);
+    if (data.parentId) formData.append('parentId', String(data.parentId));
+    if (data.files) data.files.forEach(file => formData.append('files', file));
+    return client.post<Comment>(`/tasks/${taskId}/comments`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+  getByTaskId: (taskId: number) =>
+    client.get<Comment[]>(`/tasks/${taskId}/comments`),
+};
+
+export const taskService = {
+  getAllAdmin: () => client.get<Task[]>('/tasks/all'),
+  getMyTasks: () => client.get<Task[]>('/tasks/my'),
+  getTaskById: (taskId: number) => client.get<Task>(`/tasks/${taskId}`),
+  create: (data: { title: string; description?: string; projectId: number; status?: TaskStatus; deadline?: Date; assigneeIds: number[] }) =>
+    client.post<Task>('/tasks', data),
+  update: (taskId: number, data: { title?: string; description?: string; status?: TaskStatus; deadline?: Date | string | null; assigneeIds?: number[] }) =>
+    client.patch<Task>(`/tasks/${taskId}`, data),
+  delete: (taskId: number) => client.delete<Task>(`/tasks/${taskId}`),
+};
+
+export const projectService = {
+  create: (data: { name: string; description?: string; deadline?: string }) =>
+    client.post<Project>('/projects', data),
+  getAll: () => client.get<Project[]>('/projects'),
+  getById: (projectId: number) => client.get<Project>(`/projects/${projectId}`),
+  update: (projectId: number, data: { name?: string; description?: string; deadline?: string; status?: ProjectStatus }) =>
+    client.patch<Project>(`/projects/${projectId}`, data),
+  delete: (projectId: number) => client.delete<{ message: string }>(`/projects/${projectId}`),
+  addMember: (projectId: number, userId: number, role: ProjectRole) =>
+    client.post<ProjectMember>(`/projects/${projectId}/members`, { userId, role }),
+  removeMember: (projectId: number, userId: number) =>
+    client.delete<{ message: string }>(`/projects/${projectId}/members/${userId}`),
+  createMessage: (projectId: number, content: string) =>
+    client.post<Message>(`/projects/${projectId}/messages`, { content }),
+  getMessages: (projectId: number) => client.get<Message[]>(`/projects/${projectId}/messages`),
+};
+
+export const friendService = {
+  getMyFriends: () => client.get<FriendUser[]>('/friends'),
+  getRequests: () => client.get<FriendRequest[]>('/friends/requests'),
+  sendRequest: (addressee: number) => client.post<FriendRequest>(`/friends/request/${addressee}`),
+  acceptRequest: (requesterId: number) => client.patch<FriendRequest>(`/friends/accept/${requesterId}`),
+  rejectRequest: (requesterId: number) => client.patch<FriendRequest>(`/friends/reject/${requesterId}`),
+  removeFriend: (friendshipId: number) => client.delete<void>(`/friends/remove/${friendshipId}`),
+};
+
+export const notificationService = {
+  getNotifications: (userId: number) => client.get<Notification[]>(`/notifications/user/${userId}`),
+  markAsRead: (userId: number) => client.patch<{ count: number}>(`/notifications/user/${userId}/read`),
+};
+
+export const dashboardMetrics = {
+  getGlobalMetrics: (filters: DashboardFilters) =>
+    client.get<DashboardMetrics>('/dashboard', {params: filters}),
+  getProjectMetrics: (projectId: number, filters: DashboardFilters) => 
+    client.get<DashboardMetrics>(`/dashboard/projects/${projectId}`, {params: filters}),
+  exportMetrics: (filters: DashboardFilters, format: 'csv' | 'pdf') =>
+    client.get('dashboard/export', {params: {...filters, format}, responseType: 'blob'}),
+};
+
+export const userService = {
+  create: (data: { username: string; email: string; password: string; avatar?: string }) =>
+    client.post<User>('/users', data),
+  getAllUsers: () => client.get<User[]>('/users'),
+  getUser: (userId: number) => client.get<User>(`/users/${userId}`),
+  getMe: () => client.get<User>('users/me'),
+  delete: (userId: number) => client.delete<void>(`/users/${userId}`),
+  updateUser: (data: { username?: string; email?: string; password?: string; avatar?: string }) =>
+    client.patch<User>('/users/me', data),
+  promoteUser: (username: string) => client.patch<PromotedUser>(`/users/promote/${username}`),
+  demoteUser: (username: string) => client.patch<PromotedUser>(`/users/demote/${username}`),
+};
+</file>
+
+<file path="srcs/frontend/src/App.tsx">
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
+import { ProfilePage } from './pages/ProfilePage';
+import ProjectPage from './pages/ProjectPage';
+import Layout from './components/layout';
+import MainPage from './pages/MainPage';
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        
+        {/* add pages here to add the sidebar and topbar */}
+        <Route element={<Layout />}>
+          <Route path="/" element={<MainPage />} />
+          <Route path="/profile/:userId" element={<ProfilePage />} />
+          <Route path="/project/:projectId" element={<ProjectPage />} />
+        </Route>
+
+        {/* normal pages like login and registern */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+
+        {/* standard route to register */} 
+        <Route path="*" element={<Navigate to="/login" />} />
+        
+      </Routes>
+    </BrowserRouter>
+  );
+}
+</file>
+
+<file path="srcs/frontend/src/main.tsx">
+import './index.css'
+import App from './App.tsx'
+import React from 'react'
+import ReactDOM from 'react-dom/client'
+import { Provider } from './components/ui/provider' 
+import { AuthProvider } from './context/AuthContext.tsx'
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <Provider>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </Provider>
+  </React.StrictMode>
+)
+</file>
+
 <file path="srcs/backend/src/auth/auth.module.ts">
 import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
@@ -6788,49 +7774,64 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 export class AuthModule {}
 </file>
 
-<file path="srcs/frontend/package.json">
-{
-  "name": "frontend",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "lint": "eslint .",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "@chakra-ui/react": "^3.35.0",
-    "@emotion/react": "^11.14.0",
-    "@emotion/styled": "^11.14.1",
-    "@transcendence/shared": "*",
-    "axios": "^1.15.2",
-    "framer-motion": "^12.38.0",
-    "next-themes": "^0.4.6",
-    "react": "^19.2.5",
-    "react-dom": "^19.2.5",
-    "react-hook-form": "^7.74.0",
-    "react-icons": "^5.6.0",
-    "react-router-dom": "^7.14.2",
-    "socket.io-client": "^4.8.3"
-  },
-  "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "@types/node": "^24.12.2",
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
-    "@types/react-router-dom": "^5.3.3",
-    "@vitejs/plugin-react": "^6.0.1",
-    "eslint": "^10.2.1",
-    "eslint-plugin-react-hooks": "^7.1.1",
-    "eslint-plugin-react-refresh": "^0.5.2",
-    "globals": "^17.5.0",
-    "typescript": "~6.0.2",
-    "typescript-eslint": "^8.58.2",
-    "vite": "^8.0.10"
-  }
+<file path="srcs/frontend/src/components/profile.tsx">
+import type { User } from '@transcendence/shared/srcs/types/user';
+import { Card, HStack, VStack, Avatar, Text, Heading, List } from '@chakra-ui/react';
+
+interface ProfileProps {
+  user: User;
 }
+
+function Profile({ user }: ProfileProps) {
+  return (
+    <VStack gap={4} align="stretch">
+    <Card.Root>
+      <Card.Body>
+
+        <HStack gap={4}>
+          {/* left: avatar */}
+          <Avatar.Root size="2xl">
+            <Avatar.Image src={user.avatar ?? undefined} />
+            <Avatar.Fallback>{user.username?.charAt(0).toUpperCase()}</Avatar.Fallback>
+          </Avatar.Root>
+
+          {/* right: info stacked */}
+          <VStack align="start" gap={5}>
+            <Heading size="md" color="fg.default">{user.username}</Heading>
+            <Text color="fg.muted">{user.email}</Text>
+            <Text color="fg.muted">
+              Member since {new Date(user.createdAt).toLocaleDateString('en-GB', {
+              year: 'numeric', month: 'long', day: 'numeric'
+            })}</Text>
+          </VStack>
+        </HStack>
+      </Card.Body>
+    </Card.Root>
+
+    {/*Projects*/}
+    <Card.Root>
+        <Card.Header>
+            <Heading size="md" color= "fg.default">Projects</Heading>
+        </Card.Header>
+        <Card.Body>
+        {user.projectMemberships && user.projectMemberships.length > 0 ? (
+          <List.Root mt={4}>
+            {user.projectMemberships.map((membership) => (
+              <List.Item key={membership.id}>
+                {membership.project?.name ?? 'Unknown project'}
+              </List.Item>
+            ))}
+          </List.Root>
+        ) : (
+          <Text mt={4}>No projects yet</Text>
+        )}
+        </Card.Body>
+    </Card.Root>
+    </VStack>
+  );
+}
+
+export default Profile;
 </file>
 
 <file path="srcs/backend/src/dashboard/dashboard.service.ts">
@@ -7058,6 +8059,91 @@ export class CreateTaskDto {
 }
 </file>
 
+<file path="srcs/frontend/src/api/client.ts">
+import axios from 'axios';
+
+const client = axios.create({
+    baseURL: '/api',
+    withCredentials: true,
+});
+
+client.interceptors.request.use((config) => {
+    const token = localStorage.getItem('access_token');
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+    return config;
+});
+
+client.interceptors.response.use(
+  (res) => res,
+  async (err) => {
+    const isUnauthorized = err.response?.status === 401;
+    const isLoginRequest = err.config?.url?.includes('/auth/login');
+    const isRefreshRequest = err.config?.url?.includes('/auth/refresh');
+    const originalRequest = err.config;
+
+    if (isUnauthorized && !isLoginRequest && !isRefreshRequest && !originalRequest._retry) {
+      originalRequest._retry = true; 
+      try {
+        await axios.post('/api/auth/refresh', {}, { withCredentials: true });
+        return client.request(err.config);
+      } catch {
+        localStorage.removeItem('access_token');
+        window.location.href = '/login';
+      }
+    }
+
+    return Promise.reject(err);
+  }
+);
+
+export default client;
+</file>
+
+<file path="srcs/frontend/package.json">
+{
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@chakra-ui/react": "^3.35.0",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@transcendence/shared": "*",
+    "axios": "^1.15.2",
+    "framer-motion": "^12.38.0",
+    "next-themes": "^0.4.6",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "react-hook-form": "^7.74.0",
+    "react-icons": "^5.6.0",
+    "react-router-dom": "^7.14.2",
+    "socket.io-client": "^4.8.3"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.12.2",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/react-router-dom": "^5.3.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "eslint": "^10.2.1",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.2",
+    "globals": "^17.5.0",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.58.2",
+    "vite": "^8.0.10"
+  }
+}
+</file>
+
 <file path="srcs/backend/src/tasks/tasks.service.ts">
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -7156,7 +8242,11 @@ export class TasksService {
   async update(id: number, updateTaskDto: UpdateTaskDto, userId?: number) {
     const { assigneeIds, ...taskData } = updateTaskDto;
 
-    const currentTask = await this.prisma.task.findUnique({ where: { id } });
+    const currentTask = await this.prisma.task.findUnique({ 
+      where: { id },
+      include: { assignees: { select: { id: true } } } 
+    });
+    
     if (!currentTask) throw new NotFoundException('Task not found');
 
     if (assigneeIds?.length) {
@@ -7172,6 +8262,12 @@ export class TasksService {
     }
 
     const statusChanged = taskData.status && taskData.status !== currentTask.status;
+    const oldAssigneeIds = currentTask.assignees.map(a => a.id);
+    const newlyAssignedIds = assigneeIds?.filter(id => !oldAssigneeIds.includes(id)) || [];
+
+    if (taskData.deadline !== undefined) {
+      (taskData as any).deadlineNotified = false;
+    }
 
     const updatedTask = await this.prisma.$transaction(async (tx) => {
       const task = await tx.task.update({
@@ -7214,6 +8310,16 @@ export class TasksService {
       }
     }
 
+    if (newlyAssignedIds.length > 0) {
+      for (const newUserId of newlyAssignedIds) {
+        await this.notificationsService.createNotification(
+          newUserId,
+          'TASK_ASSIGNED',
+          `You have been assigned to: ${updatedTask.title}`,
+        );
+      }
+    }
+
     this.notificationsGateway.server
       .to(`project_${updatedTask.projectId}`)
       .emit('task_updated', updatedTask);
@@ -7221,86 +8327,32 @@ export class TasksService {
     return updatedTask;
   }
 
-  async remove(id: number) {
+  async remove(id: number, currentUserId: number) {
     const task = await this.prisma.task.findUnique({
-      where: { id },
-      include: { assignees: true },
+        where: { id: id },
+        include: { assignees: true }
     });
 
-    if (task && task.assignees.length > 0) {
-      for (const assignee of task.assignees) {
-        await this.notificationsService.createNotification(
-          assignee.id,
-          'TASK_DELETED',
-          `Task has been deleted: ${task.title}`
-        );
-      }
+    if (!task) {
+        throw new NotFoundException('Task not found'); 
     }
 
-    return this.prisma.task.delete({
-      where: { id },
+    await this.prisma.task.delete({
+        where: { id: id },
     });
-  }
-}
-</file>
 
-<file path="srcs/backend/src/tasks/tasks.controller.ts">
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
-import { TasksService } from './tasks.service';
-import { CreateTaskDto } from './dto/create-task.dto';
-import { UpdateTaskDto } from './dto/update-task.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { ApiBearerAuth } from '@nestjs/swagger';
-import { Request } from '@nestjs/common';
-import { Roles } from 'src/auth/decorators/roles.decorator';
-import { RolesGuard } from 'src/auth/guards/roles.guard';
-import { ProjectLeaderGuard } from 'src/projects/project-leader.guard';
+    const targets = task.assignees
+        .map(assignee => assignee.id)
+        .filter(userId => userId !== currentUserId);
 
-@ApiBearerAuth()
-@UseGuards(JwtAuthGuard)
-@Controller('tasks')
-export class TasksController {
-  constructor(private readonly tasksService: TasksService) {}
-
-  @Post()
-  create(@Body() createTaskDto: CreateTaskDto) {
-    const deadlineDate = createTaskDto.deadline ? new Date(createTaskDto.deadline) : null;
-    return this.tasksService.create(createTaskDto, deadlineDate);
-  }
-@ApiBearerAuth()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles('ADMIN')
-  @Get('all')
-  findAllAdmins() {
-    return this.tasksService.findAll(); 
-  }
-
-@ApiBearerAuth()
-  @UseGuards(JwtAuthGuard) 
-  @Get('me')
-  findMyTasks(@Request() req) {
-    return this.tasksService.findMyTasks(req.user.sub);
-  }
-
-
-  @Get(':id')
-  @UseGuards(JwtAuthGuard)
-  findOne(@Param('id') id: string) {
-    return this.tasksService.findOne(+id);
-  }
-
-  @UseGuards(RolesGuard, ProjectLeaderGuard)
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.tasksService.remove(+id);
-  }
-
-  @Patch(':id')
-  update(
-    @Param('id') id: string, 
-    @Body() updateTaskDto: UpdateTaskDto,
-    @Request() req) {
-    return this.tasksService.update(+id, updateTaskDto, req.user.sub);
+    targets.forEach(async userId => {
+        this.notificationsGateway.server.to(`user_${userId}`).emit('new_notification', {
+            type: 'TASK_DELETED',
+            taskId: id,
+            message: `The task "${task.title}" has been deleted.`,
+        });
+    });
+    return { message: 'Task successfully deleted' };
   }
 }
 </file>
@@ -7331,44 +8383,6 @@ export class UpdateUserDto{
     username?: string;
     avatar?: string;
 }
-</file>
-
-<file path="srcs/backend/src/main.ts">
-import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { join } from 'path';
-import * as express from 'express';
-
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-
-  app.setGlobalPrefix('api');
-
-  app.enableCors({
-    origin: ['http://localhost:5173', 'https://34.79.48.4.nip.io'],
-    credentials: true
-  });
-
-  app.useGlobalPipes(new ValidationPipe());
-
-  app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
-
-  const config = new DocumentBuilder()
-    .setTitle('Transcendence API')
-    .setDescription('De API documentatie voor ons Transcendence project')
-    .setVersion('1.0')
-    .addServer('/api') 
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-
-  SwaggerModule.setup('docs', app, document); 
-
-  await app.listen(process.env.PORT ?? 3000);
-}
-bootstrap();
 </file>
 
 <file path="srcs/backend/src/auth/auth.service.ts">
@@ -7473,75 +8487,63 @@ async validateOAuthUser(data: {email: string, googleId: string, username:string}
 }
 </file>
 
-<file path="srcs/backend/src/projects/projects.controller.ts">
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
-import { ProjectsService } from './projects.service';
-import { CreateProjectDto } from './dto/create-project.dto';
-import { UpdateProjectDto } from './dto/update-project.dto';
+<file path="srcs/backend/src/tasks/tasks.controller.ts">
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { TasksService } from './tasks.service';
+import { CreateTaskDto } from './dto/create-task.dto';
+import { UpdateTaskDto } from './dto/update-task.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { ProjectLeaderGuard } from './project-leader.guard';
 import { ApiBearerAuth } from '@nestjs/swagger';
-import { AddMemberDto } from './dto/add-member.dto';
-import { CreateMessageDto } from './dto/create-message.dto';
+import { Request } from '@nestjs/common';
+import { Roles } from 'src/auth/decorators/roles.decorator';
+import { RolesGuard } from 'src/auth/guards/roles.guard';
+import { ProjectLeaderGuard } from 'src/projects/project-leader.guard';
 
 @ApiBearerAuth()
-@UseGuards(JwtAuthGuard) // you need to be logged in before you can do ANYTHING with projects
-@Controller('projects')
-export class ProjectsController {
-  constructor(private readonly projectsService: ProjectsService) {}
+@UseGuards(JwtAuthGuard)
+@Controller('tasks')
+export class TasksController {
+  constructor(private readonly tasksService: TasksService) {}
 
   @Post()
-  create(@Body() createProjectDto: CreateProjectDto, @Request() req) {
-    const userId = req.user.sub; 
-    const deadlineDate = createProjectDto.deadline ? new Date(createProjectDto.deadline) : null;
-    return this.projectsService.create(createProjectDto, userId);
+  create(@Body() createTaskDto: CreateTaskDto) {
+    const deadlineDate = createTaskDto.deadline ? new Date(createTaskDto.deadline) : null;
+    return this.tasksService.create(createTaskDto, deadlineDate);
+  }
+@ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN')
+  @Get('all')
+  findAllAdmins() {
+    return this.tasksService.findAll(); 
   }
 
-  @Get()
-  findAll() {
-    return this.projectsService.findAll();
+@ApiBearerAuth()
+  @UseGuards(JwtAuthGuard) 
+  @Get('me')
+  findMyTasks(@Request() req) {
+    return this.tasksService.findMyTasks(req.user.sub);
   }
+
 
   @Get(':id')
+  @UseGuards(JwtAuthGuard)
   findOne(@Param('id') id: string) {
-    return this.projectsService.findOne(+id);
+    return this.tasksService.findOne(+id);
   }
 
-  @UseGuards(ProjectLeaderGuard) 
+ @UseGuards(RolesGuard, ProjectLeaderGuard)
+@Delete(':id')
+  remove(@Param('id') id: string, @Request() req) {
+    return this.tasksService.remove(+id, req.user.sub);
+  }
+
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateProjectDto: UpdateProjectDto) {
-    return this.projectsService.update(+id, updateProjectDto);
-  }
-
-  @UseGuards(ProjectLeaderGuard) 
-  @Delete(':id')
-  remove(@Param('id') id: string,
-         @Request() req) {
-    const currentUserId = req.user.sub;
-    return this.projectsService.remove(+id, currentUserId);
-  }
-
-  @UseGuards(ProjectLeaderGuard) 
-  @Post(':id/members')
-  addMember(
+  update(
     @Param('id') id: string, 
-    @Body() addMemberDto: AddMemberDto
-  ) {
-    return this.projectsService.addMember(+id, addMemberDto.userId, addMemberDto.role);
-  }
-
-  @Post(':id/messages')
-  createMessage(
-    @Param('id') projectid: string,
-    @Body() createMessageDto: CreateMessageDto,
-    @Request () req) {
-    const currentUserId = req.user.sub;
-    return this.projectsService.createmessage(+projectid, currentUserId, createMessageDto);
-  }
-
-  @Get(':id/messages')
-  getMessages(@Param('id') projectId: string) {
-    return this.projectsService.getProjectMessages(+projectId);
+    @Body() updateTaskDto: UpdateTaskDto,
+    @Request() req) {
+    return this.tasksService.update(+id, updateTaskDto, req.user.sub);
   }
 }
 </file>
@@ -7580,6 +8582,127 @@ import { ExportModule } from './export/export.module';
 export class AppModule {}
 </file>
 
+<file path="srcs/backend/src/projects/projects.controller.ts">
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Request } from '@nestjs/common';
+import { ProjectsService } from './projects.service';
+import { CreateProjectDto } from './dto/create-project.dto';
+import { UpdateProjectDto } from './dto/update-project.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ProjectLeaderGuard } from './project-leader.guard';
+import { ApiBearerAuth } from '@nestjs/swagger';
+import { AddMemberDto } from './dto/add-member.dto';
+import { CreateMessageDto } from './dto/create-message.dto';
+
+@ApiBearerAuth()
+@UseGuards(JwtAuthGuard) // you need to be logged in before you can do ANYTHING with projects
+@Controller('projects')
+export class ProjectsController {
+  constructor(private readonly projectsService: ProjectsService) {}
+
+  @Post()
+  create(@Body() createProjectDto: CreateProjectDto, @Request() req) {
+    const userId = req.user.sub; 
+    const deadlineDate = createProjectDto.deadline ? new Date(createProjectDto.deadline) : null;
+    return this.projectsService.create(createProjectDto, userId);
+  }
+
+  @Get()
+  findAll() {
+    return this.projectsService.findAll();
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string, @Request() req) {
+    return this.projectsService.findOne(+id, req.user.sub, req.user.role);
+  }
+
+  @UseGuards(ProjectLeaderGuard) 
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() updateProjectDto: UpdateProjectDto) {
+    return this.projectsService.update(+id, updateProjectDto);
+  }
+
+  @UseGuards(ProjectLeaderGuard) 
+  @Delete(':id')
+  remove(@Param('id') id: string,
+         @Request() req) {
+    const currentUserId = req.user.sub;
+    return this.projectsService.remove(+id, currentUserId);
+  }
+
+  @UseGuards(ProjectLeaderGuard) 
+  @Post(':id/members')
+  addMember(
+    @Param('id') id: string, 
+    @Body() addMemberDto: AddMemberDto
+  ) {
+    return this.projectsService.addMember(+id, addMemberDto.userId, addMemberDto.role);
+  }
+
+  @UseGuards(ProjectLeaderGuard)
+  @Delete(':id/members/:userId')
+  removeMember(
+    @Param('id') projectId: string,
+    @Param('userId') userId: string,
+    @Request() req
+  ) {
+    const currentUserId = req.user.sub;
+    return this.projectsService.removeMember(+projectId, +userId, currentUserId);
+  }
+
+  @Post(':id/messages')
+  createMessage(
+    @Param('id') projectid: string,
+    @Body() createMessageDto: CreateMessageDto,
+    @Request () req) {
+    const currentUserId = req.user.sub;
+    return this.projectsService.createmessage(+projectid, currentUserId, createMessageDto);
+  }
+
+  @Get(':id/messages')
+  getMessages(@Param('id') projectId: string) {
+    return this.projectsService.getProjectMessages(+projectId);
+  }
+}
+</file>
+
+<file path="srcs/backend/src/main.ts">
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+import { ValidationPipe } from '@nestjs/common';
+import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { join } from 'path';
+import * as express from 'express';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+
+  app.setGlobalPrefix('api');
+
+  app.enableCors({
+    origin: true,
+    credentials: true
+  });
+
+  app.useGlobalPipes(new ValidationPipe());
+
+  app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
+
+  const config = new DocumentBuilder()
+    .setTitle('Transcendence API')
+    .setDescription('De API documentatie voor ons Transcendence project')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, config);
+
+  SwaggerModule.setup('docs', app, document); 
+
+  await app.listen(process.env.PORT ?? 3000);
+}
+bootstrap();
+</file>
+
 <file path="package.json">
 {
   "name": "transcendence-monorepo",
@@ -7597,13 +8720,14 @@ export class AppModule {}
 </file>
 
 <file path="srcs/backend/src/projects/projects.service.ts">
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, ConflictException, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { UpdateProjectDto } from './dto/update-project.dto';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { NotificationsGateway } from 'src/notifications/notifications.gateway';
 import { CreateMessageDto } from './dto/create-message.dto';
+import { Roles } from 'src/auth/decorators/roles.decorator';
 
 @Injectable()
 export class ProjectsService {
@@ -7713,12 +8837,53 @@ export class ProjectsService {
     return newMember;
   }
 
+  async removeMember(projectId: number, userId: number, currentUserId: number)
+  {
+    const membership = await this.prisma.projectMember.findUnique({
+      where: {
+        userId_projectId: {
+          userId: userId,
+          projectId: projectId,
+        },
+      },
+      include: {
+        project: {select: {name: true}},
+        user: {select: {username: true}},
+      }
+    });
+      if (!membership) {
+        throw new NotFoundException('Member not found in this project.');
+    }
+    if (membership.role === 'PROJECT_LEADER')
+    {
+      const leaderCount = await this.prisma.projectMember.count({
+        where: {projectId: projectId, role: 'PROJECT_LEADER'}
+      });
+        if (leaderCount <= 1) {
+          throw new BadRequestException('Cannot remove the last project leader.');
+      }
+    }
+    await this.prisma.projectMember.delete({
+      where: {
+        id: membership.id,
+      },
+    });
+    if (userId !== currentUserId) {
+        await this.notificationsService.createNotification(
+          userId,
+          'PROJECT_REMOVED',
+          `You have been removed from the project: ${membership.project.name}`
+        );
+    }
+    return { message: 'Member successfully removed' };
+  }
+
   async findAll() {
     return this.prisma.project.findMany();
   }
 
-async findOne(id: number) {
-    return this.prisma.project.findUnique({
+async findOne(id: number, userId: number, role: string) {
+    const project = await this.prisma.project.findUnique({
       where: { id },
       include: { 
         members: {
@@ -7737,6 +8902,15 @@ async findOne(id: number) {
         } 
       } 
     });
+    if (!project)
+      throw new NotFoundException('Project not found!')
+    if (role !== 'ADMIN') {
+      const isMember = project.members.some(m => m.userId === userId);
+      if (!isMember) {
+        throw new ForbiddenException('You are not a member of this project');
+      }
+    }
+    return project;
   }
 
   async update(id: number, updateProjectDto: UpdateProjectDto) {
@@ -7807,11 +8981,19 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
+  @Get('me')
+   @UseGuards(JwtAuthGuard)
+   getMe(@Request() req) {
+    return this.usersService.findOne(req.user.sub);
+  }
+
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   findOne(@Param('id') id: string) {
     return this.usersService.findOne(+id);
   }
+
+
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Patch('me')

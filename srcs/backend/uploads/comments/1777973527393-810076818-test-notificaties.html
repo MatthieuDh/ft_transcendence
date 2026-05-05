@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f9; }
+        #log { background: #fff; padding: 15px; border: 1px solid #ccc; height: 300px; overflow-y: scroll; margin-top: 20px; }
+        .notification { padding: 10px; border-bottom: 1px solid #eee; color: #d32f2f; font-weight: bold; }
+        .system { color: #888; font-size: 0.9em; }
+    </style>
+</head>
+<body>
+
+    <h2>Transcendence Live Notificaties 🚀</h2>
+    <p>We doen nu alsof we <b>User ID: 1</b> zijn.</p>
+    
+    <div id="log">
+        <div class="system">Wachten op verbinding...</div>
+    </div>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        const logDiv = document.getElementById('log');
+        
+        function addLog(message, type = 'system') {
+            const div = document.createElement('div');
+            div.className = type;
+            div.innerText = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.prepend(div);
+        }
+
+        // 1. Maak verbinding met jouw backend
+        const socket = io('http://localhost:3000');
+
+        // 2. Zodra we verbonden zijn...
+        socket.on('connect', () => {
+            addLog('✅ Verbonden met de server!', 'system');
+            
+            // Vertel de server dat wij User ID 1 zijn
+            socket.emit('identify', 1);
+            addLog('Gestuurd: Ik ben User 1', 'system');
+        });
+
+        // 3. Wacht op het 'new_notification' signaal
+        socket.on('new_notification', (data) => {
+            console.log('Nieuwe notificatie ontvangen:', data);
+            addLog(`🔔 MELDING: ${data.message}`, 'notification');
+            
+            // Leuke extra: we geven ook een pop-up!
+            alert(`Nieuwe notificatie!\n\n${data.message}`);
+        });
+
+        socket.on('disconnect', () => {
+            addLog('❌ Verbinding verbroken...', 'system');
+        });
+    </script>
+</body>
+</html>
