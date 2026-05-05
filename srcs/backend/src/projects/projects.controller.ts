@@ -22,8 +22,8 @@ export class ProjectsController {
   }
 
   @Get()
-  findAll() {
-    return this.projectsService.findAll();
+  findAll(@Request() req) {
+    return this.projectsService.findAll(req.user.sub);
   }
 
   @Get(':id')

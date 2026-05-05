@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, UseGuards, Request } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, UseGuards, Request, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { AuthService } from './auth.service';
 import { SignInDto } from './dto/sign-in.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -34,7 +35,9 @@ export class AuthController {
 
   @Get('google/callback')
   @UseGuards(GoogleAuthGuard)
-  async googleAuthCallback(@Request() req){
-    return this.authService.signInOAuth(req.user);
+  async googleAuthCallback(@Request() req, @Res() res: Response){
+    const { access_token } = await this.authService.signInOAuth(req.user);
+    const frontendUrl = process.env.FRONTEND_URL ?? 'http://localhost:5174';
+    res.redirect(`${frontendUrl}/auth/callback?token=${access_token}`);
   }
 }

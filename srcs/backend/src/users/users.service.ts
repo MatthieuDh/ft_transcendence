@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, ConflictException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService} from '../prisma/prisma.service'
@@ -43,15 +43,23 @@ export class UsersService {
     if (!createUserDto.password) throw new Error('Password is required');
     const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
     const userCount = await this.prisma.user.count();
-      const globalRole = userCount === 0 ? 'ADMIN' : 'USER'; 
-    return this.prisma.user.create({
-      data: {
-        ...createUserDto,
-        password: hashedPassword,
-        globalRole: globalRole,
-      },
-      select: userSelect,
-    });
+    const globalRole = userCount === 0 ? 'ADMIN' : 'USER';
+    try {
+      return await this.prisma.user.create({
+        data: {
+          ...createUserDto,
+          password: hashedPassword,
+          globalRole: globalRole,
+        },
+        select: userSelect,
+      });
+    } catch (e: any) {
+      if (e?.code === 'P2002') {
+        const field = e.meta?.target?.includes('email') ? 'e-mailadres' : 'gebruikersnaam';
+        throw new ConflictException(`Dit ${field} is al in gebruik`);
+      }
+      throw e;
+    }
   }
 
   async createOAuthUser(data: { email: string; googleId: string; username: string }) {
