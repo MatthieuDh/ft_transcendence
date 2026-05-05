@@ -13,53 +13,90 @@ export default function RegisterPage() {
   const { register, handleSubmit, formState: { errors } } = useForm<FormValues>()
 
   return (
-    <Flex minH="100vh" align="center" justify="center" bg="gray.50" _dark={{ bg: "gray.900" }} p={4} position="relative">
-      <Box position="absolute" top={6} left={6}><SigmaLogo height="40px" /></Box>
+    <Flex minH="100vh" bg="gray.50" _dark={{ bg: "gray.950" }}>
+      <Box
+        display={{ base: 'none', lg: 'flex' }}
+        w="45%"
+        bgGradient="to-br"
+        gradientFrom="purple.600"
+        gradientTo="blue.700"
+        position="relative"
+        overflow="hidden"
+        flexDirection="column"
+        justifyContent="space-between"
+        p={12}
+      >
+        <Box position="absolute" top="-60px" right="-60px" w="300px" h="300px" borderRadius="full" bg="whiteAlpha.100" />
+        <Box position="absolute" bottom="-80px" left="-80px" w="400px" h="400px" borderRadius="full" bg="whiteAlpha.100" />
 
-      <Box w="full" maxW="md" bg="white" _dark={{ bg: "gray.800", borderWidth: "1px", borderColor: "gray.700" }} p={8} borderRadius="xl" boxShadow="lg">
-        <Stack gap={6}>
-          <Box textAlign="center">
-            <Heading fontSize="3xl" mb={2}>Account aanmaken</Heading>
-            <Text color="gray.500" fontSize="md">Stel je werkruimte in bij Sigma.</Text>
+        <Box position="relative">
+          <SigmaLogo height="36px" />
+        </Box>
+
+        <Box position="relative">
+          <Heading color="white" size="2xl" mb={4} lineHeight="1.2">
+            Begin vandaag nog met Sigma
+          </Heading>
+          <Text color="whiteAlpha.800" fontSize="lg">
+            Maak een account aan en ga meteen aan de slag met je eerste project.
+          </Text>
+        </Box>
+      </Box>
+
+      <Flex flex={1} align="center" justify="center" p={8}>
+        <Box w="full" maxW="400px">
+          <Box display={{ base: 'block', lg: 'none' }} mb={8}>
+            <SigmaLogo height="32px" />
           </Box>
 
-          <form onSubmit={handleSubmit((d) => doRegister(d.username, d.email, d.password))} style={{ width: '100%' }}>
-            <Stack gap={4}>
-              {error && <Text color="red.500" fontWeight="bold" textAlign="center" fontSize="sm">{error}</Text>}
+          <Box mb={8}>
+            <Heading fontSize="2xl" mb={2}>Account aanmaken</Heading>
+            <Text color="gray.500" fontSize="sm">Maak je Sigma account aan en begin meteen</Text>
+          </Box>
 
-              <Field label="Gebruikersnaam" invalid={!!errors.username} errorText={errors.username?.message}>
-                <Input {...register('username', { required: 'Verplicht' })} size="lg" />
-              </Field>
+          <Box bg="white" _dark={{ bg: "gray.800", borderWidth: "1px", borderColor: "gray.700" }} p={8} borderRadius="2xl" boxShadow="sm">
+            <form onSubmit={handleSubmit((d) => doRegister(d.username, d.email, d.password))} style={{ width: '100%' }}>
+              <Stack gap={4}>
+                {error && (
+                  <Box bg="red.50" _dark={{ bg: "red.900" }} border="1px solid" borderColor="red.200" borderRadius="lg" p={3}>
+                    <Text color="red.600" _dark={{ color: "red.300" }} fontSize="sm" textAlign="center">{error}</Text>
+                  </Box>
+                )}
 
-              <Field label="E-mailadres" invalid={!!errors.email} errorText={errors.email?.message}>
-                <Input {...register('email', { required: 'Verplicht' })} type="email" size="lg" />
-              </Field>
+                <Field label="Gebruikersnaam" invalid={!!errors.username} errorText={errors.username?.message}>
+                  <Input {...register('username', { required: 'Verplicht' })} placeholder="jouwgebruikersnaam" />
+                </Field>
 
-              <Field label="Wachtwoord" invalid={!!errors.password} errorText={errors.password?.message}>
-                <PasswordInput {...register('password', { required: 'Verplicht', minLength: { value: 8, message: 'Minimaal 8 tekens' } })} size="lg" />
-              </Field>
+                <Field label="E-mailadres" invalid={!!errors.email} errorText={errors.email?.message}>
+                  <Input {...register('email', { required: 'Verplicht' })} type="email" placeholder="jij@voorbeeld.be" />
+                </Field>
 
-              <Button type="submit" loading={isLoading} colorPalette="purple" size="lg" width="full">
-                Registreren
-              </Button>
+                <Field label="Wachtwoord" invalid={!!errors.password} errorText={errors.password?.message}>
+                  <PasswordInput {...register('password', { required: 'Verplicht', minLength: { value: 8, message: 'Minimaal 8 tekens' } })} placeholder="Minimaal 8 tekens" />
+                </Field>
 
-              <Box position="relative" textAlign="center" py={2}>
-                <Box position="absolute" top="50%" left={0} right={0} h="1px" bg="gray.200" _dark={{ bg: "gray.700" }} />
-                <Text position="relative" display="inline-block" px={3} bg="white" _dark={{ bg: "gray.800" }} color="gray.500" fontSize="sm">of</Text>
-              </Box>
+                <Button type="submit" loading={isLoading} colorPalette="purple" size="lg" width="full" mt={2}>
+                  Account aanmaken
+                </Button>
 
-              <Button type="button" variant="outline" size="lg" width="full" onClick={() => { window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/google` }}>
-                <GoogleIcon /> Registreren met Google
-              </Button>
-            </Stack>
-          </form>
+                <Box position="relative" textAlign="center" py={1}>
+                  <Box position="absolute" top="50%" left={0} right={0} h="1px" bg="gray.200" _dark={{ bg: "gray.700" }} />
+                  <Text position="relative" display="inline-block" px={3} bg="white" _dark={{ bg: "gray.800" }} color="gray.400" fontSize="xs">OF</Text>
+                </Box>
 
-          <Text textAlign="center" fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
+                <Button type="button" variant="outline" size="md" width="full" onClick={() => { window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/google` }}>
+                  <GoogleIcon /> Doorgaan met Google
+                </Button>
+              </Stack>
+            </form>
+          </Box>
+
+          <Text textAlign="center" fontSize="sm" color="gray.500" mt={6}>
             Al een account?{' '}
-            <RouterLink to="/login" style={{ color: '#9f7aea', fontWeight: 'bold', textDecoration: 'none' }}>Log in hier</RouterLink>
+            <RouterLink to="/login" style={{ color: '#9f7aea', fontWeight: '600', textDecoration: 'none' }}>Inloggen</RouterLink>
           </Text>
-        </Stack>
-      </Box>
+        </Box>
+      </Flex>
     </Flex>
   )
 }

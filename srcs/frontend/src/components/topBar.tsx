@@ -1,8 +1,8 @@
-import { Flex, HStack, Heading, Box, Text, VStack } from "@chakra-ui/react"
+import { Flex, HStack, Heading, Box, Text, VStack, Separator } from "@chakra-ui/react"
 import { ColorModeButton } from "./ui/color-mode"
 import { useLocation, useNavigate } from "react-router-dom"
 import { useNotifications } from "../hooks/useNotification"
-import { LuBell } from "react-icons/lu"
+import { LuBell, LuUser, LuLogOut, LuSettings } from "react-icons/lu"
 import { useState, useRef, useEffect } from "react"
 
 export default function TopBar() {
@@ -10,7 +10,9 @@ export default function TopBar() {
   const navigate = useNavigate()
   const { notifications, unreadCount, markAllAsRead, currentUser } = useNotifications()
   const [isOpen, setIsOpen] = useState(false)
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+  const userMenuRef = useRef<HTMLDivElement>(null)
 
   const getPageTitle = (path: string) => {
     if (path === '/' || path === '') return 'Dashboard';
@@ -23,6 +25,9 @@ export default function TopBar() {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsOpen(false);
+      }
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+        setUserMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -92,18 +97,56 @@ export default function TopBar() {
 
         <ColorModeButton />
 
-        <Box
-          w="40px" h="40px"
-          bg="purple.500" color="white"
-          borderRadius="full"
-          display="flex" alignItems="center" justifyContent="center"
-          fontWeight="bold"
-          cursor="pointer"
-          _hover={{ bg: "purple.600" }}
-          onClick={logout}
-          title={`${currentUser?.username ?? ''} (click to logout)`}
-        >
-          {currentUser?.username?.charAt(0).toUpperCase() || '?'}
+        <Box position="relative" ref={userMenuRef}>
+          <Box
+            w="38px" h="38px"
+            bg="purple.500" color="white"
+            borderRadius="full"
+            display="flex" alignItems="center" justifyContent="center"
+            fontWeight="bold"
+            fontSize="sm"
+            cursor="pointer"
+            _hover={{ bg: "purple.600", transform: "scale(1.05)" }}
+            transition="all 0.15s"
+            onClick={() => setUserMenuOpen(v => !v)}
+            userSelect="none"
+          >
+            {currentUser?.username?.charAt(0).toUpperCase() || '?'}
+          </Box>
+
+          {userMenuOpen && (
+            <Box
+              position="absolute" top="48px" right="0"
+              w="200px" bg="white" _dark={{ bg: "gray.800", borderColor: "gray.700" }}
+              boxShadow="lg" borderRadius="lg" border="1px solid" borderColor="gray.200"
+              zIndex={1000} overflow="hidden" py={1}
+            >
+              <Box px={4} py={3} borderBottom="1px solid" borderColor="gray.100" _dark={{ borderColor: "gray.700" }}>
+                <Text fontWeight="semibold" fontSize="sm">{currentUser?.username}</Text>
+                <Text fontSize="xs" color="gray.500" truncate>{currentUser?.email}</Text>
+              </Box>
+
+              <Box
+                px={4} py={2.5} cursor="pointer" display="flex" alignItems="center" gap={3}
+                _hover={{ bg: "gray.50", _dark: { bg: "gray.700" } }}
+                fontSize="sm"
+                onClick={() => { setUserMenuOpen(false); navigate(`/profile/${currentUser?.id}`) }}
+              >
+                <LuUser size={16} /> Mijn profiel
+              </Box>
+
+              <Separator />
+
+              <Box
+                px={4} py={2.5} cursor="pointer" display="flex" alignItems="center" gap={3}
+                _hover={{ bg: "red.50", color: "red.600", _dark: { bg: "gray.700", color: "red.400" } }}
+                fontSize="sm" color="gray.700" _dark={{ color: "gray.300" }}
+                onClick={() => { setUserMenuOpen(false); logout() }}
+              >
+                <LuLogOut size={16} /> Uitloggen
+              </Box>
+            </Box>
+          )}
         </Box>
       </HStack>
     </Flex>
