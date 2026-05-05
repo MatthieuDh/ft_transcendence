@@ -20,16 +20,21 @@ client.interceptors.response.use(
     const originalRequest = err.config;
 
     if (isUnauthorized && !isLoginRequest && !isRefreshRequest && !originalRequest._retry) {
-      originalRequest._retry = true; 
+      originalRequest._retry = true;
       try {
-        await axios.post('/api/auth/refresh', {}, { withCredentials: true });
-        return client.request(err.config);
+        const { data } = await axios.post('/api/auth/refresh', {
+          refresh_token: localStorage.getItem('refresh_token'),
+        }, { withCredentials: true });
+
+        localStorage.setItem('access_token', data.access_token);
+        originalRequest.headers['Authorization'] = `Bearer ${data.access_token}`;
+        return client.request(originalRequest);
       } catch {
         localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
         window.location.href = '/login';
       }
     }
-
     return Promise.reject(err);
   }
 );

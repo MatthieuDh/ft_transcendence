@@ -5,17 +5,33 @@ export const authService = {
   login: async (username: string, password: string) => {
     const response = await client.post<AuthToken>('/auth/login', { username, password });
     localStorage.setItem('access_token', response.data.access_token);
+    if (response.data.refresh_token)
+      localStorage.setItem('refresh_token', response.data.refresh_token);
     return response;
   },
   googleLogin: () => {
     window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/google`;
   },
-  refresh: async (refreshToken: string) => {
+  refresh: async () => {
+    const refreshToken = localStorage.getItem('refresh_token');
+    if (!refreshToken) throw new Error('No refresh token');
     const response = await client.post<{ access_token: string }>('/auth/refresh', { refresh_token: refreshToken });
     localStorage.setItem('access_token', response.data.access_token);
     return response;
   },
   getProfile: () => client.get<User>('/auth/profile'),
+  initialize: async () =>{
+    const refreshToken = localStorage.getItem('refresh_token');
+    if (!refreshToken) return;
+    try{
+      const { data } = await client.post('/auth/refresh', {refresh_token: refreshToken},
+        {withCredentials: true});
+        localStorage.setItem('access_token', data.access_token);
+    } catch{
+      localStorage.removeItem('access_token');
+      localStorage.removeItem('refresh_token');
+    }
+  },
 };
 
 export const commentService = {
@@ -62,6 +78,7 @@ export const projectService = {
 
 export const friendService = {
   getMyFriends: () => client.get<FriendUser[]>('/friends'),
+  getFriendsByUserId: (userId: number) => client.get<FriendUser[]>(`/friends/user/${userId}`),
   getRequests: () => client.get<FriendRequest[]>('/friends/requests'),
   sendRequest: (addressee: number) => client.post<FriendRequest>(`/friends/request/${addressee}`),
   acceptRequest: (requesterId: number) => client.patch<FriendRequest>(`/friends/accept/${requesterId}`),
