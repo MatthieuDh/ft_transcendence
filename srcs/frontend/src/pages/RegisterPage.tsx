@@ -15,6 +15,7 @@ export default function RegisterPage() {
       bg="gray.50" 
       _dark={{ bg: "gray.900" }} 
       p={4} 
+      pb="110px"
       position="relative"
     >
       

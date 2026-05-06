@@ -16,6 +16,7 @@ export default function Layout() {
           as="main" 
           flex={1} 
           p={8} 
+          pb="88px"
           overflowY="auto"
           bg="gray.50"
           _dark={{ bg: "gray.950" }}
