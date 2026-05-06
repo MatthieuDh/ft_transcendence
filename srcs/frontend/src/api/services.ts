@@ -47,6 +47,7 @@ export const projectService = {
   create: (data: { name: string; description?: string; deadline?: string }) =>
     client.post<Project>('/projects', data),
   getAll: () => client.get<Project[]>('/projects'),
+  getMyProjects: () => client.get<Project[]>('/projects/my'),
   getById: (projectId: number) => client.get<Project>(`/projects/${projectId}`),
   update: (projectId: number, data: { name?: string; description?: string; deadline?: string; status?: ProjectStatus }) =>
     client.patch<Project>(`/projects/${projectId}`, data),

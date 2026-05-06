@@ -198,6 +198,27 @@ async findOne(id: number, userId: number, role: string) {
     });
   }
 
+  async findMyProjects(userId: number) {
+    return this.prisma.project.findMany({
+      where: {
+        members: {
+          some: {
+            userId: userId,
+          },
+        },
+      },
+      include: {
+        members: {
+          where: { userId: userId },
+          select: { role: true }
+        }
+      },
+      orderBy: {
+        deadline: 'asc',
+      },
+    });
+  }
+
   async remove(id: number, currentUserId: number) {
     const project = await this.prisma.project.findUnique({
         where: { id: id },

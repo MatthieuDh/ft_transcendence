@@ -51,12 +51,12 @@ export class CommentsController {
         return comments.map(comment => ({ 
             ...comment, 
             attachments: comment.attachments.map(fileName => 
-                `http://localhost:3000/uploads/comments/${fileName}`
+                `/api/uploads/comments/${fileName}`
             ),
             replies: comment.replies ? comment.replies.map(reply => ({
                 ...reply,
                 attachments: reply.attachments.map(fileName => 
-                    `http://localhost:3000/uploads/comments/${fileName}`
+                    `/api/uploads/comments/${fileName}`
                 )
             })) : []
         }));
