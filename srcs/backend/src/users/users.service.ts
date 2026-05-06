@@ -19,6 +19,8 @@ const userSelect = {
       project: {
         select: {
           name: true,
+          description: true,
+          deadline: true,
         },
       },
     },

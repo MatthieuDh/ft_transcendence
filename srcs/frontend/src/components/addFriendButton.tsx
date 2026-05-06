@@ -1,12 +1,12 @@
 import { Button } from "@chakra-ui/react";
 import { useAddFriend } from "../hooks/useFriend";
 
-function AddFriendButton({ targetUserId }: { targetUserId: number }) {
+function AddFriendButton({ targetUserId, onSuccess }: { targetUserId: number, onSuccess:() => void }) {
   const { sendRequest, isLoading } = useAddFriend();
 
   return (
     <Button 
-      onClick={() => sendRequest(targetUserId)}
+      onClick={async() => {await sendRequest(targetUserId); onSuccess();}}
       loading={isLoading}
     >
       Add Friend

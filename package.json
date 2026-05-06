@@ -8,6 +8,10 @@
     "shared"
   ],
   "dependencies": {
-    "react-icons": "^5.0.0"
+    "react-icons": "^5.0.0",
+    "socket.io-client": "^4.8.3"
+  },
+  "devDependencies": {
+    "@types/node": "^25.6.0"
   }
 }

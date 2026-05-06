@@ -1,11 +1,12 @@
 import type { User } from '@transcendence/shared/srcs/types/user';
-import { Card, HStack, VStack, Avatar, Text, Heading, List } from '@chakra-ui/react';
+import { Card, HStack, VStack, Avatar, Text, Heading, List, Tooltip } from '@chakra-ui/react';
 
 interface ProfileProps {
   user: User;
 }
 
 function Profile({ user }: ProfileProps) {
+  console.log(user.projectMemberships?.[0]?.project);
   return (
     <VStack gap={4} align="stretch">
     <Card.Root>
@@ -41,7 +42,22 @@ function Profile({ user }: ProfileProps) {
           <List.Root mt={4}>
             {user.projectMemberships.map((membership) => (
               <List.Item key={membership.id}>
-                {membership.project?.name ?? 'Unknown project'}
+                <Tooltip.Root>
+                  <Tooltip.Trigger asChild>
+                    <Text cursor="default">{membership.project?.name ?? 'Unknown project'}</Text>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content>
+                    <VStack align="start" gap={1}>
+                      <Text fontWeight="bold">{membership.project?.name}</Text>
+                      <Text>{membership.project?.description ?? 'No description'}</Text>
+                      <Text>
+                        {membership.project?.deadline
+                        ? `Deadline: ${new Date(membership.project.deadline).toLocaleDateString('en-GB')}`
+                        : 'No deadline set'}
+                      </Text>
+                    </VStack>
+                  </Tooltip.Content>
+                </Tooltip.Root>
               </List.Item>
             ))}
           </List.Root>
