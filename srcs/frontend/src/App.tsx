@@ -8,10 +8,11 @@ import MainPage from './pages/MainPage';
 import { useEffect, useState } from 'react';
 import { authService } from './api/services';
 import { Flex, Spinner } from '@chakra-ui/react'
-import  ProtectedRoute from './components/protectedRoute'
+import ProtectedRoute from './components/protectedRoute'
 import Footer from './components/Footer';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
+import ConditionalLayout from './components/ConditionalLayout';
 
 export default function App() {
 
@@ -22,24 +23,27 @@ export default function App() {
 
   if (!ready) return (
     <Flex height="100vh" alignItems="center" justifyContent="center">
-    <Spinner size="xl" />
-  </Flex>
+      <Spinner size="xl" />
+    </Flex>
   );
 
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public routes wrapped by ConditionalLayout - will render Layout if token exists */}
+        <Route element={<ConditionalLayout />}>
+          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+        </Route>
+
         {/* add pages here to add the sidebar and topbar */}
         <Route element={<ProtectedRoute />}>
           <Route element={<Layout />}>
-          <Route path="/" element={<MainPage />} />
-          <Route path="/profile/:userId" element={<ProfilePage />} />
-          <Route path="/project/:projectId" element={<ProjectPage />} />
+            <Route path="/" element={<MainPage />} />
+            <Route path="/profile/:userId" element={<ProfilePage />} />
+            <Route path="/project/:projectId" element={<ProjectPage />} />
           </Route>
         </Route>
-
-        <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
-        <Route path="/terms-of-service" element={<TermsOfServicePage />} />
 
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />

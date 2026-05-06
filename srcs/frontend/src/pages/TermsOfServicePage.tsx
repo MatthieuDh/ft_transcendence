@@ -1,90 +1,162 @@
-import { Box, Container, Heading, ListItem, OrderedList, Text, UnorderedList, Stack } from '@chakra-ui/react';
+import { Box, Heading, Text, Stack } from '@chakra-ui/react';
 
-const sectionStyle = {
-  bg: 'white',
-  border: '1px solid',
-  borderColor: 'gray.200',
-  borderRadius: '2xl',
-  p: { base: 5, md: 8 },
-  _dark: { bg: 'gray.800', borderColor: 'gray.700' }
+const pageStyle = {
+    bg: 'white',
+    color: 'gray.800',
+    _dark: { bg: 'gray.900', color: 'gray.100' }
+};
+
+const sectionHeadingStyle = {
+    size: 'md' as const,
+    color: 'gray.900',
+    _dark: { color: 'white' }
 };
 
 export default function TermsOfServicePage() {
-  return (
-    <Box minH="100vh" bg="gray.50" py={10} pb="110px" _dark={{ bg: 'gray.900' }}>
-      <Container maxW="4xl">
-        <Stack gap={6}>
-          <Box {...sectionStyle}>
-            <Heading size="xl" mb={3} color="gray.800" _dark={{ color: 'white' }}>
-              Terms of Service
-            </Heading>
-            <Text color="gray.600" _dark={{ color: 'gray.300' }}>
-              These Terms of Service govern your use of Sigma, our task management and team collaboration platform.
-            </Text>
-          </Box>
+    return (
+        <Box minH="100vh" w="100%" display="flex" flexDirection="column" alignItems="center" {...pageStyle} textAlign="left" style={{ textAlign: 'left' }}>
+            <Box maxW="800px" w="100%" mx="auto" px={{ base: 6, md: 12 }} pt={{ base: 10, md: 14 }} pb="120px">
+                <Stack gap={10} align="stretch">
+                    <Box>
+                        <Heading textAlign="left" size="lg" mb={4} color="inherit">
+                            Terms of Service
+                        </Heading>
+                        <Text textAlign="left" lineHeight="1.8" color="inherit">
+                            These Terms of Service govern your use of Sigma, our task management and team collaboration platform.
+                        </Text>
+                    </Box>
 
-          <Box {...sectionStyle}>
-            <Heading size="md" mb={3}>1. Acceptance of Terms</Heading>
-            <Text color="gray.600" _dark={{ color: 'gray.300' }}>
-              By creating an account or using Sigma, you agree to these Terms and to use the platform in accordance with applicable laws and project rules.
-            </Text>
-          </Box>
+                    <Box>
+                        <Heading textAlign="left" {...sectionHeadingStyle} mb={3}>
+                            1. Acceptance of Terms
+                        </Heading>
+                        <Text textAlign="left" lineHeight="1.8" color="inherit" mb={3}>
+                            By creating an account or using Sigma, you agree to these Terms and to use the platform in accordance with applicable laws and project rules. These Terms constitute a binding agreement between you and the Sigma team.
+                        </Text>
+                        <Text textAlign="left" lineHeight="1.8" color="inherit">
+                            We may update these Terms at any time. Continued use of Sigma after updates means you accept the revised Terms. If you do not agree to any changes, you must stop using the platform and request account deletion.
+                        </Text>
+                    </Box>
 
-          <Box {...sectionStyle}>
-            <Heading size="md" mb={3}>2. Account Responsibilities</Heading>
-            <UnorderedList spacing={2} pl={5} color="gray.600" _dark={{ color: 'gray.300' }}>
-              <ListItem>Provide accurate and up-to-date information when registering.</ListItem>
-              <ListItem>Keep your login credentials secure and do not share them with unauthorized users.</ListItem>
-              <ListItem>Be responsible for activity performed through your account.</ListItem>
-            </UnorderedList>
-          </Box>
+                    <Box>
+                        <Heading textAlign="left" {...sectionHeadingStyle} mb={3}>
+                            2. Account Responsibilities
+                        </Heading>
+                        <Text textAlign="left" lineHeight="1.8" color="inherit" mb={3}>
+                            As a user of Sigma, you are responsible for maintaining the confidentiality of your account credentials and for all activities that occur under your account. You agree to:
+                        </Text>
+                        <Box as="ul" pl={5} color="inherit" mb={4}>
+                            <Box as="li" mb={2} lineHeight="1.8">Provide accurate and up-to-date information when registering and maintain current contact details.</Box>
+                            <Box as="li" mb={2} lineHeight="1.8">Keep your login credentials secure and do not share them with unauthorized users or in unencrypted communication.</Box>
+                            <Box as="li" mb={2} lineHeight="1.8">Be responsible for activity performed through your account and immediately notify us of unauthorized access.</Box>
+                            <Box as="li" mb={2} lineHeight="1.8">Use your account only for lawful purposes and in accordance with these Terms.</Box>
+                        </Box>
+                        <Text textAlign="left" lineHeight="1.8" color="inherit">
+                            Sigma is not liable for any loss or damage resulting from unauthorized access due to your failure to maintain secure credentials.
+                        </Text>
+                    </Box>
 
-          <Box {...sectionStyle}>
-            <Heading size="md" mb={3}>3. Acceptable Use</Heading>
-            <OrderedList spacing={2} pl={5} color="gray.600" _dark={{ color: 'gray.300' }}>
-              <ListItem>Use the application only for lawful task and project collaboration.</ListItem>
-              <ListItem>Do not upload malicious content, spam, or abusive messages.</ListItem>
-              <ListItem>Respect the privacy and work of other users in your workspace.</ListItem>
-              <ListItem>Do not attempt to access data or features without proper authorization.</ListItem>
-            </OrderedList>
-          </Box>
+                    <Box>
+                        <Heading textAlign="left" {...sectionHeadingStyle} mb={3}>
+                            3. Acceptable Use
+                        </Heading>
+                        <Text textAlign="left" lineHeight="1.8" color="inherit" mb={3}>
+                            You agree not to use Sigma in ways that could harm, disrupt, or negatively affect the platform or other users. Specifically, you agree not to:
+                        </Text>
+                        <Box as="ol" pl={5} color="inherit" mb={4}>
+                            <Box as="li" mb={2} lineHeight="1.8">Use the application for illegal activities or violate any applicable laws or regulations.</Box>
+                            <Box as="li" mb={2} lineHeight="1.8">Upload, distribute, or create malicious software, viruses, worms, or any code intended to harm systems or data.</Box>
+                            <Box as="li" mb={2} lineHeight="1.8">Send spam, scams, chain letters, phishing attempts, or abusive messages to other users or teams.</Box>
+                            <Box as="li" mb={2} lineHeight="1.8">Harass, threaten, defame, or discriminate against other users based on protected characteristics.</Box>
+                            <Box as="li" mb={2} lineHeight="1.8">Attempt to access, hack, or exploit the platform, its infrastructure, or other users' data without authorization.</Box>
+                            <Box as="li" mb={2} lineHeight="1.8">Share or copy other users' work, credentials, or sensitive information without permission.</Box>
+                            <Box as="li" mb={2} lineHeight="1.8">Disrupt service through denial-of-service attacks, resource exhaustion, or intentional overuse of platform resources.</Box>
+                            <Box as="li" mb={2} lineHeight="1.8">Circumvent security measures, reverse-engineer the platform, or attempt to gain unauthorized access to restricted features.</Box>
+                        </Box>
+                        <Text textAlign="left" lineHeight="1.8" color="inherit">
+                            Violations may result in immediate suspension or termination of your account without warning.
+                        </Text>
+                    </Box>
 
-          <Box {...sectionStyle}>
-            <Heading size="md" mb={3}>4. User Content</Heading>
-            <Text color="gray.600" _dark={{ color: 'gray.300' }}>
-              You remain responsible for the content you submit, including project data, tasks, comments, attachments, and chat messages. You grant Sigma the right to host and process this content as needed to provide the service.
-            </Text>
-          </Box>
+                    <Box>
+                        <Heading textAlign="left" {...sectionHeadingStyle} mb={3}>
+                            4. User Content and Intellectual Property
+                        </Heading>
+                        <Text textAlign="left" lineHeight="1.8" color="inherit" mb={3}>
+                            You retain ownership of all content you create or upload to Sigma, including projects, tasks, comments, documents, and files. By uploading or sharing content, you grant Sigma a non-exclusive license to host, process, display, and transmit your content to provide the service.
+                        </Text>
+                        <Text textAlign="left" lineHeight="1.8" color="inherit" mb={3}>
+                            Upon account termination, your personal data will be deleted as per our Privacy Policy. However, content you shared in team projects remains in those projects for other team members to access, unless you explicitly delete it beforehand. The platform itself, including its code, design, features, and documentation, remains the property of the Sigma team. You may not copy, distribute, modify, or create derivative works of the platform without explicit permission.
+                        </Text>
+                    </Box>
 
-          <Box {...sectionStyle}>
-            <Heading size="md" mb={3}>5. Service Availability</Heading>
-            <Text color="gray.600" _dark={{ color: 'gray.300' }}>
-              The service is provided on an as-is and as-available basis. We may update, change, or temporarily interrupt the platform for maintenance, security, or feature improvements.
-            </Text>
-          </Box>
+                    <Box>
+                        <Heading textAlign="left" {...sectionHeadingStyle} mb={3}>
+                            5. Service Availability and Maintenance
+                        </Heading>
+                        <Text textAlign="left" lineHeight="1.8" color="inherit" mb={3}>
+                            Sigma is provided on an "as-is" and "as-available" basis without guarantees of continuous availability. We may update, modify, improve, suspend, or discontinue features or the entire service at any time with or without notice.
+                        </Text>
+                        <Text textAlign="left" lineHeight="1.8" color="inherit" mb={3}>
+                            We may perform scheduled or emergency maintenance that temporarily interrupts service. We aim to minimize downtime and will attempt to schedule maintenance during off-peak hours, but we do not guarantee specific availability windows or provide advance notice for emergency repairs. The service is not backed by a Service Level Agreement (SLA), and we make no uptime guarantees.
+                        </Text>
+                        <Text textAlign="left" lineHeight="1.8" color="inherit">
+                            Regular backups are performed for disaster recovery, but backup retention is limited to 30 days. We recommend users maintain their own backup copies of critical data. We are not liable for data loss due to service interruptions, maintenance, or any other cause.
+                        </Text>
+                    </Box>
 
-          <Box {...sectionStyle}>
-            <Heading size="md" mb={3}>6. Suspension and Termination</Heading>
-            <Text color="gray.600" _dark={{ color: 'gray.300' }}>
-              We may suspend or terminate access if a user violates these Terms, jeopardizes the security of the platform, or disrupts the experience of other users.
-            </Text>
-          </Box>
+                    <Box>
+                        <Heading textAlign="left" {...sectionHeadingStyle} mb={3}>
+                            6. Suspension, Termination, and Dispute Resolution
+                        </Heading>
+                        <Text textAlign="left" lineHeight="1.8" color="inherit" mb={3}>
+                            We may suspend, restrict, or terminate your access to Sigma immediately if we determine (in our sole discretion) that you have:
+                        </Text>
+                        <Box as="ul" pl={5} color="inherit" mb={4}>
+                            <Box as="li" mb={2} lineHeight="1.8">Violated these Terms or applicable laws.</Box>
+                            <Box as="li" mb={2} lineHeight="1.8">Jeopardized the security of the platform, other users, or data.</Box>
+                            <Box as="li" mb={2} lineHeight="1.8">Disrupted the experience of other users through abusive, harassing, or disruptive behavior.</Box>
+                            <Box as="li" mb={2} lineHeight="1.8">Engaged in unauthorized access, fraud, or misrepresentation.</Box>
+                        </Box>
+                        <Text textAlign="left" lineHeight="1.8" color="inherit">
+                            You may request account deletion at any time. Upon deletion, your personal data will be removed within 30 days, though content in shared projects will remain visible to other team members.
+                        </Text>
+                    </Box>
 
-          <Box {...sectionStyle}>
-            <Heading size="md" mb={3}>7. Changes to These Terms</Heading>
-            <Text color="gray.600" _dark={{ color: 'gray.300' }}>
-              These Terms may be updated as the project evolves. Continued use of Sigma after updates means you accept the revised Terms.
-            </Text>
-          </Box>
+                    <Box>
+                        <Heading textAlign="left" {...sectionHeadingStyle} mb={3}>
+                            7. Limitation of Liability
+                        </Heading>
+                        <Text textAlign="left" lineHeight="1.8" color="inherit" mb={3}>
+                            To the fullest extent permitted by law, Sigma and its team are not liable for any indirect, incidental, special, consequential, or punitive damages arising from your use of or inability to use the platform, including but not limited to loss of profits, data loss, business interruption, or any other damage, even if advised of the possibility of such damages.
+                        </Text>
+                        <Text textAlign="left" lineHeight="1.8" color="inherit" mb={3}>
+                            We do not warrant that the platform will be uninterrupted, secure, or error-free. We do not guarantee that defects will be corrected or that the service will meet your specific needs. Use of the platform is at your own risk.
+                        </Text>
+                        <Text textAlign="left" lineHeight="1.8" color="inherit">
+                            In no event shall Sigma's total liability to you exceed the amount you have paid for the service in the past 12 months, or $100, whichever is less.
+                        </Text>
+                    </Box>
 
-          <Box {...sectionStyle}>
-            <Heading size="md" mb={3}>8. Contact</Heading>
-            <Text color="gray.600" _dark={{ color: 'gray.300' }}>
-              For questions about these Terms, contact the project maintainers or the team responsible for the deployment.
-            </Text>
-          </Box>
-        </Stack>
-      </Container>
-    </Box>
-  );
+                    <Box>
+                        <Heading textAlign="left" {...sectionHeadingStyle} mb={3}>
+                            8. Changes to These Terms
+                        </Heading>
+                        <Text textAlign="left" lineHeight="1.8" color="inherit" mb={3}>
+                            We may update these Terms at any time. Changes will be effective immediately upon posting to the platform. Your continued use of Sigma after updates indicates acceptance of the revised Terms. We will make reasonable efforts to notify users of significant changes, but it is your responsibility to review the Terms regularly.
+                        </Text>
+                    </Box>
+
+                    <Box>
+                        <Heading textAlign="left" {...sectionHeadingStyle} mb={3}>
+                            9. Contact and Dispute Resolution
+                        </Heading>
+                        <Text textAlign="left" lineHeight="1.8" color="inherit">
+                            For questions about these Terms, contact the project maintainers or the team responsible for the deployment.
+                        </Text>
+                    </Box>
+                </Stack>
+            </Box>
+        </Box>
+    );
 }

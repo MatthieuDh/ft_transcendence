@@ -6,16 +6,16 @@ import TopBar from './topBar';
 export default function Layout() {
   return (
     <Flex minH="100vh" bg="gray.50" _dark={{ bg: "gray.900" }}>
-      
+
       <Sidebar />
-      
+
       <Flex direction="column" flex={1}>
         <TopBar />
-        
-        <Box 
-          as="main" 
-          flex={1} 
-          p={8} 
+
+        <Box
+          as="main"
+          flex={1}
+          p={8}
           pb="88px"
           overflowY="auto"
           bg="gray.50"

@@ -1,74 +1,154 @@
-import { Box, Container, Heading, ListItem, OrderedList, Text, UnorderedList, Stack } from '@chakra-ui/react';
+import { Box, Heading, Text, Stack } from '@chakra-ui/react';
 
-const sectionStyle = {
-  bg: 'white',
-  border: '1px solid',
-  borderColor: 'gray.200',
-  borderRadius: '2xl',
-  p: { base: 5, md: 8 },
-  _dark: { bg: 'gray.800', borderColor: 'gray.700' }
+const pageStyle = {
+    bg: 'white',
+    color: 'gray.800',
+    _dark: { bg: 'gray.900', color: 'gray.100' }
+};
+
+const sectionHeadingStyle = {
+    size: 'md' as const,
+    color: 'gray.900',
+    _dark: { color: 'white' }
 };
 
 export default function PrivacyPolicyPage() {
-  return (
-    <Box minH="100vh" bg="gray.50" py={10} pb="110px" _dark={{ bg: 'gray.900' }}>
-      <Container maxW="4xl">
-        <Stack gap={6}>
-          <Box {...sectionStyle}>
-            <Heading size="xl" mb={3} color="gray.800" _dark={{ color: 'white' }}>
-              Privacy Policy
-            </Heading>
-            <Text color="gray.600" _dark={{ color: 'gray.300' }}>
-              This Privacy Policy explains how Sigma collects, uses, and protects your information in our task management application.
-            </Text>
-          </Box>
+    return (
+        <Box minH="100vh" w="100%" display="flex" flexDirection="column" alignItems="center" {...pageStyle} textAlign="left" style={{ textAlign: 'left' }}>
+            <Box maxW="800px" w="100%" mx="auto" px={{ base: 6, md: 12 }} pt={{ base: 10, md: 14 }} pb="120px">
+                <Stack gap={10} align="stretch">
+                    <Box>
+                        <Heading textAlign="left" size="lg" mb={4} color="inherit">
+                            Privacy Policy
+                        </Heading>
+                        <Text lineHeight="1.8" color="inherit">
+                            This Privacy Policy explains how Sigma collects, uses, and protects your information in our task management application.
+                        </Text>
+                    </Box>
 
-          <Box {...sectionStyle}>
-            <Heading size="md" mb={3}>Information We Collect</Heading>
-            <Text color="gray.600" _dark={{ color: 'gray.300' }} mb={4}>
-              We only collect information needed to provide and improve the service.
-            </Text>
-            <UnorderedList spacing={2} pl={5} color="gray.600" _dark={{ color: 'gray.300' }}>
-              <ListItem><strong>Email address</strong> for account creation, login, and notifications.</ListItem>
-              <ListItem><strong>Hashed password</strong> to secure your account credentials.</ListItem>
-              <ListItem><strong>Avatar</strong> or profile image to personalize your account.</ListItem>
-              <ListItem><strong>Project and task data</strong> such as titles, descriptions, assignments, due dates, and status updates.</ListItem>
-              <ListItem><strong>Chat messages</strong> and collaboration content shared within the application.</ListItem>
-            </UnorderedList>
-          </Box>
+                    <Box>
+                        <Heading {...sectionHeadingStyle} mb={3}>
+                            1. Introduction
+                        </Heading>
+                        <Text lineHeight="1.8" color="inherit">
+                            This Privacy Policy explains how Sigma collects, uses, and protects your information in our task management application.
+                        </Text>
+                    </Box>
 
-          <Box {...sectionStyle}>
-            <Heading size="md" mb={3}>How We Use Your Information</Heading>
-            <OrderedList spacing={2} pl={5} color="gray.600" _dark={{ color: 'gray.300' }}>
-              <ListItem>To create and manage your user account.</ListItem>
-              <ListItem>To let you organize projects, tasks, comments, and team communication.</ListItem>
-              <ListItem>To send notifications related to your activity and workspace updates.</ListItem>
-              <ListItem>To keep the application secure, reliable, and prevent abuse.</ListItem>
-            </OrderedList>
-          </Box>
+                    <Box>
+                        <Heading textAlign="left" {...sectionHeadingStyle} mb={3}>
+                            2. Data We Collect
+                        </Heading>
+                        <Text textAlign="left" lineHeight="1.8" color="inherit" mb={4}>
+                            We only collect information needed to provide and improve the service. When you create an account and use Sigma, we collect the following types of data:
+                        </Text>
+                        <Box as="ul" pl={5} color="inherit" mb={4}>
+                            <Box as="li" mb={2} lineHeight="1.8"><strong>Authentication data:</strong> Email address, hashed password, and session tokens used for login and maintaining your session.</Box>
+                            <Box as="li" mb={2} lineHeight="1.8"><strong>Profile information:</strong> Display name, avatar image, and any biographical information you provide.</Box>
+                            <Box as="li" mb={2} lineHeight="1.8"><strong>Usage data:</strong> Login timestamps, IP addresses (for security monitoring), device information, and activity logs.</Box>
+                            <Box as="li" mb={2} lineHeight="1.8"><strong>Project and collaboration data:</strong> Projects you create or join, tasks and their metadata, comments and attachments, chat messages, and real-time presence information.</Box>
+                            <Box as="li" mb={2} lineHeight="1.8"><strong>Communication preferences:</strong> Notification settings, email preferences, and communication history.</Box>
+                        </Box>
+                        <Text textAlign="left" lineHeight="1.8" color="inherit">
+                            We do not sell or share your personal data with third parties for marketing purposes. Data is collected solely to operate the platform, improve user experience, and ensure security.
+                        </Text>
+                    </Box>
 
-          <Box {...sectionStyle}>
-            <Heading size="md" mb={3}>Data Retention and Security</Heading>
-            <Text color="gray.600" _dark={{ color: 'gray.300' }}>
-              We store data only for as long as it is needed to operate the service or meet legal requirements. Passwords are stored in hashed form and access to the application data is restricted to authorized users and services.
-            </Text>
-          </Box>
+                    <Box>
+                        <Heading textAlign="left" {...sectionHeadingStyle} mb={3}>
+                            3. How We Use Your Information
+                        </Heading>
+                        <Box as="ol" pl={5} color="inherit">
+                            <Box as="li" mb={2} lineHeight="1.8">To authenticate your account and maintain your secure session.</Box>
+                            <Box as="li" mb={2} lineHeight="1.8">To create and manage your user account.</Box>
+                            <Box as="li" mb={2} lineHeight="1.8">To deliver core features: organize projects, tasks, comments, and enable team communication.</Box>
+                            <Box as="li" mb={2} lineHeight="1.8">To send notifications related to your activity, workspace updates, and important security alerts.</Box>
+                            <Box as="li" mb={2} lineHeight="1.8">To monitor for suspicious activity, prevent abuse, protect against unauthorized access, and maintain platform security.</Box>
+                            <Box as="li" mb={2} lineHeight="1.8">To improve the platform through usage analytics, error tracking, and feature optimization.</Box>
+                            <Box as="li" mb={2} lineHeight="1.8">To comply with legal obligations and respond to valid legal requests.</Box>
+                        </Box>
+                    </Box>
 
-          <Box {...sectionStyle}>
-            <Heading size="md" mb={3}>Your Choices</Heading>
-            <Text color="gray.600" _dark={{ color: 'gray.300' }}>
-              You can update your profile information, manage your uploaded avatar, and request account deletion according to the project’s account management policies.
-            </Text>
-          </Box>
+                    <Box>
+                        <Heading textAlign="left" {...sectionHeadingStyle} mb={3}>
+                            4. Data Retention
+                        </Heading>
+                        <Text textAlign="left" lineHeight="1.8" color="inherit" mb={4}>
+                            We retain data for different periods depending on its type and purpose:
+                        </Text>
+                        <Box as="ul" pl={5} color="inherit" mb={4}>
+                            <Box as="li" mb={2} lineHeight="1.8"><strong>Account data (email, password hash, profile):</strong> Retained for the duration of your account. Deleted within 30 days of account termination.</Box>
+                            <Box as="li" mb={2} lineHeight="1.8"><strong>Project and task data:</strong> Retained as long as the project exists. Owners can delete projects, after which data is removed within 30 days.</Box>
+                            <Box as="li" mb={2} lineHeight="1.8"><strong>Chat messages and comments:</strong> Retained as long as they exist in the platform. Users can delete their own messages; project admins can remove content.</Box>
+                            <Box as="li" mb={2} lineHeight="1.8"><strong>Login logs and activity data:</strong> Retained for 90 days for security and troubleshooting purposes, then deleted.</Box>
+                            <Box as="li" mb={2} lineHeight="1.8"><strong>Backups:</strong> Data may be retained in database backups for up to 30 days beyond deletion for disaster recovery purposes.</Box>
+                        </Box>
+                    </Box>
 
-          <Box {...sectionStyle}>
-            <Heading size="md" mb={3}>Contact</Heading>
-            <Text color="gray.600" _dark={{ color: 'gray.300' }}>
-              If you have questions about this Privacy Policy, please contact the project administrators or your team’s maintainer.
-            </Text>
-          </Box>
-        </Stack>
-      </Container>
-    </Box>
-  );
+                    <Box>
+                        <Heading textAlign="left" {...sectionHeadingStyle} mb={3}>
+                            5. Security and Data Protection
+                        </Heading>
+                        <Text textAlign="left" lineHeight="1.8" color="inherit">
+                            We implement industry-standard security measures to protect your information. Passwords are hashed using strong cryptographic algorithms and are never stored in plaintext. All communication between your device and our servers is encrypted using TLS/SSL. Access to user data is restricted to authorized team members and is logged for audit purposes. We regularly review our security practices and respond to threats. However, no system is completely secure; we encourage you to use strong, unique passwords and enable multi-factor authentication where available.
+                        </Text>
+                    </Box>
+
+                    <Box>
+                        <Heading textAlign="left" {...sectionHeadingStyle} mb={3}>
+                            6. Your Privacy Rights and Choices
+                        </Heading>
+                        <Text textAlign="left" lineHeight="1.8" color="inherit" mb={3}>
+                            You have control over your information and can exercise the following rights:
+                        </Text>
+                        <Box as="ul" pl={5} color="inherit" mb={4}>
+                            <Box as="li" mb={2} lineHeight="1.8"><strong>Access:</strong> You can view, download, and export all your personal data and content from your account.</Box>
+                            <Box as="li" mb={2} lineHeight="1.8"><strong>Update:</strong> You can update your profile information, including name, email, and avatar at any time.</Box>
+                            <Box as="li" mb={2} lineHeight="1.8"><strong>Delete:</strong> You can request deletion of your account and associated personal data. We will delete your data within 30 days, except where required by law or backup systems.</Box>
+                            <Box as="li" mb={2} lineHeight="1.8"><strong>Opt-out:</strong> You can manage notification preferences and opt out of non-essential communications in your account settings.</Box>
+                        </Box>
+                        <Text textAlign="left" lineHeight="1.8" color="inherit">
+                            To exercise any of these rights, contact the project administrators or your team's maintainer with your request.
+                        </Text>
+                    </Box>
+
+                    <Box>
+                        <Heading textAlign="left" {...sectionHeadingStyle} mb={3}>
+                            7. Cookies and Session Tokens
+                        </Heading>
+                        <Text textAlign="left" lineHeight="1.8" color="inherit" mb={3}>
+                            Sigma uses cookies and session tokens to maintain your login status and personalize your experience. Session tokens are created when you log in and expire when you log out or after a period of inactivity. These are essential for the application to function and cannot be disabled. You can manage cookies through your browser settings, though this may limit the platform's functionality.
+                        </Text>
+                    </Box>
+
+                    <Box>
+                        <Heading textAlign="left" {...sectionHeadingStyle} mb={3}>
+                            8. Third Party Services
+                        </Heading>
+                        <Text textAlign="left" lineHeight="1.8" color="inherit" mb={3}>
+                            Sigma integrates with Google OAuth for optional sign-up and login. If you choose to authenticate via Google, your email address is retrieved and used to create or access your Sigma account. Google's privacy practices are governed by their Privacy Policy. We do not share your Sigma data with Google beyond what is necessary for authentication. Other than Google OAuth, we do not use third-party services to process your personal data.
+                        </Text>
+                    </Box>
+
+                    <Box>
+                        <Heading textAlign="left" {...sectionHeadingStyle} mb={3}>
+                            9. Changes to This Policy
+                        </Heading>
+                        <Text textAlign="left" lineHeight="1.8" color="inherit" mb={3}>
+                            We may update this Privacy Policy from time to time. We will notify you of significant changes via email or by posting a notice on the platform. Your continued use of Sigma after changes indicates your acceptance of the updated policy.
+                        </Text>
+                    </Box>
+
+                    <Box>
+                        <Heading textAlign="left" {...sectionHeadingStyle} mb={3}>
+                            10. Contact
+                        </Heading>
+                        <Text textAlign="left" lineHeight="1.8" color="inherit">
+                            If you have questions about this Privacy Policy, please contact the project administrators or your team’s maintainer.
+                        </Text>
+                    </Box>
+                </Stack>
+            </Box>
+        </Box>
+    );
 }
