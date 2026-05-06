@@ -1,15 +1,18 @@
 import { Flex, HStack, Box, Heading, Text, VStack } from "@chakra-ui/react";
 import { ColorModeButton } from "./ui/color-mode";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import { useNotifications } from "../hooks/useNotification";
 import { LuBell } from "react-icons/lu";
 
 export default function TopBar() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { notifications, unreadCount, markAllAsRead, currentUser } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
 
   const getPageTitle = (path: string) => {
     if (path === '/' || path === '') return 'Dashboard';
@@ -22,6 +25,9 @@ export default function TopBar() {
     const handleClickOutside = (event: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
         setIsOpen(false);
+      }
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -74,8 +80,25 @@ export default function TopBar() {
 
         <ColorModeButton />
 
-        <Box w="40px" h="40px" bg="purple.500" color="white" borderRadius="full" display="flex" alignItems="center" justifyContent="center" fontWeight="bold" cursor="pointer" _hover={{ bg: "purple.600" }}>
-          {currentUser?.username?.charAt(0).toUpperCase() || 'S'}
+        <Box position="relative" ref={profileMenuRef}>
+          <Box w="40px" h="40px" bg="purple.500" color="white" borderRadius="full" display="flex" alignItems="center" justifyContent="center" fontWeight="bold" cursor="pointer" _hover={{ bg: "purple.600" }} onClick={() => setIsProfileOpen(!isProfileOpen)}>
+            {currentUser?.username?.charAt(0).toUpperCase() || 'S'}
+          </Box>
+
+          {isProfileOpen && (
+            <Box position="absolute" top="50px" right="0" w="160px" bg="white" _dark={{ bg: "gray.800", borderColor: "gray.700" }} boxShadow="xl" borderRadius="lg" border="1px solid" borderColor="gray.200" zIndex={1000} overflow="hidden">
+              <VStack align="stretch" gap={0}>
+                <Box p={3} cursor="pointer" _hover={{ bg: "gray.50", _dark: { bg: "gray.700" } }} onClick={() => {
+                  setIsProfileOpen(false);
+                  if (currentUser) {
+                    navigate(`/profile/${currentUser.id}`);
+                  }
+                }}>
+                  <Text fontSize="sm" fontWeight="bold">My Profile</Text>
+                </Box>
+              </VStack>
+            </Box>
+          )}
         </Box>
       </HStack>
     </Flex>

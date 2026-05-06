@@ -54,7 +54,7 @@ export default function Sidebar() {
           color="gray.700"
           _dark={{ color: "gray.200" }}
         >
-          <RouterLink to="/profile/1">
+          <RouterLink to="`/profile/$userId">
             👤 Profile
           </RouterLink>
         </Link>

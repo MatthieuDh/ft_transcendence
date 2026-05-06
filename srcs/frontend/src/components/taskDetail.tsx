@@ -167,7 +167,7 @@ export default function TaskDetailsModal({ isOpen, onClose, task, projectId, can
                         <VStack align="start" mt={2} gap={1}>
                           {comment.attachments.map((url, i) => (
                             <Button key={i} asChild size="xs" variant="outline" colorPalette="purple">
-                              <a href={url} target="_blank" rel="noopener noreferrer">
+                              <a href={url} download={extractFileName(url)} target="_blank" rel="noopener noreferrer">
                                 <LuPaperclip /> {extractFileName(url)}
                               </a>
                             </Button>
@@ -193,7 +193,7 @@ export default function TaskDetailsModal({ isOpen, onClose, task, projectId, can
                                   <VStack align="start" mt={2} gap={1}>
                                     {reply.attachments.map((url, i) => (
                                       <Button key={i} asChild size="xs" variant="outline" colorPalette="purple">
-                                        <a href={url} target="_blank" rel="noopener noreferrer">
+                                        <a href={url} download={extractFileName(url)} target="_blank" rel="noopener noreferrer">
                                           <LuPaperclip /> {extractFileName(url)}
                                         </a>
                                       </Button>

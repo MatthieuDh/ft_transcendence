@@ -30,7 +30,7 @@ export class TasksController {
 
 @ApiBearerAuth()
   @UseGuards(JwtAuthGuard) 
-  @Get('me')
+  @Get('my')
   findMyTasks(@Request() req) {
     return this.tasksService.findMyTasks(req.user.sub);
   }

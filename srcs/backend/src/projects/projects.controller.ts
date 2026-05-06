@@ -21,6 +21,12 @@ export class ProjectsController {
     return this.projectsService.create(createProjectDto, userId);
   }
 
+@UseGuards(JwtAuthGuard)
+  @Get('my')
+  findMyProjects(@Request() req) {
+    return this.projectsService.findMyProjects(req.user.sub);
+  }
+
   @Get()
   findAll() {
     return this.projectsService.findAll();

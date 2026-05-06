@@ -69,9 +69,9 @@ export class TasksService {
   async findMyTasks(userId: number) {
     return this.prisma.task.findMany({
       where: {
-        project: {
-          members: {
-            some: { userId: userId },
+        assignees: {
+          some: { 
+            id: userId 
           },
         },
       },
