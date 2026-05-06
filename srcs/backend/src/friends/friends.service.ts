@@ -130,7 +130,13 @@ async getfriends(userId: number) {
         addressee: { select: { id: true, username: true, avatar: true } }
       }
     });
-    return friendships.map(f => f.requesterId === userId ? f.addressee : f.requester);
+    return friendships.map(f => {
+      const friend = f.requesterId === userId ? f.addressee : f.requester;
+      return {
+        friendshipId: f.id,
+        ...friend
+      };
+    });
   }
   async removefriendship(loggedInUserId: number, friendshipId: number) {
     const friendship = await this.prisma.friendship.findUnique({

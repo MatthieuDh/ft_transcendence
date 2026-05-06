@@ -1,16 +1,27 @@
 import { friendService } from "../api/services";
 import{ type FriendUser } from "@transcendence/shared";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
-export function useFriend (userId: number){
-    const [friends, setFriends] = useState<FriendUser[]>([]);
+export function useFriend(userId: number) {
+  const [friends, setFriends] = useState<FriendUser[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-    useEffect(() => {
-        friendService.getFriendsByUserId(userId).then(response => {
-            setFriends(response.data);
-        });
-    }, [userId]);
-    return {friends}
+  const fetchFriends = useCallback(async () => {
+    if (!userId) return;
+    setIsLoading(true);
+    try {
+      const response = await friendService.getFriendsByUserId(userId);
+      setFriends(response.data);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [userId]);
+
+  useEffect(() => {
+    fetchFriends();
+  }, [fetchFriends]);
+
+  return { friends, isLoading, refetch: fetchFriends };
 }
 
 export function useAddFriend() {
@@ -29,4 +40,23 @@ export function useAddFriend() {
   };
 
   return { sendRequest, isLoading, error };
+}
+
+// useRemoveFriend hook — add this to useFriend.ts
+export function useRemoveFriend() {
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const removeFriend = async (friendshipId: number) => {
+    setIsLoading(true);
+    try {
+      await friendService.removeFriend(friendshipId);
+    } catch (e) {
+      setError('Failed to remove friend');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return { removeFriend, isLoading, error };
 }

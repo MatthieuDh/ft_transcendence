@@ -1,45 +1,38 @@
-import { useState, useEffect, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { useState, useEffect } from 'react';
 import { notificationService, authService } from '../api/services';
 import type { Notification, User } from '../../../../shared/srcs/types';
+import { useSocket } from '../context/SocketContext';
 
 export function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const socketRef = useRef<Socket | null>(null);
+  const socket = useSocket();
 
   useEffect(() => {
     const init = async () => {
       try {
         const profileRes = await authService.getProfile();
         setCurrentUser(profileRes.data);
-        
         const notifsRes = await notificationService.getNotifications(profileRes.data.id);
         setNotifications(notifsRes.data);
-
-        const token = localStorage.getItem('access_token');
-        if (token) {
-          socketRef.current = io('/', { auth: { token }, path: '/socket.io' });
-          
-          socketRef.current.on('connect', () => {
-            socketRef.current?.emit('identify', profileRes.data.id);
-          });
-          
-          socketRef.current.on('new_notification', (data: Notification) => {
-            setNotifications(prev => [data, ...prev]);
-          });
-        }
       } catch (error) {
         console.error(error);
       }
     };
-    
     init();
+  }, []);
+
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on('new_notification', (data: Notification) => {
+      setNotifications(prev => [data, ...prev]);
+    });
 
     return () => {
-      if (socketRef.current) socketRef.current.disconnect();
+      socket.off('new_notification');
     };
-  }, []);
+  }, [socket]);
 
   const markAllAsRead = async () => {
     if (!currentUser) return;
@@ -52,6 +45,5 @@ export function useNotifications() {
   };
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
-
   return { notifications, unreadCount, markAllAsRead, currentUser };
 }

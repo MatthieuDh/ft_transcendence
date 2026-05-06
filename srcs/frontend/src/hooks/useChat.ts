@@ -1,20 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
 import type { Message } from '../../../../shared/srcs/types/message';
 import { projectService } from '../api/services';
+import { useSocket } from '../context/SocketContext';
 
 export function useChat(projectId: number, currentUserId: number, isOpen: boolean) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isSending, setIsSending] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
-  const socketRef = useRef<Socket | null>(null);
+  const socket = useSocket();
   const isOpenRef = useRef(isOpen);
 
   useEffect(() => {
     isOpenRef.current = isOpen;
-    if (isOpen) {
-      setUnreadCount(0);
-    }
+    if (isOpen) setUnreadCount(0);
   }, [isOpen]);
 
   useEffect(() => {
@@ -27,43 +25,38 @@ export function useChat(projectId: number, currentUserId: number, isOpen: boolea
       }
     };
     fetchHistory();
+  }, [projectId]);
 
-    const token = localStorage.getItem('access_token');
-    socketRef.current = io('/', { auth: { token }, path: '/socket.io' });
+  useEffect(() => {
+    if (!socket || !projectId || !currentUserId) return;
 
-    socketRef.current.on('connect', () => {
-      socketRef.current?.emit('identify', currentUserId);
-      socketRef.current?.emit('joined project', { username: `User_${currentUserId}`, projectId });
-    });
+    socket.emit('joined project', { username: `User_${currentUserId}`, projectId });
 
-    socketRef.current.on('new_project_notification', (data: Message & { projectId: number }) => {
+    socket.on('new_project_notification', (data: Message & { projectId: number }) => {
       if (data.projectId === projectId) {
-        setMessages((prev) => {
-          if (prev.some((msg) => msg.id === data.id)) return prev;
+        setMessages(prev => {
+          if (prev.some(msg => msg.id === data.id)) return prev;
           return [...prev, data];
         });
-        
         if (data.userId !== currentUserId && !isOpenRef.current) {
-          setUnreadCount((prev) => prev + 1);
+          setUnreadCount(prev => prev + 1);
         }
       }
     });
 
     return () => {
-      if (socketRef.current) {
-        socketRef.current.emit('left project', { username: `User_${currentUserId}`, projectId });
-        socketRef.current.disconnect();
-      }
+      socket.emit('left project', { username: `User_${currentUserId}`, projectId });
+      socket.off('new_project_notification');
     };
-  }, [projectId, currentUserId]);
+  }, [socket, projectId, currentUserId]);
 
   const sendMessage = async (content: string) => {
     if (!content.trim() || isSending) return false;
     setIsSending(true);
     try {
       const response = await projectService.createMessage(projectId, content);
-      setMessages((prev) => {
-        if (prev.some((msg) => msg.id === response.data.id)) return prev;
+      setMessages(prev => {
+        if (prev.some(msg => msg.id === response.data.id)) return prev;
         return [...prev, response.data];
       });
       return true;

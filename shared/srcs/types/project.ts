@@ -23,7 +23,7 @@ export interface ProjectMember{
         username: string;
         avatar?: string | null;
     };
-    project?: {name: string};
+    project?: {name: string; description?: string; deadline?: Date};
 }
 
 export interface Project {
