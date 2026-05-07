@@ -31,7 +31,7 @@ const statusColors: Record<TaskStatus, string> = {
 export default function ProjectPage() {
   const { projectId } = useParams();
   const { project, tasks, currentUser, isLoading, reloadProject, changeTaskStatus, changeProjectStatus, assignTaskMember, removeProjectMember, removeTask } = useProjectDetails(Number(projectId));
-  
+
   const [createTaskStatus, setCreateTaskStatus] = useState<TaskStatus | null>(null);
   const [selectedTaskForComments, setSelectedTaskForComments] = useState<Task | null>(null);
 
@@ -73,12 +73,12 @@ export default function ProjectPage() {
             </Text>
             <HStack gap={2} flexWrap="wrap">
               {project.members?.map(member => (
-                <Badge 
-                  key={member.id} 
-                  variant="subtle" 
-                  colorPalette="gray" 
-                  borderRadius="full" 
-                  px={3} 
+                <Badge
+                  key={member.id}
+                  variant="subtle"
+                  colorPalette="gray"
+                  borderRadius="full"
+                  px={3}
                   py={1}
                   display="flex"
                   alignItems="center"
@@ -86,7 +86,7 @@ export default function ProjectPage() {
                 >
                   <Text>{member.user?.username || `User ${member.userId}`}</Text>
                   {member.role === 'PROJECT_LEADER' && <Text>👑</Text>}
-                  
+
                   {canManage && (
                     <Box
                       as="span"
@@ -104,25 +104,25 @@ export default function ProjectPage() {
               ))}
             </HStack>
           </Box>
-          
+
           <VStack align="flex-end" gap={3}>
             <Box bg="purple.100" color="purple.800" _dark={{ bg: "purple.900", color: "purple.200" }} px={3} py={1} borderRadius="md" display="inline-block">
-              <select 
-                value={project.status} 
+              <select
+                value={project.status}
                 onChange={(e) => changeProjectStatus(e.target.value as ProjectStatus)}
                 style={{ background: 'transparent', border: 'none', color: 'inherit', fontWeight: 'bold', cursor: 'pointer', outline: 'none', fontSize: '14px' }}
                 disabled={!canManage}
               >
-                <option value={ProjectStatus.PLANNING} style={{color: 'black'}}>PLANNING</option>
-                <option value={ProjectStatus.ACTIVE} style={{color: 'black'}}>ACTIVE</option>
-                <option value={ProjectStatus.COMPLETED} style={{color: 'black'}}>COMPLETED</option>
+                <option value={ProjectStatus.PLANNING} style={{ color: 'black' }}>PLANNING</option>
+                <option value={ProjectStatus.ACTIVE} style={{ color: 'black' }}>ACTIVE</option>
+                <option value={ProjectStatus.COMPLETED} style={{ color: 'black' }}>COMPLETED</option>
               </select>
             </Box>
             {canManage && (
-              <AddMemberMenu 
-                projectId={project.id} 
-                existingMembers={project.members || []} 
-                onMemberAdded={reloadProject} 
+              <AddMemberMenu
+                projectId={project.id}
+                existingMembers={project.members || []}
+                onMemberAdded={reloadProject}
               />
             )}
           </VStack>
@@ -131,56 +131,33 @@ export default function ProjectPage() {
 
       <Grid templateColumns="repeat(4, 1fr)" gap={4} flex={1} alignItems="start">
         {columns.map((column) => (
-          <VStack key={column.id} bg="gray.100" _dark={{ bg: "gray.900" }} p={4} borderRadius="lg" minH="500px" alignItems="stretch">
-            <Flex justify="space-between" align="center" mb={4}>
-              <Text fontWeight="bold" color={`${column.color}.600`} _dark={{ color: `${column.color}.300` }} textAlign="left">
-                {column.label}
-              </Text>
-              <Badge colorPalette={column.color} borderRadius="full">
-                {tasks.filter(t => t.status === column.id).length}
-              </Badge>
-            </Flex>
-            
-            {tasks.filter((task) => task.status === column.id).map((task) => (
-              <TaskCard 
-                key={task.id} 
-                task={task} 
-                projectMembers={project.members || []} 
-                canDelete={canManage}
-                onStatusChange={changeTaskStatus} 
-                onAssign={assignTaskMember} 
-                onDelete={removeTask}
-                onOpenComments={() => setSelectedTaskForComments(task)}
-              />
-            ))}
-
-            <Button 
-              variant="ghost" 
-              color="gray.500" 
-              justifyContent="flex-start" 
-              w="full" 
-              mt={2}
-              _hover={{ bg: "gray.200", color: "gray.800", _dark: { bg: "gray.800", color: "white" } }}
-              onClick={() => setCreateTaskStatus(column.id)}
-            >
-              <LuPlus /> Add Task
-            </Button>
-          </VStack>
+          <TaskColumn
+            key={column.id}
+            column={column}
+            tasks={tasks}
+            projectMembers={project.members || []}
+            canDelete={canManage}
+            onStatusChange={changeTaskStatus}
+            onAssign={assignTaskMember}
+            onDelete={removeTask}
+            onOpenComments={setSelectedTaskForComments}
+            onAddTask={() => setCreateTaskStatus(column.id)}
+          />
         ))}
       </Grid>
-      
-      <CreateTaskModal 
-        isOpen={createTaskStatus !== null} 
-        onClose={() => setCreateTaskStatus(null)} 
-        projectId={project.id} 
-        initialStatus={createTaskStatus || TaskStatus.TODO} 
-        onSuccess={handleTaskCreated} 
+
+      <CreateTaskModal
+        isOpen={createTaskStatus !== null}
+        onClose={() => setCreateTaskStatus(null)}
+        projectId={project.id}
+        initialStatus={createTaskStatus || TaskStatus.TODO}
+        onSuccess={handleTaskCreated}
       />
 
-      <TaskDetailsModal 
-        isOpen={selectedTaskForComments !== null} 
-        onClose={() => setSelectedTaskForComments(null)} 
-        task={liveTask} 
+      <TaskDetailsModal
+        isOpen={selectedTaskForComments !== null}
+        onClose={() => setSelectedTaskForComments(null)}
+        task={liveTask}
         projectId={project.id}
         canEdit={canManage}
         onTaskUpdate={reloadProject}
@@ -191,22 +168,108 @@ export default function ProjectPage() {
   );
 }
 
-function TaskCard({ 
-  task, 
-  projectMembers, 
+function TaskColumn({
+  column,
+  tasks,
+  projectMembers,
   canDelete,
-  onStatusChange, 
-  onAssign, 
+  onStatusChange,
+  onAssign,
   onDelete,
-  onOpenComments
-}: { 
-  task: Task, 
-  projectMembers: ProjectMember[], 
+  onOpenComments,
+  onAddTask,
+}: {
+  column: { id: TaskStatus; label: string; color: string };
+  tasks: Task[];
+  projectMembers: ProjectMember[];
+  canDelete: boolean;
+  onStatusChange: (id: number, s: TaskStatus) => void;
+  onAssign: (taskId: number, userIds: number[]) => void;
+  onDelete: (id: number) => void;
+  onOpenComments: (task: Task) => void;
+  onAddTask: () => void;
+}) {
+  const [dragOver, setDragOver] = useState(false);
+  const columnTasks = tasks.filter((task) => task.status === column.id);
+
+  return (
+    <VStack
+      bg={dragOver ? 'gray.200' : 'gray.100'}
+      _dark={{ bg: dragOver ? 'gray.800' : 'gray.900' }}
+      p={4}
+      borderRadius="lg"
+      minH="500px"
+      alignItems="stretch"
+      border={dragOver ? '2px dashed' : '1px solid'}
+      borderColor={dragOver ? `${column.color}.400` : 'transparent'}
+      transition="background-color 0.15s ease, border-color 0.15s ease"
+      onDragOver={(e) => {
+        e.preventDefault();
+        setDragOver(true);
+      }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setDragOver(false);
+        const taskId = Number(e.dataTransfer.getData('taskId'));
+        if (taskId) {
+          onStatusChange(taskId, column.id);
+        }
+      }}
+    >
+      <Flex justify="space-between" align="center" mb={4}>
+        <Text fontWeight="bold" color={`${column.color}.600`} _dark={{ color: `${column.color}.300` }} textAlign="left">
+          {column.label}
+        </Text>
+        <Badge colorPalette={column.color} borderRadius="full">
+          {columnTasks.length}
+        </Badge>
+      </Flex>
+
+      {columnTasks.map((task) => (
+        <TaskCard
+          key={task.id}
+          task={task}
+          projectMembers={projectMembers}
+          canDelete={canDelete}
+          onStatusChange={onStatusChange}
+          onAssign={onAssign}
+          onDelete={onDelete}
+          onOpenComments={() => onOpenComments(task)}
+        />
+      ))}
+
+      <Button
+        variant="ghost"
+        color="gray.500"
+        justifyContent="flex-start"
+        w="full"
+        mt={2}
+        _hover={{ bg: 'gray.200', color: 'gray.800', _dark: { bg: 'gray.800', color: 'white' } }}
+        onClick={onAddTask}
+      >
+        <LuPlus /> Add Task
+      </Button>
+    </VStack>
+  );
+}
+
+function TaskCard({
+  task,
+  projectMembers,
+  canDelete,
+  onStatusChange,
+  onAssign,
+  onDelete,
+  onOpenComments,
+}: {
+  task: Task,
+  projectMembers: ProjectMember[],
   canDelete: boolean,
-  onStatusChange: (id: number, s: TaskStatus) => void, 
+  onStatusChange: (id: number, s: TaskStatus) => void,
   onAssign: (taskId: number, userIds: number[]) => void,
   onDelete: (id: number) => void,
-  onOpenComments: () => void
+  onOpenComments: () => void,
 }) {
   const cardColor = statusColors[task.status] || 'gray';
   const assignees = task.assignees || [];
@@ -224,25 +287,30 @@ function TaskCard({
   );
 
   return (
-    <Card.Root 
-      size="sm" 
-      variant="elevated" 
-      borderLeft="4px solid" 
-      borderColor={`${cardColor}.500`} 
-      _hover={{ shadow: 'md', transform: 'translateY(-2px)', transition: 'all 0.2s' }} 
+    <Card.Root
+      size="sm"
+      variant="elevated"
+      borderLeft="4px solid"
+      borderColor={`${cardColor}.500`}
+      _hover={{ shadow: 'md', transform: 'translateY(-2px)', transition: 'all 0.2s' }}
       position="relative"
-      cursor="pointer"
+      draggable={true}
+      cursor="grab"
+      onDragStart={(e) => {
+        e.stopPropagation();
+        e.dataTransfer.setData('taskId', String(task.id));
+      }}
       onClick={onOpenComments}
     >
       <Card.Body>
-        
+
         {canDelete && (
-          <Box 
-            position="absolute" 
-            top={2} 
-            right={2} 
-            color="gray.300" 
-            _hover={{ color: "red.500" }} 
+          <Box
+            position="absolute"
+            top={2}
+            right={2}
+            color="gray.300"
+            _hover={{ color: "red.500" }}
             zIndex={2}
             onClick={(e) => {
               e.stopPropagation();
@@ -258,29 +326,29 @@ function TaskCard({
             {task.title}
           </Text>
         </Tooltip>
-        
+
         <Box onClick={(e) => e.stopPropagation()}>
-          <TaskAssignees 
-            taskId={task.id} 
-            assignees={assignees as any} 
-            projectMembers={projectMembers} 
-            onAssign={onAssign} 
+          <TaskAssignees
+            taskId={task.id}
+            assignees={assignees as any}
+            projectMembers={projectMembers}
+            onAssign={onAssign}
           />
         </Box>
 
         <HStack justify="space-between" align="center" mt={2}>
           <Badge variant="subtle" colorPalette={cardColor}>#{task.id}</Badge>
-          
-          <Box 
+
+          <Box
             onClick={(e) => e.stopPropagation()}
-            color={`${cardColor}.600`} 
-            _dark={{ color: task.status === TaskStatus.TODO ? "white" : `${cardColor}.300` }} 
-            bg="transparent" 
-            _hover={{ bg: "gray.100", _dark: { bg: "gray.700" } }} 
+            color={`${cardColor}.600`}
+            _dark={{ color: task.status === TaskStatus.TODO ? "white" : `${cardColor}.300` }}
+            bg="transparent"
+            _hover={{ bg: "gray.100", _dark: { bg: "gray.700" } }}
             px={2} py={1} borderRadius="md" transition="background 0.2s"
           >
-            <select 
-              value={task.status} 
+            <select
+              value={task.status}
               onChange={(e) => onStatusChange(task.id, e.target.value as TaskStatus)}
               onClick={(e) => e.stopPropagation()}
               style={{ background: 'transparent', fontSize: '11px', cursor: 'pointer', outline: 'none', fontWeight: 'bold', color: 'inherit' }}
