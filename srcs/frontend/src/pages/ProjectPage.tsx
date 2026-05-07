@@ -1,7 +1,7 @@
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { Box, Flex, Heading, Text, Badge, Grid, Card, VStack, HStack, Spinner, Button } from '@chakra-ui/react';
-import { LuPlus, LuX } from 'react-icons/lu';
+import { LuPlus, LuX, LuTrash } from 'react-icons/lu';
 import ChatButton from '../components/chatButton';
 import AddMemberMenu from '../components/addMember';
 import TaskAssignees from '../components/taskAssigness';
@@ -30,7 +30,8 @@ const statusColors: Record<TaskStatus, string> = {
 
 export default function ProjectPage() {
   const { projectId } = useParams();
-  const { project, tasks, currentUser, isLoading, reloadProject, changeTaskStatus, changeProjectStatus, assignTaskMember, removeProjectMember, removeTask } = useProjectDetails(Number(projectId));
+  const navigate = useNavigate();
+  const { project, tasks, currentUser, isLoading, reloadProject, changeTaskStatus, changeProjectStatus, assignTaskMember, removeProjectMember, removeTask, deleteProject } = useProjectDetails(Number(projectId));
 
   const [createTaskStatus, setCreateTaskStatus] = useState<TaskStatus | null>(null);
   const [selectedTaskForComments, setSelectedTaskForComments] = useState<Task | null>(null);
@@ -56,9 +57,21 @@ export default function ProjectPage() {
     await reloadProject();
   };
 
+  const handleDeleteProject = async () => {
+    if (window.confirm("Are you sure you want to delete this project? This action cannot be undone.")) {
+      const success = await deleteProject();
+      if (success) {
+        navigate('/');
+      }
+    }
+  };
+
   const isProjectLeader = project?.members?.find(m => m.userId === currentUser?.id)?.role === 'PROJECT_LEADER';
   const isAdmin = currentUser?.globalRole === 'ADMIN';
+  const isMember = project?.members?.some(m => m.userId === currentUser?.id);
+  
   const canManage = isProjectLeader || isAdmin;
+  const canUpdate = isMember || isAdmin;
 
   const liveTask = selectedTaskForComments ? tasks.find(t => t.id === selectedTaskForComments.id) || selectedTaskForComments : null;
 
@@ -111,7 +124,7 @@ export default function ProjectPage() {
                 value={project.status}
                 onChange={(e) => changeProjectStatus(e.target.value as ProjectStatus)}
                 style={{ background: 'transparent', border: 'none', color: 'inherit', fontWeight: 'bold', cursor: 'pointer', outline: 'none', fontSize: '14px' }}
-                disabled={!canManage}
+                disabled={!canUpdate}
               >
                 <option value={ProjectStatus.PLANNING} style={{ color: 'black' }}>PLANNING</option>
                 <option value={ProjectStatus.ACTIVE} style={{ color: 'black' }}>ACTIVE</option>
@@ -119,17 +132,21 @@ export default function ProjectPage() {
               </select>
             </Box>
             {canManage && (
-              <AddMemberMenu
-                projectId={project.id}
-                existingMembers={project.members || []}
-                onMemberAdded={reloadProject}
-              />
+              <HStack gap={2}>
+                <Button size="sm" variant="subtle" colorPalette="red" onClick={handleDeleteProject}>
+                  <LuTrash /> Delete
+                </Button>
+                <AddMemberMenu
+                  projectId={project.id}
+                  existingMembers={project.members || []}
+                  onMemberAdded={reloadProject}
+                />
+              </HStack>
             )}
           </VStack>
         </Flex>
       </Box>
 
-      {/* Hier gebruiken we minmax(0, 1fr) zodat de kolommen altijd perfect 25% blijven */}
       <Grid templateColumns="repeat(4, minmax(0, 1fr))" gap={4} flex={1} alignItems="stretch">
         {columns.map((column) => (
           <TaskColumn
@@ -160,7 +177,7 @@ export default function ProjectPage() {
         onClose={() => setSelectedTaskForComments(null)}
         task={liveTask}
         projectId={project.id}
-        canEdit={canManage}
+        canEdit={canUpdate}
         onTaskUpdate={reloadProject}
       />
 
@@ -324,7 +341,6 @@ function TaskCard({
         )}
 
         <Tooltip content={tooltipContent} positioning={{ placement: "top" }} showArrow portalled>
-          {/* 👇 Hier zat de fout! w="full" forceert hem om binnen zijn kaartje te blijven */}
           <Text fontWeight="medium" mb={3} pr={5} textAlign="left" w="full" display="block" truncate>
             {task.title}
           </Text>

@@ -116,7 +116,7 @@ export function useProjectDetails(projectId: number) {
       await projectService.removeMember(projectId, userId);
       await reloadProject();
     } catch (error) {
-      console.error("Failed to remove member:", error);
+      console.error(error);
     }
   };
 
@@ -125,9 +125,19 @@ export function useProjectDetails(projectId: number) {
       await taskService.delete(taskId);
       await reloadProject();
     } catch (error) {
-      console.error("Failed to delete task:", error);
+      console.error(error);
     }
   };
 
-  return { project, tasks, currentUser, isLoading, reloadProject, changeTaskStatus, changeProjectStatus, assignTaskMember, removeProjectMember, removeTask };
+  const deleteProject = async () => {
+    try {
+      await projectService.delete(projectId);
+      return true;
+    } catch (error) {
+      console.error(error);
+      return false;
+    }
+  };
+
+  return { project, tasks, currentUser, isLoading, reloadProject, changeTaskStatus, changeProjectStatus, assignTaskMember, removeProjectMember, removeTask, deleteProject };
 }
