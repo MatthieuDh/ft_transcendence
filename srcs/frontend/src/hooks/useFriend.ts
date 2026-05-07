@@ -1,6 +1,6 @@
 import { friendService } from "../api/services";
-import{ type FriendUser } from "@transcendence/shared";
 import { useEffect, useState, useCallback } from "react";
+import type { FriendUser, FriendRequest } from "../../../../shared/srcs/types";
 
 export function useFriend(userId: number) {
   const [friends, setFriends] = useState<FriendUser[]>([]);
@@ -42,7 +42,6 @@ export function useAddFriend() {
   return { sendRequest, isLoading, error };
 }
 
-// useRemoveFriend hook — add this to useFriend.ts
 export function useRemoveFriend() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,4 +58,34 @@ export function useRemoveFriend() {
   };
 
   return { removeFriend, isLoading, error };
+}
+
+export function useFriendRequests() {
+  const [requests, setRequests] = useState<FriendRequest[]>([]);
+
+  useEffect(() => {
+    friendService.getRequests().then(res => {
+      setRequests(res.data.filter(req => req.status === 'PENDING'));
+    }).catch(console.error);
+  }, []);
+
+  const accept = async (requesterId: number) => {
+    try {
+      await friendService.acceptRequest(requesterId);
+      setRequests(prev => prev.filter(req => req.requesterId !== requesterId));
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const reject = async (requesterId: number) => {
+    try {
+      await friendService.rejectRequest(requesterId);
+      setRequests(prev => prev.filter(req => req.requesterId !== requesterId));
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  return { requests, accept, reject };
 }

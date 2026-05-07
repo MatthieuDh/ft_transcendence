@@ -1,10 +1,11 @@
-import { Flex, HStack, Box, Heading, Text, VStack, Input } from "@chakra-ui/react";
+import { Flex, HStack, Box, Heading, Text, VStack, Input, Button } from "@chakra-ui/react";
 import { ColorModeButton } from "./ui/color-mode";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import { useNotifications } from "../hooks/useNotification";
 import { LuBell, LuSearch } from "react-icons/lu";
 import { useLogout } from "../hooks/useLogout";
+import { useFriendRequests } from "../hooks/useFriend";
 
 interface TopBarProps {
   searchQuery: string;
@@ -15,6 +16,7 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { notifications, unreadCount, markAllAsRead, currentUser } = useNotifications();
+  const { requests, accept, reject } = useFriendRequests();
   const { logout } = useLogout();
   const [isOpen, setIsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
@@ -41,15 +43,19 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const displayNotifications = notifications.filter(
+    n => !n.message.toLowerCase().includes('friend request')
+  );
+
+  const totalAlerts = unreadCount + requests.length;
+
   return (
     <Flex as="header" w="full" h="72px" align="center" justify="space-between" px={8} bg="white" borderBottom="1px solid" borderColor="gray.200" _dark={{ bg: "gray.900", borderColor: "gray.700" }}>
       
-      {/* 1. LINKS: Paginatitel */}
       <Heading size="lg" fontWeight="bold" color="gray.800" _dark={{ color: "white" }} minW="150px">
         {getPageTitle(location.pathname)}
       </Heading>
 
-      {/* 2. MIDDEN: Zoekbalk (Alleen tonen op startpagina) */}
       <Box flex={1} maxW="500px" mx={8} display={{ base: "none", md: "block" }}>
         {location.pathname === '/' && (
           <Flex align="center" bg="gray.50" borderRadius="lg" border="1px solid" borderColor="gray.200" _dark={{ bg: "gray.800", borderColor: "gray.700" }} px={4} py={2}>
@@ -67,20 +73,19 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
         )}
       </Box>
 
-      {/* 3. RECHTS: Notificaties, Dark Mode en Profiel (Altijd tonen) */}
       <HStack gap={6}>
         <Box position="relative" ref={menuRef}>
-          <Box cursor="pointer" position="relative" onClick={() => setIsOpen(!isOpen)}>
+          <Box cursor="pointer" position="relative" onClick={() => setIsOpen(!isOpen)} p={1}>
             <LuBell size={24} />
-            {unreadCount > 0 && (
+            {totalAlerts > 0 && (
               <Flex position="absolute" top="-4px" right="-4px" bg="red.500" color="white" w="18px" h="18px" borderRadius="full" justify="center" align="center" fontSize="10px" fontWeight="bold">
-                {unreadCount}
+                {totalAlerts}
               </Flex>
             )}
           </Box>
 
           {isOpen && (
-            <Box position="absolute" top="40px" right="-10px" w="320px" bg="white" _dark={{ bg: "gray.800", borderColor: "gray.700" }} boxShadow="xl" borderRadius="lg" border="1px solid" borderColor="gray.200" zIndex={1000} overflow="hidden">
+            <Box position="absolute" top="50px" right="-10px" w="320px" bg="white" _dark={{ bg: "gray.800", borderColor: "gray.700" }} boxShadow="xl" borderRadius="lg" border="1px solid" borderColor="gray.200" zIndex={1000} overflow="hidden">
               <Flex justify="space-between" align="center" p={3} borderBottom="1px solid" borderColor="gray.100" bg="gray.50" _dark={{ borderColor: "gray.700", bg: "gray.900" }}>
                 <Text fontWeight="bold" fontSize="sm">Notifications</Text>
                 {unreadCount > 0 && (
@@ -90,11 +95,37 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
                 )}
               </Flex>
               <VStack maxH="300px" overflowY="auto" align="stretch" gap={0}>
-                {notifications.length === 0 ? (
+                
+                {/* INTERACTIEVE VRIENDENVERZOEKEN */}
+                {requests.map(req => (
+                  <Box key={`req-${req.id}`} p={3} borderBottom="1px solid" borderColor="gray.100" bg="purple.50" _dark={{ borderColor: "gray.700", bg: "purple.900" }}>
+                    <Text fontSize="sm" color="gray.800" _dark={{ color: "white" }} mb={2}>
+                      <strong>{req.requester.username}</strong> sent you a friend request!
+                    </Text>
+                    <HStack>
+                      <Button size="xs" colorPalette="green" onClick={(e) => { e.preventDefault(); e.stopPropagation(); accept(req.requesterId); }}>
+                        Accept
+                      </Button>
+                      <Button size="xs" colorPalette="red" variant="outline" onClick={(e) => { e.preventDefault(); e.stopPropagation(); reject(req.requesterId); }}>
+                        Decline
+                      </Button>
+                    </HStack>
+                  </Box>
+                ))}
+
+                {displayNotifications.length === 0 && requests.length === 0 ? (
                   <Text p={4} textAlign="center" fontSize="sm" color="gray.500">No notifications</Text>
                 ) : (
-                  notifications.map(notif => (
-                    <Box key={notif.id} p={3} borderBottom="1px solid" borderColor="gray.100" bg={notif.isRead ? "transparent" : "purple.50"} _dark={{ borderColor: "gray.700", bg: notif.isRead ? "transparent" : "purple.900" }} _hover={{ bg: "gray.50", _dark: { bg: "gray.700" } }}>
+                  displayNotifications.map(notif => (
+                    <Box 
+                      key={notif.id} 
+                      p={3} 
+                      borderBottom="1px solid" 
+                      borderColor="gray.100" 
+                      bg={notif.isRead ? "transparent" : "purple.50"} 
+                      _dark={{ borderColor: "gray.700", bg: notif.isRead ? "transparent" : "purple.900" }} 
+                      _hover={{ bg: "gray.50", _dark: { bg: "gray.700" } }}
+                    >
                       <Text fontSize="sm" color={notif.isRead ? "gray.600" : "gray.800"} _dark={{ color: notif.isRead ? "gray.400" : "white" }}>
                         {notif.message}
                       </Text>
