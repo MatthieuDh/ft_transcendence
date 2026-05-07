@@ -1,5 +1,5 @@
 import client from './client';
-import type { AuthToken, DashboardMetrics, Comment, Message, FriendRequest, FriendUser, Notification, Project, ProjectMember, ProjectRole, Task, User, PromotedUser, TaskStatus, DashboardFilters, ProjectStatus } from '../../../../shared/srcs/types';
+import { type AuthToken, type DashboardMetrics, type Comment, type Message, type FriendRequest, type FriendUser, type Notification, type Project, type ProjectMember, type ProjectRole, type Task, type User, type PromotedUser, type TaskStatus, type DashboardFilters, type ProjectStatus, type SentRequest } from '../../../../shared/srcs/types';
 
 export const authService = {
   login: async (username: string, password: string) => {
@@ -82,6 +82,7 @@ export const friendService = {
   getFriendsByUserId: (userId: number) => client.get<FriendUser[]>(`/friends/user/${userId}`),
   getRequests: () => client.get<FriendRequest[]>('/friends/requests'),
   sendRequest: (addressee: number) => client.post<FriendRequest>(`/friends/request/${addressee}`),
+  getSentRequests: () => client.get<SentRequest[]>('/friends/sent-requests'),
   acceptRequest: (requesterId: number) => client.patch<FriendRequest>(`/friends/accept/${requesterId}`),
   rejectRequest: (requesterId: number) => client.patch<FriendRequest>(`/friends/reject/${requesterId}`),
   removeFriend: (friendshipId: number) => client.delete<void>(`/friends/remove/${friendshipId}`),

@@ -1,5 +1,5 @@
 import { friendService } from "../api/services";
-import{ type FriendUser } from "@transcendence/shared";
+import{ type FriendUser, type SentRequest } from "@transcendence/shared";
 import { useEffect, useState, useCallback } from "react";
 
 export function useFriend(userId: number) {
@@ -59,4 +59,25 @@ export function useRemoveFriend() {
   };
 
   return { removeFriend, isLoading, error };
+}
+
+export function useSentRequests() {
+  const [sentRequests, setSentRequests] = useState<SentRequest[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchSentRequests = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const response = await friendService.getSentRequests();
+      setSentRequests(response.data);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchSentRequests();
+  }, [fetchSentRequests]);
+
+  return { sentRequests, isLoading, refetch: fetchSentRequests };
 }

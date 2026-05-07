@@ -25,6 +25,11 @@ export class FriendsController {
     return this.friendsService.getFriendRequests(req.user.sub);
   }
 
+  @Get('sent-requests')
+  getSentRequests(@Request() req) {
+  return this.friendsService.getSentRequests(req.user.sub);
+}
+
   @Post('request/:userId')
   sendRequest(@Request() req, @Param('userId', ParseIntPipe) targetUserId: number) {
     console.log('friend request sent by:', req.user);

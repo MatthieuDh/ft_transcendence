@@ -117,7 +117,21 @@ async getfriends(userId: number) {
             requester: {select: {id: true, username: true, email: true}}
         }
     });
-    }
+  }
+
+  async getSentRequests(requesterId: number) {
+    return this.prisma.friendship.findMany({
+      where: {
+        requesterId: requesterId,
+        status: 'PENDING', },
+        select:{
+          id: true,
+          addresseeId: true,
+          status: true,
+        }
+    });
+  }
+
 
     async getMyFriends(userId: number) {
     const friendships = await this.prisma.friendship.findMany({
