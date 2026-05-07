@@ -5,7 +5,7 @@ import LoginForm from '../components/loginForm';
 import SigmaLogo from '../components/logo';
 
 export default function LoginPage() {
-  const { login, error, isLoading } = useLogin();
+  const { login, loginWithGoogle, error, isLoading } = useLogin();
 
   return (
     <Flex 
@@ -42,7 +42,12 @@ export default function LoginPage() {
             </Text>
           </Box>
 
-          <LoginForm onSubmit={login} error={error} isLoading={isLoading} />
+          <LoginForm 
+            onSubmit={login} 
+            onGoogleLogin={loginWithGoogle} 
+            error={error} 
+            isLoading={isLoading} 
+          />
 
           <Text textAlign="center" fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
             Don't have an account yet?{' '}

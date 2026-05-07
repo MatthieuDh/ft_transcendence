@@ -1,4 +1,4 @@
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import { useState } from 'react';
 import { Box, Flex, Heading, Text, Button, VStack, Spinner, Grid, HStack, Badge } from '@chakra-ui/react';
 import { LuPlus, LuFolder, LuListTodo } from 'react-icons/lu';
@@ -18,6 +18,17 @@ export default function MainPage() {
   const navigate = useNavigate();
   const { projects, sortedTasks, isLoading, refresh } = useMainPageData();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { searchQuery } = useOutletContext<{ searchQuery: string }>();
+
+  const filteredProjects = projects.filter(p => 
+    p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    (p.description && p.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  const filteredTasks = sortedTasks.filter(t => 
+    t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (t.description && t.description.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
 
   if (isLoading) return <Flex h="100%" justify="center" align="center"><Spinner size="xl" color="purple.500" /></Flex>;
 
@@ -34,25 +45,22 @@ export default function MainPage() {
         </Button>
       </Flex>
 
-      {/* Content Grid */}
       <Grid templateColumns={{ base: "1fr", xl: "1fr 1fr" }} gap={8} alignItems="start" flex={1} minH={0}>
         
-        {/* Projects Column */}
         <Flex direction="column" h="100%" minH={0}>
-          <SectionHeader title="My Projects" count={projects.length} icon={<LuFolder />} color="purple" />
+          <SectionHeader title="My Projects" count={filteredProjects.length} icon={<LuFolder />} color="purple" />
           <VStack align="stretch" gap={3} overflowY="auto" pr={3} css={customScrollbar} flex={1} pb={4}>
-            {projects.length === 0 ? <Text color="gray.500">No projects yet.</Text> : 
-              projects.map(p => <ProjectCard key={p.id} project={p} onClick={() => navigate(`/project/${p.id}`)} />)
+            {filteredProjects.length === 0 ? <Text color="gray.500">No projects found.</Text> : 
+              filteredProjects.map(p => <ProjectCard key={p.id} project={p} onClick={() => navigate(`/project/${p.id}`)} />)
             }
           </VStack>
         </Flex>
 
-        {/* Tasks Column */}
         <Flex direction="column" h="100%" minH={0}>
-          <SectionHeader title="My Tasks" count={sortedTasks.length} icon={<LuListTodo />} color="orange" />
+          <SectionHeader title="My Tasks" count={filteredTasks.length} icon={<LuListTodo />} color="orange" />
           <VStack align="stretch" gap={3} overflowY="auto" pr={3} css={customScrollbar} flex={1} pb={4}>
-            {sortedTasks.length === 0 ? <Text color="gray.500">No tasks assigned yet.</Text> : 
-              sortedTasks.map(t => <TaskCard key={t.id} task={t} onClick={() => navigate(`/project/${t.projectId}`)} />)
+            {filteredTasks.length === 0 ? <Text color="gray.500">No tasks found.</Text> : 
+              filteredTasks.map(t => <TaskCard key={t.id} task={t} onClick={() => navigate(`/project/${t.projectId}`)} />)
             }
           </VStack>
         </Flex>

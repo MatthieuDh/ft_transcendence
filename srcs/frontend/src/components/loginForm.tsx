@@ -1,10 +1,12 @@
-import { Button, Input, Stack, Text } from "@chakra-ui/react"
+import { Button, Input, Stack, Text, HStack, Box } from "@chakra-ui/react"
 import { useForm } from "react-hook-form"
 import { PasswordInput } from "./ui/password-input"
 import { Field } from "./ui/field"
+import { FaGoogle } from "react-icons/fa"
 
 interface LoginFormProps {
   onSubmit: (username: string, password: string) => void;
+  onGoogleLogin: () => void;
   error?: string;
   isLoading: boolean;
 }
@@ -14,7 +16,7 @@ interface FormValues {
   password: string
 }
 
-export default function LoginForm({ onSubmit, error, isLoading }: LoginFormProps) {
+export default function LoginForm({ onSubmit, onGoogleLogin, error, isLoading }: LoginFormProps) {
   const {
     register,
     handleSubmit,
@@ -44,9 +46,9 @@ export default function LoginForm({ onSubmit, error, isLoading }: LoginFormProps
             {...register("username", { required: "Username is required" })} 
             focusRingColor="purple.500"
             borderColor="gray.300"
-            bg="gray.130"
-            _dark={{ borderColor: "gray.100" }}
-            _hover={{ borderColor: "gray.400", _dark: { borderColor: "gray.500" } }}
+            bg="white"
+            _dark={{ bg: "gray.800", borderColor: "gray.600" }}
+            _hover={{ borderColor: "purple.400", _dark: { borderColor: "purple.500" } }}
             size="lg"
           />
         </Field>
@@ -59,10 +61,10 @@ export default function LoginForm({ onSubmit, error, isLoading }: LoginFormProps
           <PasswordInput 
             {...register("password", { required: "Password is required" })} 
             focusRingColor="purple.300"
-            borderColor="gray.100"
-            bg="gray.130"
-            _dark={{ borderColor: "gray.100" }}
-            _hover={{ borderColor: "gray.400", _dark: { borderColor: "gray.500" } }}
+            borderColor="gray.300"
+            bg="white"
+            _dark={{ bg: "gray.800", borderColor: "gray.600" }}
+            _hover={{ borderColor: "purple.400", _dark: { borderColor: "purple.500" } }}
             size="lg"
           />
         </Field>
@@ -76,6 +78,25 @@ export default function LoginForm({ onSubmit, error, isLoading }: LoginFormProps
           width="full"
         >
           Login
+        </Button>
+
+        <HStack w="full" my={2}>
+          <Box flex="1" h="1px" bg="gray.200" _dark={{ bg: "gray.700" }} />
+          <Text fontSize="sm" color="gray.500" whiteSpace="nowrap">Or log in with</Text>
+          <Box flex="1" h="1px" bg="gray.200" _dark={{ bg: "gray.700" }} />
+        </HStack>
+
+        <Button
+          type="button"
+          w="full"
+          variant="outline"
+          onClick={onGoogleLogin}
+          display="flex"
+          gap={2}
+          size="lg"
+        >
+          <FaGoogle />
+          Google
         </Button>
         
       </Stack>
