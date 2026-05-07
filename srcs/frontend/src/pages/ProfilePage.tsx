@@ -7,6 +7,8 @@ import { HStack, Box, Container, VStack  } from "@chakra-ui/react";
 import { useAuth } from "../context/AuthContext";
 import AddFriendButton from "../components/addFriendButton";
 import RemoveFriendButton from "../components/removeFriendButton";
+import RoleSelect from "../components/roleSelection";
+import type { GlobalRole } from "@transcendence/shared";
 
 export function ProfilePage() {
   const { userId } = useParams();
@@ -14,6 +16,7 @@ export function ProfilePage() {
   const { friends } = useFriend(Number(userId));
   const { currentUser, isLoading: authLoading } = useAuth();
   const { friends: myFriends, isLoading: friendsLoading, refetch: refetchMyFriends } = useFriend(currentUser?.id ?? 0);
+
   
 
   const isOwnProfile = currentUser?.id === Number(userId);
@@ -26,7 +29,16 @@ export function ProfilePage() {
     <Container maxW="1400px" mt={8}>
       <HStack gap={4} align="start" flexWrap="wrap">
         <Box flex="3 1 62%" minW="60%">
-          <Profile user={user} />
+          <Profile user={user} 
+            roleSelect={currentUser?.globalRole === 'ADMIN' && !isOwnProfile
+           ? <RoleSelect
+            targetUserId={Number(userId)}
+            currentRole={user.globalRole as GlobalRole}
+            onSuccess={() => {}}
+          />
+          : undefined} 
+        />
+
         </Box>
         <VStack flex="1" gap={4}>
           <Box flex="2 1 38%" minW="300px" width="100%">

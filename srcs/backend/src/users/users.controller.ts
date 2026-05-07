@@ -75,8 +75,8 @@ export class UsersController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Patch('demote/:username')
-  demote(@Param('username') username: string, @Request() req) {
+  demote(@Param('userId') userId: number, @Request() req) {
     // to the service (e.g., to prevent an admin from demoting themselves).
-    return this.usersService.demote(username, req.user.username);
+    return this.usersService.demote(userId, req.user.userId);
   }
 }
