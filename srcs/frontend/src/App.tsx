@@ -5,14 +5,18 @@ import { ProfilePage } from './pages/ProfilePage';
 import ProjectPage from './pages/ProjectPage';
 import Layout from './components/layout';
 import MainPage from './pages/MainPage';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { authService } from './api/services';
-import { Flex, Spinner } from '@chakra-ui/react'
-import  ProtectedRoute from './components/protectedRoute'
+import { Flex, Spinner } from '@chakra-ui/react';
+import ProtectedRoute from './components/protectedRoute';
+import Footer from './components/Footer';
+import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
+import TermsOfServicePage from './pages/TermsOfServicePage';
+import ConditionalLayout from './components/ConditionalLayout';
 import { SocketProvider } from './context/SocketContext';
 import { useAuth } from './context/AuthContext';
 
-function SocketWrapper({ children }: { children: React.ReactNode }) {
+function SocketWrapper({ children }: { children: ReactNode }) {
   const { currentUser } = useAuth();
   return <SocketProvider currentUserId={currentUser?.id}>{children}</SocketProvider>;
 }
@@ -32,6 +36,13 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Public routes wrapped by ConditionalLayout - will render Layout if token exists */}
+        <Route element={<ConditionalLayout />}>
+          <Route path="/privacy-policy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms-of-service" element={<TermsOfServicePage />} />
+        </Route>
+
+        {/* add pages here to add the sidebar and topbar */}
         <Route element={<ProtectedRoute />}>
           <Route element={<SocketWrapper><Layout /></SocketWrapper>}>
             <Route path="/" element={<MainPage />} />
@@ -39,10 +50,13 @@ export default function App() {
             <Route path="/project/:projectId" element={<ProjectPage />} />
           </Route>
         </Route>
+
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="*" element={<Navigate to="/login" />} />
       </Routes>
+
+      <Footer />
     </BrowserRouter>
   );
 }

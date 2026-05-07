@@ -8,31 +8,32 @@ export default function RegisterPage() {
   const { register, error, isLoading } = useRegister();
 
   return (
-    <Flex 
-      minH="100vh" 
-      align="center" 
-      justify="center" 
-      bg="gray.50" 
-      _dark={{ bg: "gray.900" }} 
-      p={4} 
+    <Flex
+      minH="100vh"
+      align="center"
+      justify="center"
+      bg="gray.50"
+      _dark={{ bg: "gray.900" }}
+      p={4}
+      pb="110px"
       position="relative"
     >
-      
+
       <Box position="absolute" top={6} left={6}>
         <SigmaLogo height="48px" />
       </Box>
 
-      <Box 
-        w="full" 
-        maxW="md" 
-        bg="white" 
+      <Box
+        w="full"
+        maxW="md"
+        bg="white"
         _dark={{ bg: "gray.800", borderWidth: "1px", borderColor: "gray.700", boxShadow: "none" }}
-        p={8} 
-        borderRadius="xl" 
+        p={8}
+        borderRadius="xl"
         boxShadow="lg"
       >
         <Stack gap={6}>
-          
+
           <Box textAlign="center">
             <Heading fontSize="3xl" mb={2} color="gray.800" _dark={{ color: "white" }}>
               Create an Account
@@ -46,12 +47,12 @@ export default function RegisterPage() {
 
           <Text textAlign="center" fontSize="sm" color="gray.600" _dark={{ color: "gray.400" }}>
             Already have an account?{' '}
-            <RouterLink 
-              to="/login" 
-              style={{ 
-                color: '#9f7aea', 
-                fontWeight: 'bold', 
-                textDecoration: 'none' 
+            <RouterLink
+              to="/login"
+              style={{
+                color: '#9f7aea',
+                fontWeight: 'bold',
+                textDecoration: 'none'
               }}
             >
               Log in here

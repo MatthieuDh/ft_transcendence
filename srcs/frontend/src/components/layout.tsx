@@ -12,11 +12,12 @@ export default function Layout() {
       <Sidebar />
       <Flex direction="column" flex={1}>
         <TopBar searchQuery={searchQuery} onSearchChange={setSearchQuery} />
-        
-        <Box 
-          as="main" 
-          flex={1} 
-          p={8} 
+
+        <Box
+          as="main"
+          flex={1}
+          p={8}
+          pb="88px"
           overflowY="auto"
           bg="gray.50"
           _dark={{ bg: "gray.950" }}
