@@ -43,13 +43,17 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
 
   return (
     <Flex as="header" w="full" h="72px" align="center" justify="space-between" px={8} bg="white" borderBottom="1px solid" borderColor="gray.200" _dark={{ bg: "gray.900", borderColor: "gray.700" }}>
+      
+      {/* 1. LINKS: Paginatitel */}
       <Heading size="lg" fontWeight="bold" color="gray.800" _dark={{ color: "white" }} minW="150px">
         {getPageTitle(location.pathname)}
       </Heading>
 
+      {/* 2. MIDDEN: Zoekbalk (Alleen tonen op startpagina) */}
       <Box flex={1} maxW="500px" mx={8} display={{ base: "none", md: "block" }}>
         {location.pathname === '/' && (
-        <Flex align="center" bg="gray.50" borderRadius="lg" border="1px solid" borderColor="gray.200" _dark={{ bg: "gray.800", borderColor: "gray.700" }} px={4} py={2}>            <LuSearch color="gray" size={20} />
+          <Flex align="center" bg="gray.50" borderRadius="lg" border="1px solid" borderColor="gray.200" _dark={{ bg: "gray.800", borderColor: "gray.700" }} px={4} py={2}>
+            <LuSearch color="gray" size={20} />
             <Input 
               variant="outline" 
               border="none" 
@@ -63,6 +67,7 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
         )}
       </Box>
 
+      {/* 3. RECHTS: Notificaties, Dark Mode en Profiel (Altijd tonen) */}
       <HStack gap={6}>
         <Box position="relative" ref={menuRef}>
           <Box cursor="pointer" position="relative" onClick={() => setIsOpen(!isOpen)}>
