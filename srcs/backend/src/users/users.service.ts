@@ -133,9 +133,9 @@ export class UsersService {
     });
   }
 
-  async promote(username: string) {
+  async promote(id: number) {
     return this.prisma.user.update({
-      where: { username },
+      where: { id },
       data: { globalRole: 'ADMIN'}, 
       select: {
         id: true,

@@ -24,10 +24,12 @@ export function ProfilePage() {
 
   return (
     <Container maxW="1400px" mt={8}>
-      <HStack gap={4} align="start">
-        <Box flex={3} borderRadius="xl" borderWidth="2px"><Profile user={user} /></Box>
-        <VStack flex={2} gap={4}>
-          <Box w="100%" borderRadius="xl">
+      <HStack gap={4} align="start" flexWrap="wrap">
+        <Box flex="3 1 62%" minW="60%">
+          <Profile user={user} />
+        </Box>
+        <VStack flex="1" gap={4}>
+          <Box flex="2 1 38%" minW="300px" width="100%">
             <FriendList friends={friends} currentUserId={currentUser?.id ?? 0} />
           </Box>
           {!isOwnProfile && !friendsLoading && (
