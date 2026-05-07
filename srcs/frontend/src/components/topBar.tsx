@@ -1,14 +1,21 @@
-import { Flex, HStack, Box, Heading, Text, VStack } from "@chakra-ui/react";
+import { Flex, HStack, Box, Heading, Text, VStack, Input } from "@chakra-ui/react";
 import { ColorModeButton } from "./ui/color-mode";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import { useNotifications } from "../hooks/useNotification";
-import { LuBell } from "react-icons/lu";
+import { LuBell, LuSearch } from "react-icons/lu";
+import { useLogout } from "../hooks/useLogout";
 
-export default function TopBar() {
+interface TopBarProps {
+  searchQuery: string;
+  onSearchChange: (value: string) => void;
+}
+
+export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const { notifications, unreadCount, markAllAsRead, currentUser } = useNotifications();
+  const { logout } = useLogout();
   const [isOpen, setIsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -36,10 +43,31 @@ export default function TopBar() {
 
   return (
     <Flex as="header" w="full" h="72px" align="center" justify="space-between" px={8} bg="white" borderBottom="1px solid" borderColor="gray.200" _dark={{ bg: "gray.900", borderColor: "gray.700" }}>
-      <Heading size="lg" fontWeight="bold" color="gray.800" _dark={{ color: "white" }}>
+      
+      {/* 1. LINKS: Paginatitel */}
+      <Heading size="lg" fontWeight="bold" color="gray.800" _dark={{ color: "white" }} minW="150px">
         {getPageTitle(location.pathname)}
       </Heading>
 
+      {/* 2. MIDDEN: Zoekbalk (Alleen tonen op startpagina) */}
+      <Box flex={1} maxW="500px" mx={8} display={{ base: "none", md: "block" }}>
+        {location.pathname === '/' && (
+          <Flex align="center" bg="gray.50" borderRadius="lg" border="1px solid" borderColor="gray.200" _dark={{ bg: "gray.800", borderColor: "gray.700" }} px={4} py={2}>
+            <LuSearch color="gray" size={20} />
+            <Input 
+              variant="outline" 
+              border="none" 
+              placeholder="Search projects and tasks..." 
+              _focus={{ boxShadow: "none" }}
+              value={searchQuery}
+              onChange={(e) => onSearchChange(e.target.value)}
+              ml={2}
+            />
+          </Flex>
+        )}
+      </Box>
+
+      {/* 3. RECHTS: Notificaties, Dark Mode en Profiel (Altijd tonen) */}
       <HStack gap={6}>
         <Box position="relative" ref={menuRef}>
           <Box cursor="pointer" position="relative" onClick={() => setIsOpen(!isOpen)}>
@@ -95,6 +123,21 @@ export default function TopBar() {
                   }
                 }}>
                   <Text fontSize="sm" fontWeight="bold">My Profile</Text>
+                </Box>
+                <Box 
+                  p={3} 
+                  cursor="pointer" 
+                  color="red.500"
+                  _hover={{ bg: "red.50", _dark: { bg: "red.900/30" } }} 
+                  borderTop="1px solid" 
+                  borderColor="gray.100" 
+                  _dark={{ borderColor: "gray.700" }}
+                  onClick={() => {
+                    setIsProfileOpen(false);
+                    logout();
+                  }}
+                >
+                  <Text fontSize="sm" fontWeight="bold">Logout</Text>
                 </Box>
               </VStack>
             </Box>

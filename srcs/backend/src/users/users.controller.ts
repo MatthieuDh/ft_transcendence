@@ -65,18 +65,18 @@ export class UsersController {
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard) // <-- Check if the user is logged in first, THEN check their role
   @Roles('ADMIN')                   // <-- The magic tag! Only ADMINs can access this route
-  @Patch('promote/:username')
-  promote(@Param('username') username: string) {
+  @Patch('promote/:userId')
+  promote(@Param('userId') userId: number) {
     // If the execution reaches this point, we are 100% sure the user is an ADMIN.
-    return this.usersService.promote(username);
+    return this.usersService.promote(userId);
   }
 
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMIN')
   @Patch('demote/:username')
-  demote(@Param('username') username: string, @Request() req) {
+  demote(@Param('userId') userId: number, @Request() req) {
     // to the service (e.g., to prevent an admin from demoting themselves).
-    return this.usersService.demote(username, req.user.username);
+    return this.usersService.demote(userId, req.user.userId);
   }
 }

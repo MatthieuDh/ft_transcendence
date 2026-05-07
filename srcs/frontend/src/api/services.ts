@@ -10,7 +10,7 @@ export const authService = {
     return response;
   },
   googleLogin: () => {
-    window.location.href = `${import.meta.env.VITE_API_BASE_URL}/auth/google`;
+    window.location.href = `${import.meta.env.VITE_API_BASE_URL}`;
   },
   refresh: async () => {
     const refreshToken = localStorage.getItem('refresh_token');
@@ -110,6 +110,6 @@ export const userService = {
   delete: (userId: number) => client.delete<void>(`/users/${userId}`),
   updateUser: (data: { username?: string; email?: string; password?: string; avatar?: string }) =>
     client.patch<User>('/users/me', data),
-  promoteUser: (username: string) => client.patch<PromotedUser>(`/users/promote/${username}`),
-  demoteUser: (username: string) => client.patch<PromotedUser>(`/users/demote/${username}`),
+  promoteUser: (userId: number) => client.patch<PromotedUser>(`/users/promote/${userId}`),
+  demoteUser: (userId: number) => client.patch<PromotedUser>(`/users/demote/${userId}`),
 };

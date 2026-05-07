@@ -1,14 +1,14 @@
-import { useState, useEffect, useRef } from 'react';
-import { io, Socket } from 'socket.io-client';
+import { useState, useEffect } from 'react';
 import { projectService, taskService, authService } from '../api/services';
 import type { Project, Task, TaskStatus, User, ProjectStatus } from '../../../../shared/srcs/types';
+import { useSocket } from '../context/SocketContext';
 
 export function useProjectDetails(projectId: number) {
   const [project, setProject] = useState<Project | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const socketRef = useRef<Socket | null>(null);
+  const socket = useSocket();
 
   useEffect(() => {
     if (!projectId) return;
@@ -24,22 +24,6 @@ export function useProjectDetails(projectId: number) {
         setProject(projectRes.data);
         setTasks(projectRes.data.tasks || []);
         setCurrentUser(profileRes.data);
-
-        const token = localStorage.getItem('access_token');
-        if (token) {
-          socketRef.current = io('/', { auth: { token }, path: '/socket.io' });
-
-          socketRef.current.on('connect', () => {
-            socketRef.current?.emit('identify', profileRes.data.id);
-            socketRef.current?.emit('joined project', { username: profileRes.data.username, projectId });
-          });
-
-          socketRef.current.on('task_updated', (updatedTask: Task) => {
-            setTasks(prevTasks => 
-              prevTasks.map(t => t.id === updatedTask.id ? { ...t, ...updatedTask } : t)
-            );
-          });
-        }
       } catch (error) {
         console.error(error);
       } finally {
@@ -48,14 +32,24 @@ export function useProjectDetails(projectId: number) {
     };
 
     fetchData();
+  }, [projectId]);
+
+  useEffect(() => {
+    if (!socket || !projectId || !currentUser) return;
+
+    socket.emit('joined project', { username: currentUser.username, projectId });
+
+    socket.on('task_updated', (updatedTask: Task) => {
+      setTasks(prevTasks =>
+        prevTasks.map(t => t.id === updatedTask.id ? { ...t, ...updatedTask } : t)
+      );
+    });
 
     return () => {
-      if (socketRef.current) {
-        socketRef.current.emit('left project', { username: currentUser?.username || 'User', projectId });
-        socketRef.current.disconnect();
-      }
+      socket.emit('left project', { username: currentUser.username, projectId });
+      socket.off('task_updated');
     };
-  }, [projectId, currentUser?.username]);
+  }, [socket, projectId, currentUser]);
 
   const reloadProject = async () => {
     try {

@@ -19,6 +19,8 @@ const userSelect = {
       project: {
         select: {
           name: true,
+          description: true,
+          deadline: true,
         },
       },
     },
@@ -131,9 +133,9 @@ export class UsersService {
     });
   }
 
-  async promote(username: string) {
+  async promote(id: number) {
     return this.prisma.user.update({
-      where: { username },
+      where: { id },
       data: { globalRole: 'ADMIN'}, 
       select: {
         id: true,
@@ -144,8 +146,8 @@ export class UsersService {
   }
 
 
-  async demote(username: string, adminName: string) {
-    if (username == adminName) {
+  async demote(userId: number, adminId: number) {
+    if (userId == adminId) {
       throw new ForbiddenException('You cannot demote yourself');
     }
     const adminCount = await this.prisma.user.count({
@@ -155,7 +157,7 @@ export class UsersService {
       throw new ForbiddenException('Cannot demote the last admin');
     }
     return this.prisma.user.update({
-      where: { username },
+      where: { id: userId },
       data: { globalRole: 'USER' },
       select: {
         id: true,

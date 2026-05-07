@@ -24,7 +24,21 @@ async function bootstrap() {
 
   const config = new DocumentBuilder()
     .setTitle('Transcendence API')
-    .setDescription('De API documentatie voor ons Transcendence project')
+    .setDescription(`
+De API documentatie voor ons Transcendence project
+
+⚡ Rate Limiting (Nginx enforced):
+- API (/api/*): 10 requests per second per IP
+- Burst allowance: 20 requests
+- Uploads (/api/uploads): stricter burst limit (10)
+- Exceeding limits returns: 429 Too Many Requests
+
+🔐 Authentication:
+- JWT Bearer token required for protected routes
+
+📡 WebSocket:
+- Socket.IO available at /socket.io/
+  	`)
     .setVersion('1.0')
     .addBearerAuth()
     .build();

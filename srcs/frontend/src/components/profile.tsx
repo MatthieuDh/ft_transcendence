@@ -1,35 +1,39 @@
 import type { User } from '@transcendence/shared/srcs/types/user';
-import { Card, HStack, VStack, Avatar, Text, Heading, List } from '@chakra-ui/react';
+import { Card, HStack, VStack, Avatar, Text, Heading, List, Tooltip, Box } from '@chakra-ui/react';
 
 interface ProfileProps {
   user: User;
+  roleSelect?: React.ReactNode;
 }
 
-function Profile({ user }: ProfileProps) {
+function Profile({ user, roleSelect }: ProfileProps) {
+  console.log(user.projectMemberships?.[0]?.project);
   return (
     <VStack gap={4} align="stretch">
-    <Card.Root>
-      <Card.Body>
-
-        <HStack gap={4}>
-          {/* left: avatar */}
-          <Avatar.Root size="2xl">
-            <Avatar.Image src={user.avatar ?? undefined} />
-            <Avatar.Fallback>{user.username?.charAt(0).toUpperCase()}</Avatar.Fallback>
-          </Avatar.Root>
-
-          {/* right: info stacked */}
-          <VStack align="start" gap={5}>
-            <Heading size="md" color="fg.default">{user.username}</Heading>
-            <Text color="fg.muted">{user.email}</Text>
-            <Text color="fg.muted">
-              Member since {new Date(user.createdAt).toLocaleDateString('en-GB', {
-              year: 'numeric', month: 'long', day: 'numeric'
-            })}</Text>
-          </VStack>
-        </HStack>
-      </Card.Body>
-    </Card.Root>
+      <Card.Root>
+        <Card.Body>
+          <HStack gap={4} align="start">
+            <Avatar.Root size="2xl">
+              <Avatar.Image src={user.avatar ?? undefined} />
+              <Avatar.Fallback>{user.username?.charAt(0).toUpperCase()}</Avatar.Fallback>
+            </Avatar.Root>
+            <VStack align="start" gap={5} flex={1}>
+              <Heading size="md" color="fg.default">{user.username}</Heading>
+              <Text color="fg.muted">{user.email}</Text>
+              <Text color="fg.muted">
+                Member since {new Date(user.createdAt).toLocaleDateString('en-GB', {
+                  year: 'numeric', month: 'long', day: 'numeric'
+                })}
+              </Text>
+            </VStack>
+            {roleSelect && (
+              <Box ml="auto">
+                {roleSelect}
+              </Box>
+            )}
+          </HStack>
+        </Card.Body>
+      </Card.Root>
 
     {/*Projects*/}
     <Card.Root>
@@ -41,7 +45,22 @@ function Profile({ user }: ProfileProps) {
           <List.Root mt={4}>
             {user.projectMemberships.map((membership) => (
               <List.Item key={membership.id}>
-                {membership.project?.name ?? 'Unknown project'}
+                <Tooltip.Root>
+                  <Tooltip.Trigger asChild>
+                    <Text cursor="default">{membership.project?.name ?? 'Unknown project'}</Text>
+                  </Tooltip.Trigger>
+                  <Tooltip.Content>
+                    <VStack align="start" gap={1}>
+                      <Text fontWeight="bold">{membership.project?.name}</Text>
+                      <Text>{membership.project?.description ?? 'No description'}</Text>
+                      <Text>
+                        {membership.project?.deadline
+                        ? `Deadline: ${new Date(membership.project.deadline).toLocaleDateString('en-GB')}`
+                        : 'No deadline set'}
+                      </Text>
+                    </VStack>
+                  </Tooltip.Content>
+                </Tooltip.Root>
               </List.Item>
             ))}
           </List.Root>
