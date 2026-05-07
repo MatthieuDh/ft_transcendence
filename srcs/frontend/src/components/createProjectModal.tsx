@@ -33,7 +33,6 @@ export default function CreateProjectModal({ isOpen, onClose, onCreated }: Creat
         deadline: deadline ? new Date(deadline).toISOString() : undefined 
       });
       
-      
       setName('');
       setDesc('');
       setDeadline('');
@@ -51,18 +50,23 @@ export default function CreateProjectModal({ isOpen, onClose, onCreated }: Creat
     <DialogRoot open={isOpen} onOpenChange={(e) => !e.open && onClose()} placement="center">
       <DialogContent _dark={{ bg: "gray.800" }}>
         <DialogHeader>
-          <DialogTitle>Create New Project</DialogTitle>
+          <DialogTitle textAlign="left">Create New Project</DialogTitle>
           <DialogCloseTrigger />
         </DialogHeader>
         
         <DialogBody pb={6}>
-          <VStack align="stretch" gap={4}>
+          <VStack align="stretch" gap={4} textAlign="left">
             <Box>
               <Text fontSize="sm" fontWeight="bold" mb={1}>Project Name *</Text>
               <Input 
                 value={name} 
                 onChange={e => setName(e.target.value)} 
                 placeholder="e.g. Website Redesign"
+                bg="white"
+                borderWidth="1px"
+                borderColor="gray.300"
+                _dark={{ bg: "gray.700", borderColor: "gray.500" }}
+                _hover={{ borderColor: "purple.400" }}
               />
             </Box>
             <Box>
@@ -72,6 +76,11 @@ export default function CreateProjectModal({ isOpen, onClose, onCreated }: Creat
                 onChange={e => setDesc(e.target.value)} 
                 rows={3} 
                 placeholder="What is this project about?"
+                bg="white"
+                borderWidth="1px"
+                borderColor="gray.300"
+                _dark={{ bg: "gray.700", borderColor: "gray.500" }}
+                _hover={{ borderColor: "purple.400" }}
               />
             </Box>
             <Box>
@@ -80,6 +89,11 @@ export default function CreateProjectModal({ isOpen, onClose, onCreated }: Creat
                 type="datetime-local" 
                 value={deadline} 
                 onChange={e => setDeadline(e.target.value)} 
+                bg="white"
+                borderWidth="1px"
+                borderColor="gray.300"
+                _dark={{ bg: "gray.700", borderColor: "gray.500" }}
+                _hover={{ borderColor: "purple.400" }}
               />
             </Box>
           </VStack>

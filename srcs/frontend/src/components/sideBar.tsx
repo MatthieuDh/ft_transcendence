@@ -38,7 +38,7 @@ export default function Sidebar() {
           _dark={{ color: "gray.200" }}
         >
           <RouterLink to="/">
-            🏠 Dashboard
+            🏠 Home
           </RouterLink>
         </Link>
 

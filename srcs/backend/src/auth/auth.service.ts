@@ -50,7 +50,8 @@ export class AuthService {
 async signInOAuth(user: SafeUser) {
   const payload = { sub: user.id, username: user.username, role: user.globalRole };
   return {
-    access_token: await this.jwtService.signAsync(payload),
+    access_token: await this.jwtService.signAsync(payload, { secret: process.env.JWT_SECRET, expiresIn: '15m'}),
+    refresh_token: await this.jwtService.signAsync(payload, { secret: process.env.JWT_REFRESH_SECRET, expiresIn: '7d' }),
   };
 }
 
