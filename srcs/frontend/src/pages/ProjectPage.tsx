@@ -129,7 +129,8 @@ export default function ProjectPage() {
         </Flex>
       </Box>
 
-      <Grid templateColumns="repeat(4, 1fr)" gap={4} flex={1} alignItems="start">
+      {/* Hier gebruiken we minmax(0, 1fr) zodat de kolommen altijd perfect 25% blijven */}
+      <Grid templateColumns="repeat(4, minmax(0, 1fr))" gap={4} flex={1} alignItems="stretch">
         {columns.map((column) => (
           <TaskColumn
             key={column.id}
@@ -194,6 +195,7 @@ function TaskColumn({
 
   return (
     <VStack
+      h="100%"
       bg={dragOver ? 'gray.200' : 'gray.100'}
       _dark={{ bg: dragOver ? 'gray.800' : 'gray.900' }}
       p={4}
@@ -322,7 +324,8 @@ function TaskCard({
         )}
 
         <Tooltip content={tooltipContent} positioning={{ placement: "top" }} showArrow portalled>
-          <Text fontWeight="medium" mb={3} pr={5} textAlign="left" width="max-content" maxW="90%" truncate>
+          {/* 👇 Hier zat de fout! w="full" forceert hem om binnen zijn kaartje te blijven */}
+          <Text fontWeight="medium" mb={3} pr={5} textAlign="left" w="full" display="block" truncate>
             {task.title}
           </Text>
         </Tooltip>
