@@ -13,6 +13,12 @@ export interface Friend{
     status: FriendshipStatus;
 }
 
+export interface SentRequest {
+  id: number;
+  addresseeId: number;
+  status: 'PENDING';
+}
+
 export interface FriendUser {
   friendshipId: number;
   id: number;

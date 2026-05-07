@@ -9,6 +9,7 @@ import AddFriendButton from "../components/addFriendButton";
 import RemoveFriendButton from "../components/removeFriendButton";
 import RoleSelect from "../components/roleSelection";
 import type { GlobalRole } from "@transcendence/shared";
+import { useSentRequests } from "../hooks/useFriend";
 
 export function ProfilePage() {
   const { userId } = useParams();
@@ -22,6 +23,8 @@ export function ProfilePage() {
   const isOwnProfile = currentUser?.id === Number(userId);
   const isFriend = myFriends.some(f => f.id === Number(userId));
   const friendship = myFriends.find(f => f.id === Number(userId));
+  const { sentRequests, refetch: refetchSentRequests } = useSentRequests();
+  const isPending = sentRequests.some(r => r.addresseeId === Number(userId));
 
   if (!user || authLoading) return <p>Loading...</p>;
 
@@ -47,7 +50,13 @@ export function ProfilePage() {
           {!isOwnProfile && !friendsLoading && (
             isFriend
               ? <RemoveFriendButton friendshipId={friendship!.friendshipId} onSuccess={refetchMyFriends} />
-              : <AddFriendButton targetUserId={Number(userId)} onSuccess={refetchMyFriends}/>
+              : <AddFriendButton 
+                targetUserId={Number(userId)} 
+                isPending={isPending} 
+                onSuccess={() => {
+                  refetchMyFriends(); 
+                  refetchSentRequests();
+                }} />
           )}
         </VStack>
       </HStack>
