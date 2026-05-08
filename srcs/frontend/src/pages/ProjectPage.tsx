@@ -78,7 +78,7 @@ export default function ProjectPage() {
   return (
     <Flex h="100%" direction="column" gap={6} position="relative" align="stretch">
       <Box bg="white" p={6} borderRadius="xl" boxShadow="sm" border="1px solid" borderColor="gray.200" _dark={{ bg: "gray.800", borderColor: "gray.700" }}>
-        <Flex justify="space-between" align="flex-start" w="100%">
+        <Flex direction={{ base: "column", md: "row" }} justify="space-between" align={{ base: "flex-start", md: "center" }} w="100%" gap={4}>
           <Box textAlign="left">
             <Heading size="lg" mb={1}>{project.name}</Heading>
             <Text color="gray.500" fontSize="md" mb={4}>
@@ -118,7 +118,7 @@ export default function ProjectPage() {
             </HStack>
           </Box>
 
-          <VStack align="flex-end" gap={3}>
+          <VStack align={{ base: "flex-start", md: "flex-end" }} gap={3}>
             <Box bg="purple.100" color="purple.800" _dark={{ bg: "purple.900", color: "purple.200" }} px={3} py={1} borderRadius="md" display="inline-block">
               <select
                 value={project.status}
@@ -147,7 +147,16 @@ export default function ProjectPage() {
         </Flex>
       </Box>
 
-      <Grid templateColumns="repeat(4, minmax(0, 1fr))" gap={4} flex={1} alignItems="stretch">
+      <Grid 
+        templateColumns={{ 
+          base: "minmax(0, 1fr)", 
+          md: "repeat(2, minmax(0, 1fr))", 
+          lg: "repeat(4, minmax(0, 1fr))" 
+        }} 
+        gap={4} 
+        w="full"
+        alignItems="stretch"
+      >
         {columns.map((column) => (
           <TaskColumn
             key={column.id}
@@ -212,12 +221,13 @@ function TaskColumn({
 
   return (
     <VStack
+      w="full"
       h="100%"
       bg={dragOver ? 'gray.200' : 'gray.100'}
       _dark={{ bg: dragOver ? 'gray.800' : 'gray.900' }}
       p={4}
       borderRadius="lg"
-      minH="500px"
+      minH={{ base: "auto", lg: "500px" }}
       alignItems="stretch"
       border={dragOver ? '2px dashed' : '1px solid'}
       borderColor={dragOver ? `${column.color}.400` : 'transparent'}
@@ -320,6 +330,7 @@ function TaskCard({
         e.dataTransfer.setData('taskId', String(task.id));
       }}
       onClick={onOpenComments}
+      mb={2}
     >
       <Card.Body>
 
