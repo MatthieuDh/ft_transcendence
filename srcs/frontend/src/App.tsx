@@ -14,9 +14,11 @@ import ProtectedRoute from './components/protectedRoute';
 import PrivacyPolicyPage from './pages/PrivacyPolicyPage';
 import TermsOfServicePage from './pages/TermsOfServicePage';
 import ConditionalLayout from './components/ConditionalLayout';
+import UsersPage from './pages/UserPage.tsx';
 import { SocketProvider } from './context/SocketContext';
 import { useAuth } from './context/AuthContext';
 import Footer from './components/Footer';
+
 
 function SocketWrapper({ children }: { children: ReactNode }) {
   const { currentUser } = useAuth();
@@ -71,6 +73,7 @@ export default function App() {
             <Route path="/profile/:userId" element={<ProfilePage />} />
             <Route path="/project/:projectId" element={<ProjectPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/users" element={<UsersPage />} />
           </Route>
         </Route>
 
