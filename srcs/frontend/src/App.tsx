@@ -5,6 +5,7 @@ import { ProfilePage } from './pages/ProfilePage';
 import ProjectPage from './pages/ProjectPage';
 import Layout from './components/layout';
 import MainPage from './pages/MainPage';
+import DashboardPage from "./pages/DashboardPage.tsx";
 import { useEffect, useState } from 'react';
 import { authService } from './api/services';
 import { Flex, Spinner } from '@chakra-ui/react'
@@ -19,8 +20,8 @@ export default function App() {
 
   if (!ready) return (
     <Flex height="100vh" alignItems="center" justifyContent="center">
-    <Spinner size="xl" />
-  </Flex>
+      <Spinner size="xl" />
+    </Flex>
   );
 
   return (
@@ -31,12 +32,13 @@ export default function App() {
           
         <Route element={<ProtectedRoute />}>
           <Route element={<Layout />}>
-          <Route path="/" element={<MainPage />} />
-          <Route path="/profile/:userId" element={<ProfilePage />} />
-          <Route path="/project/:projectId" element={<ProjectPage />} />
+            <Route path="/" element={<MainPage />} />
+            <Route path="/profile/:userId" element={<ProfilePage />} />
+            <Route path="/project/:projectId" element={<ProjectPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
           </Route>
-          
         </Route>
+
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="*" element={<Navigate to="/login" />} />
