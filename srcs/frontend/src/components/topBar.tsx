@@ -50,7 +50,7 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
   const totalAlerts = unreadCount + requests.length;
 
   return (
-    <Flex as="header" w="full" h="72px" align="center" justify="space-between" px={8} bg="white" borderBottom="1px solid" borderColor="gray.200" _dark={{ bg: "gray.900", borderColor: "gray.700" }}>
+    <Flex as="header" w="full" h="72px" align="center" justify="space-between" px={8} backdropFilter="blur(12px)" bg="rgba(255,255,255,0.8)" borderBottom="1px solid" borderColor="rgba(255,255,255,0.15)" _dark={{ bg: "rgba(10,10,15,0.85)", borderColor: "rgba(255,255,255,0.08)" }}>
 
       <Heading size="lg" fontWeight="bold" color="gray.800" _dark={{ color: "white" }} minW="150px">
         {getPageTitle(location.pathname)}
