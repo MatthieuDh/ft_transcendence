@@ -50,7 +50,7 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
   const totalAlerts = unreadCount + requests.length;
 
   return (
-    <Flex as="header" w="full" h="72px" align="center" justify="space-between" px={8} backdropFilter="blur(12px)" bg="rgba(255,255,255,0.8)" borderBottom="1px solid" borderColor="rgba(255,255,255,0.15)" _dark={{ bg: "rgba(10,10,15,0.85)", borderColor: "rgba(255,255,255,0.08)" }}>
+    <Flex as="header" w="full" h="72px" align="center" justify="space-between" px={8} position="relative" zIndex={100} backdropFilter="blur(12px)" bg="rgba(255,255,255,0.8)" borderBottom="1px solid" borderColor="rgba(255,255,255,0.15)" _dark={{ bg: "rgba(10,10,15,0.85)", borderColor: "rgba(255,255,255,0.08)" }}>
 
       <Heading size="lg" fontWeight="bold" color="gray.800" _dark={{ color: "white" }} minW="150px">
         {getPageTitle(location.pathname)}
@@ -85,7 +85,7 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
           </Box>
 
           {isOpen && (
-            <Box position="absolute" top="50px" right="-10px" w="320px" bg="white" _dark={{ bg: "gray.800", borderColor: "gray.700" }} boxShadow="xl" borderRadius="lg" border="1px solid" borderColor="gray.200" zIndex={1000} overflow="hidden">
+            <Box position="absolute" top="50px" right="-10px" w="320px" bg="white" _dark={{ bg: "gray.800", borderColor: "gray.700" }} boxShadow="xl" borderRadius="lg" border="1px solid" borderColor="gray.200" zIndex={9999} overflow="hidden">
               <Flex justify="space-between" align="center" p={3} borderBottom="1px solid" borderColor="gray.100" bg="gray.50" _dark={{ borderColor: "gray.700", bg: "gray.900" }}>
                 <Text fontWeight="bold" fontSize="sm">Notifications</Text>
                 {unreadCount > 0 && (
@@ -145,7 +145,7 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
           </Box>
 
           {isProfileOpen && (
-            <Box position="absolute" top="50px" right="0" w="160px" bg="white" _dark={{ bg: "gray.800", borderColor: "gray.700" }} boxShadow="xl" borderRadius="lg" border="1px solid" borderColor="gray.200" zIndex={1000} overflow="hidden">
+            <Box position="absolute" top="50px" right="0" w="160px" bg="white" _dark={{ bg: "gray.800", borderColor: "gray.700" }} boxShadow="xl" borderRadius="lg" border="1px solid" borderColor="gray.200" zIndex={9999} overflow="hidden">
               <VStack align="stretch" gap={0}>
                 <Box p={3} cursor="pointer" _hover={{ bg: "gray.50", _dark: { bg: "gray.700" } }} onClick={() => {
                   setIsProfileOpen(false);
