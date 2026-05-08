@@ -6,7 +6,7 @@ import type { Project, Task } from '../../../../shared/srcs/types';
 export function ProjectCard({ project, onClick }: { project: Project, onClick: () => void }) {
   return (
     <Card.Root onClick={onClick} variant="outline" cursor="pointer" borderRadius="2xl" bg="white" _dark={{ bg: "gray.800", borderColor: "gray.700" }} _hover={{ borderColor: 'purple.400', shadow: 'sm', transform: 'translateY(-2px)' }} transition="all 0.2s">
-      <Card.Body p={4}> 
+      <Card.Body p={4}>
         <HStack justify="space-between" align="start" mb={2}>
           <HStack gap={3}>
             <Box p={2} bg="gray.50" borderRadius="md" _dark={{ bg: "gray.700" }}><LuFolder size={18} color="purple.500" /></Box>
@@ -42,20 +42,20 @@ export function TaskCard({ task, onClick }: { task: Task, onClick: () => void })
   const assigneeId = actualUser?.id || undefined;
 
   return (
-    <Card.Root 
-      onClick={onClick} 
-      variant="outline" 
-      cursor="pointer" 
-      borderRadius="2xl" 
-      bg="white" 
-      _dark={{ bg: "gray.800", borderColor: "gray.700" }} 
-      _hover={{ borderColor: 'purple.400', shadow: 'sm', transform: 'translateY(-2px)' }} 
-      transition="all 0.2s" 
+    <Card.Root
+      onClick={onClick}
+      variant="outline"
+      cursor="pointer"
+      borderRadius="2xl"
+      bg="white"
+      _dark={{ bg: "gray.800", borderColor: "gray.700" }}
+      _hover={{ borderColor: 'purple.400', shadow: 'sm', transform: 'translateY(-2px)' }}
+      transition="all 0.2s"
       opacity={isDone ? 0.6 : 1}
     >
       <Card.Body p={4}>
         <HStack justify="space-between" align="start" mb={2}>
-          <Text fontWeight="bold" fontSize="sm" textDecoration={isDone ? "line-through" : "none"}>{task.title}</Text>
+          <Heading size="sm" textDecoration={isDone ? "line-through" : "none"} truncate>{task.title}</Heading>
           <Badge size="sm" variant="subtle" colorPalette={isDone ? 'green' : task.status === 'TODO' ? 'gray' : task.status === 'PENDING_EVALUATION' ? 'orange' : 'blue'}>
             {task.status.replace('_', ' ')}
           </Badge>

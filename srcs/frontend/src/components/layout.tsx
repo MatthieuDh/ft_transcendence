@@ -20,7 +20,7 @@ export default function Layout() {
           pb="88px"
           overflowY="auto"
           bg="gray.50"
-          _dark={{ bg: "gray.950" }}
+          _dark={{ bg: 'rgba(10,10,15,0.85)' }}
         >
           <Outlet context={{ searchQuery }} />
         </Box>
