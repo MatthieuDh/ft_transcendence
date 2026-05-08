@@ -6,6 +6,7 @@ import ProjectPage from './pages/ProjectPage';
 import Layout from './components/layout';
 import MainPage from './pages/MainPage';
 import LandingPage from './pages/LandingPage';
+import DashboardPage from "./pages/DashboardPage.tsx";
 import { useEffect, useState, type ReactNode } from 'react';
 import { authService } from './api/services';
 import { Flex, Spinner } from '@chakra-ui/react';
@@ -69,6 +70,7 @@ export default function App() {
             <Route path="/main" element={<MainPage />} />
             <Route path="/profile/:userId" element={<ProfilePage />} />
             <Route path="/project/:projectId" element={<ProjectPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
           </Route>
         </Route>
 

@@ -10,11 +10,28 @@ export interface DashboardFilters {
     taskStatus?: TaskStatus;
 }
 
-export interface DashboardMetrics{
+export type ProjectRiskLevel = 'HEALTHY' | 'WATCH' | 'AT_RISK' | 'CRITICAL';
+
+export interface ProjectHealthItem {
+    id: number;
+    name: string;
+    status: ProjectStatus;
+    overdue: number;
+    pendingLong: number;
+    risk: ProjectRiskLevel;
+}
+
+export interface DashboardMetrics {
+    totalProjects: number;
+    completedProjects: number;
+    averageProjectAgeDays: number;
     totalTasks: number;
     completedTasks: number;
     overdueTasks: number;
+    pendingCount: number;
     pendingOverLimit: number;
-    averageCompletionTime: number;
+    projectHealthList: ProjectHealthItem[];
     avgTimePerStage: Record<TaskStatus, number>;
+    averageCompletionTime?: number;
+    pendingOverlimit?: number;
 }
