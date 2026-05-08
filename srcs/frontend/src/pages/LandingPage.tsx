@@ -213,7 +213,7 @@ export default function LandingPage() {
 
                                 <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.35 }}>
                                     <Text fontSize={{ base: 'lg', md: 'xl' }} color="gray.400" lineHeight="1.9" maxW="2xl" mx="auto">
-                                        Sigma brings your tasks, team, and conversations into one focused workspace. Less noise. More done.
+                                        The real treasure is the friends we make along the way.
                                     </Text>
                                 </motion.div>
 

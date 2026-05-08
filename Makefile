@@ -1,5 +1,5 @@
 # Makefile for development convenience
-.PHONY: up down re logs logs-frontend logs-backend ps clean restart-frontend restart-backend help
+.PHONY: up down re logs logs-frontend logs-backend ps clean restart-frontend restart-backend frontend-dev help
 
 .DEFAULT_GOAL := up
 
@@ -34,6 +34,9 @@ restart-frontend:
 restart-backend:
 	$(DC) restart backend
 
+frontend-dev:
+	cd srcs/frontend && npm install && npm run dev
+
 help:
 	@echo "Available targets:"
 	@echo "  make, make up              Start services with 'docker compose up --build' (default)"
@@ -46,4 +49,5 @@ help:
 	@echo "  make clean                Stop and remove containers + volumes"
 	@echo "  make restart-frontend     Restart the frontend container"
 	@echo "  make restart-backend      Restart the backend container"
+	@echo "  make frontend-dev         Install frontend deps and start Vite dev server"
 

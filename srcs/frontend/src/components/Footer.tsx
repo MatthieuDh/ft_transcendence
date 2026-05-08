@@ -24,7 +24,7 @@ export default function Footer() {
                     gap={3}
                 >
                     <Text fontSize="sm" color="gray.500" _dark={{ color: 'gray.400' }}>
-                        © {new Date().getFullYear()} Sigma. Built for focused task management.
+                        © {new Date().getFullYear()} Sigma. The real treasure is the friends we make along the way.
                     </Text>
 
                     <HStack gap={5} fontSize="sm" fontWeight="medium">
