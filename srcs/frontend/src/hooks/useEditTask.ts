@@ -28,7 +28,7 @@ export function useEditTask(task: Task | null, onTaskUpdate: () => void) {
     {
         if (!editTitle.trim())
             return;
-        data.tile = editTitle;
+        data.title = editTitle;
     }
     if (field === 'description') 
         data.description = editDesc;
