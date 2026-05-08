@@ -15,6 +15,7 @@ import TermsOfServicePage from './pages/TermsOfServicePage';
 import ConditionalLayout from './components/ConditionalLayout';
 import { SocketProvider } from './context/SocketContext';
 import { useAuth } from './context/AuthContext';
+import Footer from './components/Footer';
 
 function SocketWrapper({ children }: { children: ReactNode }) {
   const { currentUser } = useAuth();
@@ -75,6 +76,7 @@ export default function App() {
         <Route path="/register" element={<RegisterPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <Footer />
     </BrowserRouter>
   );
 }

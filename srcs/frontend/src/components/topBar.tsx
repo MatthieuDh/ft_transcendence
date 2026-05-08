@@ -24,7 +24,7 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
   const getPageTitle = (path: string) => {
-    if (path === '/' || path === '') return 'Dashboard';
+    if (path === '/' || path === '' || path === '/main') return 'Dashboard';
     const parts = path.split('/').filter(Boolean);
     const mainPath = parts[0];
     return mainPath.charAt(0).toUpperCase() + mainPath.slice(1);
@@ -51,19 +51,19 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
 
   return (
     <Flex as="header" w="full" h="72px" align="center" justify="space-between" px={8} bg="white" borderBottom="1px solid" borderColor="gray.200" _dark={{ bg: "gray.900", borderColor: "gray.700" }}>
-      
+
       <Heading size="lg" fontWeight="bold" color="gray.800" _dark={{ color: "white" }} minW="150px">
         {getPageTitle(location.pathname)}
       </Heading>
 
       <Box flex={1} maxW="500px" mx={8} display={{ base: "none", md: "block" }}>
-        {location.pathname === '/' && (
+        {(location.pathname === '/' || location.pathname === '/main') && (
           <Flex align="center" bg="gray.50" borderRadius="lg" border="1px solid" borderColor="gray.200" _dark={{ bg: "gray.800", borderColor: "gray.700" }} px={4} py={2}>
             <LuSearch color="gray" size={20} />
-            <Input 
-              variant="outline" 
-              border="none" 
-              placeholder="Search projects and tasks..." 
+            <Input
+              variant="outline"
+              border="none"
+              placeholder="Search projects and tasks..."
               _focus={{ boxShadow: "none" }}
               value={searchQuery}
               onChange={(e) => onSearchChange(e.target.value)}
@@ -95,7 +95,7 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
                 )}
               </Flex>
               <VStack maxH="300px" overflowY="auto" align="stretch" gap={0}>
-                
+
                 {/* INTERACTIEVE VRIENDENVERZOEKEN */}
                 {requests.map(req => (
                   <Box key={`req-${req.id}`} p={3} borderBottom="1px solid" borderColor="gray.100" bg="purple.50" _dark={{ borderColor: "gray.700", bg: "purple.900" }}>
@@ -117,13 +117,13 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
                   <Text p={4} textAlign="center" fontSize="sm" color="gray.500">No notifications</Text>
                 ) : (
                   displayNotifications.map(notif => (
-                    <Box 
-                      key={notif.id} 
-                      p={3} 
-                      borderBottom="1px solid" 
-                      borderColor="gray.100" 
-                      bg={notif.isRead ? "transparent" : "purple.50"} 
-                      _dark={{ borderColor: "gray.700", bg: notif.isRead ? "transparent" : "purple.900" }} 
+                    <Box
+                      key={notif.id}
+                      p={3}
+                      borderBottom="1px solid"
+                      borderColor="gray.100"
+                      bg={notif.isRead ? "transparent" : "purple.50"}
+                      _dark={{ borderColor: "gray.700", bg: notif.isRead ? "transparent" : "purple.900" }}
                       _hover={{ bg: "gray.50", _dark: { bg: "gray.700" } }}
                     >
                       <Text fontSize="sm" color={notif.isRead ? "gray.600" : "gray.800"} _dark={{ color: notif.isRead ? "gray.400" : "white" }}>
@@ -155,13 +155,13 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
                 }}>
                   <Text fontSize="sm" fontWeight="bold">My Profile</Text>
                 </Box>
-                <Box 
-                  p={3} 
-                  cursor="pointer" 
+                <Box
+                  p={3}
+                  cursor="pointer"
                   color="red.500"
-                  _hover={{ bg: "red.50", _dark: { bg: "red.900/30" } }} 
-                  borderTop="1px solid" 
-                  borderColor="gray.100" 
+                  _hover={{ bg: "red.50", _dark: { bg: "red.900/30" } }}
+                  borderTop="1px solid"
+                  borderColor="gray.100"
                   _dark={{ borderColor: "gray.700" }}
                   onClick={() => {
                     setIsProfileOpen(false);
