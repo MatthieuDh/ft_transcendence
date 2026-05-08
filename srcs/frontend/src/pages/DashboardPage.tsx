@@ -65,7 +65,6 @@ export default function DashboardPage() {
   );
 
   const inProgressProjects = Math.max(metrics.totalProjects - metrics.completedProjects, 0);
-  const riskyProjects = riskCounts.AT_RISK + riskCounts.CRITICAL;
 
   return (
     <Flex h="100%" direction="column" gap={6} align="stretch">
@@ -134,7 +133,7 @@ export default function DashboardPage() {
               <Heading size="md">Avg time per stage (days)</Heading>
               <StatLine label="Todo" value={metrics.avgTimePerStage.TODO} />
               <StatLine label="In progess" value={metrics.avgTimePerStage.IN_PROGRESS} />
-              <StatLine label="Pending" value={metrics.avgTimePerStage.PENDING} />
+              <StatLine label="Pending" value={metrics.avgTimePerStage.PENDING_EVALUATION} />
               <StatLine label="Done" value={metrics.avgTimePerStage.DONE} />
             </VStack>
           </Card.Body>
