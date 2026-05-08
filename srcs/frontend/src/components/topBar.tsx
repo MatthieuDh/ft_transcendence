@@ -1,4 +1,4 @@
-import { Flex, HStack, Box, Heading, Text, VStack, Input, Button } from "@chakra-ui/react";
+import { Flex, HStack, Box, Heading, Text, VStack, Input, Button, Avatar } from "@chakra-ui/react";
 import { ColorModeButton } from "./ui/color-mode";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
@@ -6,6 +6,7 @@ import { useNotifications } from "../hooks/useNotification";
 import { LuBell, LuSearch } from "react-icons/lu";
 import { useLogout } from "../hooks/useLogout";
 import { useFriendRequests } from "../hooks/useFriend";
+import { useAuth } from "../context/AuthContext";
 import ChangePasswordModal from "./changePasswordModal";
 
 interface TopBarProps {
@@ -16,7 +17,8 @@ interface TopBarProps {
 export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
   const location = useLocation();
   const navigate = useNavigate();
-  const { notifications, unreadCount, markAllAsRead, currentUser } = useNotifications();
+  const { currentUser } = useAuth();
+  const { notifications, unreadCount, markAllAsRead } = useNotifications();
   const { requests, accept, reject } = useFriendRequests();
   const { logout } = useLogout();
   const [isOpen, setIsOpen] = useState(false);
@@ -97,8 +99,6 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
                 )}
               </Flex>
               <VStack maxH="300px" overflowY="auto" align="stretch" gap={0}>
-
-                {/* INTERACTIEVE VRIENDENVERZOEKEN */}
                 {requests.map(req => (
                   <Box key={`req-${req.id}`} p={3} borderBottom="1px solid" borderColor="gray.100" bg="purple.50" _dark={{ borderColor: "gray.700", bg: "purple.900" }}>
                     <Text fontSize="sm" color="gray.800" _dark={{ color: "white" }} mb={2}>
@@ -141,8 +141,13 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
         <ColorModeButton />
 
         <Box position="relative" ref={profileMenuRef}>
-          <Box w="40px" h="40px" bg="purple.500" color="white" borderRadius="full" display="flex" alignItems="center" justifyContent="center" fontWeight="bold" cursor="pointer" _hover={{ bg: "purple.600" }} onClick={() => setIsProfileOpen(!isProfileOpen)}>
-            {currentUser?.username?.charAt(0).toUpperCase() || 'S'}
+          <Box cursor="pointer" onClick={() => setIsProfileOpen(!isProfileOpen)}>
+            <Avatar.Root size="md" w="40px" h="40px" _hover={{ opacity: 0.8 }} transition="opacity 0.2s">
+              <Avatar.Image src={currentUser?.avatar || undefined} />
+              <Avatar.Fallback bg="purple.500" color="white" fontWeight="bold" display="flex" alignItems="center" justifyContent="center" boxSize="full">
+                {currentUser?.username?.charAt(0).toUpperCase() || 'S'}
+              </Avatar.Fallback>
+            </Avatar.Root>
           </Box>
 
           {isProfileOpen && (
@@ -157,8 +162,7 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
                 <Box
                   p={3}
                   cursor="pointer"
-                  color="red.500"
-                  _hover={{ bg: "red.50", _dark: { bg: "red.900/30" } }}
+                  _hover={{ bg: "gray.50", _dark: { bg: "gray.700" } }}
                   borderTop="1px solid"
                   borderColor="gray.100"
                   _dark={{ borderColor: "gray.700" }}

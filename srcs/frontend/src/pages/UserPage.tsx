@@ -7,7 +7,8 @@ import {
   Text, 
   Spinner, 
   Flex,
-  Button
+  Button,
+  Avatar
 } from "@chakra-ui/react";
 import { useNavigate } from "react-router-dom";
 import { useUsers } from "../hooks/useUsers";
@@ -51,20 +52,18 @@ export default function UsersPage() {
             {users.map((user) => (
               <Table.Row key={user.id} _hover={{ bg: "gray.50", _dark: { bg: "gray.900/50" } }}>
                 <Table.Cell>
-                  <HStack gap={3}>
-                    <Flex 
-                      w="32px" 
-                      h="32px" 
-                      bg="purple.500" 
-                      color="white" 
-                      borderRadius="full" 
-                      align="center" 
-                      justify="center" 
-                      fontSize="xs" 
-                      fontWeight="bold"
-                    >
-                      {user.username.charAt(0).toUpperCase()}
-                    </Flex>
+                  <HStack 
+                    gap={3} 
+                    cursor="pointer" 
+                    onClick={() => navigate(`/profile/${user.id}`)}
+                    _hover={{ color: "purple.500" }}
+                  >
+                    <Avatar.Root size="sm">
+                      <Avatar.Image src={user.avatar || undefined} />
+                      <Avatar.Fallback boxSize="full" display="flex" alignItems="center" justifyContent="center" bg="purple.500" color="white" fontSize="xs" fontWeight="bold">
+                        {user.username.charAt(0).toUpperCase()}
+                      </Avatar.Fallback>
+                    </Avatar.Root>
                     <Text fontWeight="medium">{user.username}</Text>
                   </HStack>
                 </Table.Cell>

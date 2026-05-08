@@ -1,26 +1,26 @@
 import { useState, useEffect } from 'react';
-import { notificationService, authService } from '../api/services';
-import type { Notification, User } from '../../../../shared/srcs/types';
+import { notificationService } from '../api/services';
+import type { Notification } from '../../../../shared/srcs/types';
 import { useSocket } from '../context/SocketContext';
+import { useAuth } from '../context/AuthContext';
 
 export function useNotifications() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const { currentUser } = useAuth();
   const socket = useSocket();
 
   useEffect(() => {
     const init = async () => {
+      if (!currentUser) return;
       try {
-        const profileRes = await authService.getProfile();
-        setCurrentUser(profileRes.data);
-        const notifsRes = await notificationService.getNotifications(profileRes.data.id);
+        const notifsRes = await notificationService.getNotifications(currentUser.id);
         setNotifications(notifsRes.data);
       } catch (error) {
         console.error(error);
       }
     };
     init();
-  }, []);
+  }, [currentUser]);
 
   useEffect(() => {
     if (!socket) return;
@@ -45,5 +45,5 @@ export function useNotifications() {
   };
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
-  return { notifications, unreadCount, markAllAsRead, currentUser };
+  return { notifications, unreadCount, markAllAsRead };
 }
