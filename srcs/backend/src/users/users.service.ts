@@ -110,9 +110,7 @@ export class UsersService {
   }
 
   async changePassword(id: number, dto: ChangePasswordDto){
-    if (dto.newPassword !== dto.confirmPassword) {
-      throw new ForbiddenException('New password and confirm password do not match');
-    }
+    
     const user = await this.prisma.user.findUnique({
       where: { id },});
       
