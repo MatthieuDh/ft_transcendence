@@ -77,7 +77,7 @@ export default function Sidebar() {
           color="gray.700"
           _dark={{ color: "gray.200" }}
         >
-          <RouterLink to="`/dashboard">
+          <RouterLink to="/dashboard">
             📊 Dashboard
           </RouterLink>
         </Link>
