@@ -6,6 +6,7 @@ import { useNotifications } from "../hooks/useNotification";
 import { LuBell, LuSearch } from "react-icons/lu";
 import { useLogout } from "../hooks/useLogout";
 import { useFriendRequests } from "../hooks/useFriend";
+import ChangePasswordModal from "./changePasswordModal";
 
 interface TopBarProps {
   searchQuery: string;
@@ -20,6 +21,7 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
   const { logout } = useLogout();
   const [isOpen, setIsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
@@ -112,7 +114,6 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
                     </HStack>
                   </Box>
                 ))}
-
                 {displayNotifications.length === 0 && requests.length === 0 ? (
                   <Text p={4} textAlign="center" fontSize="sm" color="gray.500">No notifications</Text>
                 ) : (
@@ -149,9 +150,7 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
               <VStack align="stretch" gap={0}>
                 <Box p={3} cursor="pointer" _hover={{ bg: "gray.50", _dark: { bg: "gray.700" } }} onClick={() => {
                   setIsProfileOpen(false);
-                  if (currentUser) {
-                    navigate(`/profile/${currentUser.id}`);
-                  }
+                  if (currentUser) navigate(`/profile/${currentUser.id}`);
                 }}>
                   <Text fontSize="sm" fontWeight="bold">My Profile</Text>
                 </Box>
@@ -163,10 +162,19 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
                   borderTop="1px solid"
                   borderColor="gray.100"
                   _dark={{ borderColor: "gray.700" }}
-                  onClick={() => {
-                    setIsProfileOpen(false);
-                    logout();
-                  }}
+                  onClick={() => { setIsProfileOpen(false); setChangePasswordOpen(true); }}
+                >
+                  <Text fontSize="sm" fontWeight="bold">Change Password</Text>
+                </Box>
+                <Box
+                  p={3}
+                  cursor="pointer"
+                  color="red.500"
+                  _hover={{ bg: "red.50", _dark: { bg: "red.900/30" } }}
+                  borderTop="1px solid"
+                  borderColor="gray.100"
+                  _dark={{ borderColor: "gray.700" }}
+                  onClick={() => { setIsProfileOpen(false); logout(); }}
                 >
                   <Text fontSize="sm" fontWeight="bold">Logout</Text>
                 </Box>
@@ -174,6 +182,8 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
             </Box>
           )}
         </Box>
+
+        <ChangePasswordModal open={changePasswordOpen} onOpenChange={setChangePasswordOpen} />
       </HStack>
     </Flex>
   );
