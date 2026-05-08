@@ -47,7 +47,7 @@ export function TaskCard({ task, onClick }: { task: Task, onClick: () => void })
     >
       <Card.Body p={4}>
         <HStack justify="space-between" align="start" mb={2}>
-          <Text fontWeight="bold" fontSize="sm" textDecoration={isDone ? "line-through" : "none"}>{task.title}</Text>
+          <Heading size="sm" textDecoration={isDone ? "line-through" : "none"} truncate>{task.title}</Heading>
           <Badge size="sm" variant="subtle" colorPalette={isDone ? 'green' : task.status === 'TODO' ? 'gray' : task.status === 'PENDING_EVALUATION' ? 'orange' : 'blue'}>
             {task.status.replace('_', ' ')}
           </Badge>
