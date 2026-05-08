@@ -7,8 +7,8 @@ interface SigmaLogoProps {
 
 export default function SigmaLogo({ 
   height = "clamp(32px, 3vw, 48px)", 
-  iconColor = "#aa3bff",
-  textColor = "#aa3bff", 
+  iconColor = "purple.500",
+  textColor = "purple.500", 
   className = "" 
 }: SigmaLogoProps) {
   return (

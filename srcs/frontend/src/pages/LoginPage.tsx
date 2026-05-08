@@ -55,7 +55,7 @@ export default function LoginPage() {
             <RouterLink
               to="/register"
               style={{
-                color: '#9f7aea',
+                color: 'purple.400',
                 fontWeight: 'bold',
                 textDecoration: 'none'
               }}

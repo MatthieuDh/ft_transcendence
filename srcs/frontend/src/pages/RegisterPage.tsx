@@ -50,7 +50,7 @@ export default function RegisterPage() {
             <RouterLink
               to="/login"
               style={{
-                color: '#9f7aea',
+                color: 'purple.400',
                 fontWeight: 'bold',
                 textDecoration: 'none'
               }}
