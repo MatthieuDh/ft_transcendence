@@ -9,9 +9,20 @@ export function useProfilePage(userId: number) {
   const { currentUser, setCurrentUser, isLoading: authLoading } = useAuth();
   const { friends: myFriends, isLoading: friendsLoading, refetch: refetchMyFriends } = useFriend(currentUser?.id ?? 0);
   const { sentRequests, refetch: refetchSentRequests } = useSentRequests();
+  
   const [localUser, setLocalUser] = useState(user);
+  const [profileLoading, setProfileLoading] = useState(true);
 
-  useEffect(() => { setLocalUser(user); }, [user]);
+  useEffect(() => { 
+    setLocalUser(user); 
+    
+    if (user) {
+      setProfileLoading(false);
+    } else {
+      const timer = setTimeout(() => setProfileLoading(false), 500);
+      return () => clearTimeout(timer);
+    }
+  }, [user]);
 
   const isOwnProfile = currentUser?.id === userId;
   const isFriend = myFriends.some(f => f.id === userId);
@@ -25,6 +36,7 @@ export function useProfilePage(userId: number) {
     setCurrentUser,
     authLoading,
     friendsLoading,
+    profileLoading,
     isOwnProfile,
     isFriend,
     isPending,
