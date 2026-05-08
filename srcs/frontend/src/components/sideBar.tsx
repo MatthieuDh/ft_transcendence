@@ -18,7 +18,7 @@ export default function Sidebar() {
       bg="gray.50"
       borderRight="1px solid"
       borderColor="gray.200"
-      _dark={{ bg: "gray.950", borderColor: "gray.700" }}
+      _dark={{ bg: 'rgba(10,10,15,0.85)', borderColor: "gray.700" }}
       direction="column"
       position="sticky"
       top="0"
