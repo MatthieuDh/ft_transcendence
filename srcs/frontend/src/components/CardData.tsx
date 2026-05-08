@@ -8,7 +8,7 @@ export function ProjectCard({ project, onClick }: { project: Project, onClick: (
       <Card.Body p={4}> 
         <HStack justify="space-between" align="start" mb={2}>
           <HStack gap={3}>
-            <Box p={2} bg="gray.50" borderRadius="md" _dark={{ bg: "gray.700" }}><LuFolder size={18} color="#aa3bff" /></Box>
+            <Box p={2} bg="gray.50" borderRadius="md" _dark={{ bg: "gray.700" }}><LuFolder size={18} color="purple.500" /></Box>
             <Box>
               <Heading size="sm" truncate>{project.name}</Heading>
               <Text fontSize="xs" color="gray.500" lineClamp={1}>{project.description || "No description provided."}</Text>

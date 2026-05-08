@@ -30,52 +30,59 @@ export default function LoginForm({ onSubmit, onGoogleLogin, error, isLoading }:
   return (
     <form onSubmit={submitHandler} style={{ width: '100%' }}>
       <Stack gap="4" align="stretch">
-        
+
         {error && (
           <Text color="red.500" fontWeight="bold" textAlign="center" fontSize="sm">
             {error}
           </Text>
         )}
 
-        <Field 
-          label="Username" 
-          invalid={!!errors.username} 
+        <Field
+          label="Username"
+          invalid={!!errors.username}
           errorText={errors.username?.message}
         >
-          <Input 
-            {...register("username", { required: "Username is required" })} 
+          <Input
+            {...register("username", { required: "Username is required" })}
             focusRingColor="purple.500"
-            borderColor="gray.300"
-            bg="white"
-            _dark={{ bg: "gray.800", borderColor: "gray.600" }}
-            _hover={{ borderColor: "purple.400", _dark: { borderColor: "purple.500" } }}
+            bg="rgba(255,255,255,0.08)"
+            border="1px solid rgba(255,255,255,0.15)"
+            _hover={{ borderColor: "rgba(255,255,255,0.25)" }}
+            _focus={{ borderColor: "purple.400", bg: "rgba(255,255,255,0.1)" }}
+            color="white"
+            _placeholder={{ color: 'gray.500' }}
             size="lg"
           />
         </Field>
 
-        <Field 
-          label="Password" 
-          invalid={!!errors.password} 
+        <Field
+          label="Password"
+          invalid={!!errors.password}
           errorText={errors.password?.message}
         >
-          <PasswordInput 
-            {...register("password", { required: "Password is required" })} 
-            focusRingColor="purple.300"
-            borderColor="gray.300"
-            bg="white"
-            _dark={{ bg: "gray.800", borderColor: "gray.600" }}
-            _hover={{ borderColor: "purple.400", _dark: { borderColor: "purple.500" } }}
+          <PasswordInput
+            {...register("password", { required: "Password is required" })}
+            focusRingColor="purple.500"
+            bg="rgba(255,255,255,0.08)"
+            border="1px solid rgba(255,255,255,0.15)"
+            _hover={{ borderColor: "rgba(255,255,255,0.25)" }}
+            _focus={{ borderColor: "purple.400", bg: "rgba(255,255,255,0.1)" }}
+            color="white"
+            _placeholder={{ color: 'gray.500' }}
             size="lg"
           />
         </Field>
 
-        <Button 
-          type="submit" 
-          loading={isLoading} 
+        <Button
+          type="submit"
+          loading={isLoading}
           colorPalette="purple"
           size="lg"
           mt={2}
           width="full"
+          bg="purple.600"
+          _hover={{ bg: 'purple.500', boxShadow: '0 8px 30px rgba(168,85,247,0.12)' }}
+          borderRadius="lg"
         >
           Login
         </Button>
@@ -94,11 +101,14 @@ export default function LoginForm({ onSubmit, onGoogleLogin, error, isLoading }:
           display="flex"
           gap={2}
           size="lg"
+          bg="rgba(255,255,255,0.03)"
+          color="white"
+          borderColor="rgba(255,255,255,0.1)"
         >
           <FaGoogle />
           Google
         </Button>
-        
+
       </Stack>
     </form>
   )
