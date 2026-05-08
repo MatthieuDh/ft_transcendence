@@ -11,10 +11,10 @@ export default function Footer() {
             right={0}
             zIndex={20}
             borderTop="1px solid"
-            borderColor="gray.200"
-            bg="white/90"
+            borderColor="rgba(255,255,255,0.08)"
+            bg="rgba(10,10,15,0.85)"
             backdropFilter="blur(12px)"
-            _dark={{ bg: 'gray.950/90', borderColor: 'gray.700' }}
+            _dark={{ bg: 'rgba(10,10,15,0.85)' }}
         >
             <Container maxW="7xl" py={4}>
                 <Flex
@@ -23,15 +23,14 @@ export default function Footer() {
                     justify="space-between"
                     gap={3}
                 >
-                    <Text fontSize="sm" color="gray.500" _dark={{ color: 'gray.400' }}>
+                    <Text fontSize="sm" color="gray.400">
                         © {new Date().getFullYear()} Sigma. The real treasure is the friends we make along the way.
                     </Text>
 
                     <HStack gap={5} fontSize="sm" fontWeight="medium">
                         <Link
                             asChild
-                            color="gray.600"
-                            _dark={{ color: 'gray.300' }}
+                            color="gray.400"
                             _hover={{ color: 'purple.500', textDecoration: 'none' }}
                         >
                             <RouterLink to="/privacy-policy">Privacy Policy</RouterLink>
@@ -39,8 +38,7 @@ export default function Footer() {
 
                         <Link
                             asChild
-                            color="gray.600"
-                            _dark={{ color: 'gray.300' }}
+                            color="gray.400"
                             _hover={{ color: 'purple.500', textDecoration: 'none' }}
                         >
                             <RouterLink to="/terms-of-service">Terms of Service</RouterLink>

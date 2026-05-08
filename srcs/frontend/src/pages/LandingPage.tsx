@@ -4,6 +4,7 @@ import { Box, Badge, Button, Container, Flex, Heading, HStack, SimpleGrid, Stack
 import { LuLayoutDashboard, LuUsers, LuMessageSquare, LuZap, LuShield } from 'react-icons/lu';
 import type { IconType } from 'react-icons';
 import Footer from '../components/Footer';
+import PublicNavbar from '../components/PublicNavbar';
 import { DarkMode } from '../components/ui/color-mode';
 
 const features: Array<{
@@ -121,48 +122,7 @@ export default function LandingPage() {
                 />
 
                 <Box position="relative" zIndex={1}>
-                    <Box
-                        as="header"
-                        position="sticky"
-                        top={0}
-                        zIndex={30}
-                        bg="rgba(10,10,15,0.8)"
-                        backdropFilter="blur(20px)"
-                        borderBottom="1px solid"
-                        borderColor="whiteAlpha.100"
-                    >
-                        <Container maxW="7xl" py={4}>
-                            <Flex align="center" justify="space-between" gap={4}>
-                                <HStack gap={3}>
-                                    <Box
-                                        w={3}
-                                        h={3}
-                                        borderRadius="full"
-                                        bg="purple.500"
-                                        boxShadow="0 0 24px rgba(168, 85, 247, 0.95)"
-                                    />
-                                    <Heading size="md" letterSpacing="-0.04em" color="white">
-                                        Sigma
-                                    </Heading>
-                                </HStack>
-
-                                <HStack gap={3}>
-                                    <Button variant="ghost" color="gray.300" _hover={{ bg: 'whiteAlpha.100' }} onClick={() => navigate('/login')}>
-                                        Sign In
-                                    </Button>
-                                    <Button
-                                        colorPalette="purple"
-                                        bg="purple.500"
-                                        _hover={{ bg: 'purple.400' }}
-                                        boxShadow="0 0 30px rgba(168, 85, 247, 0.25)"
-                                        onClick={() => navigate('/register')}
-                                    >
-                                        Get Started
-                                    </Button>
-                                </HStack>
-                            </Flex>
-                        </Container>
-                    </Box>
+                    <PublicNavbar />
 
                     <Container maxW="7xl">
                         <Flex minH="calc(100vh - 96px)" align="center" justify="center" py={{ base: 20, md: 28 }}>
