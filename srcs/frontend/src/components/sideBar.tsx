@@ -1,15 +1,19 @@
 import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { Flex, Box, VStack, Link } from '@chakra-ui/react';
+import { LuHouse, LuUsers, LuActivity, LuUser } from 'react-icons/lu';
+import { useAuth } from '../context/AuthContext';
 import SigmaLogo from './logo';
-
-const NAV_ITEMS = [
-  { label: 'Home', path: '/main', icon: '🏠', aliases: ['/', '/main'] },
-  { label: 'Users', path: '/users', icon: '👤' },
-  { label: 'Dashboard', path: '/dashboard', icon: '📊' },
-];
 
 export default function Sidebar() {
   const location = useLocation();
+  const { currentUser } = useAuth();
+
+  const NAV_ITEMS = [
+    { label: 'Home', path: '/main', icon: LuHouse, aliases: ['/', '/main'] },
+    { label: 'Users', path: '/users', icon: LuUsers },
+    { label: 'Dashboard', path: '/dashboard', icon: LuActivity },
+    ...(currentUser ? [{ label: 'Profile', path: `/profile/${currentUser.id}`, icon: LuUser }] : []),
+  ];
 
   return (
     <Flex
@@ -23,8 +27,8 @@ export default function Sidebar() {
       position="sticky"
       top="0"
     >
-      <Box p="clamp(16px, 2vw, 24px)">
-        <Link asChild _hover={{ textDecoration: 'none' }} _focusVisible={{ outline: "none", boxShadow: "none" }}>
+      <Box p="clamp(16px, 2vw, 24px)" display="flex" alignItems="center" justifyContent="center">
+        <Link asChild outline="none" boxShadow="none" border="none" _hover={{ textDecoration: 'none' }} _focusVisible={{ outline: "none", boxShadow: "none" }} _focus={{ boxShadow: "none" }} _active={{ boxShadow: "none" }}>
           <RouterLink to="/main">
             <SigmaLogo height="32px" />
           </RouterLink>
@@ -34,13 +38,19 @@ export default function Sidebar() {
       <VStack as="nav" gap={2} px={4} flex={1} align="stretch">
         {NAV_ITEMS.map((item) => {
           const isActive = location.pathname === item.path || item.aliases?.includes(location.pathname);
+          const Icon = item.icon;
 
           return (
             <Link
               key={item.path}
               asChild
+              outline="none"
+              boxShadow="none"
+              border="none"
               _hover={{ textDecoration: 'none', bg: 'gray.100', _dark: { bg: 'rgba(168,85,247,0.08)' } }}
               _focusVisible={{ outline: "none", boxShadow: "none" }}
+              _focus={{ boxShadow: "none" }}
+              _active={{ boxShadow: "none" }}
               p={3}
               borderRadius="md"
               fontWeight="medium"
@@ -54,7 +64,8 @@ export default function Sidebar() {
               bg={isActive ? "rgba(168,85,247,0.08)" : "transparent"}
             >
               <RouterLink to={item.path}>
-                {item.icon} {item.label}
+                <Icon size={20} style={{ flexShrink: 0 }} />
+                {item.label}
               </RouterLink>
             </Link>
           );
