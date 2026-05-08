@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { projectService, taskService, authService } from '../api/services';
 import type { Project, Task, TaskStatus, User, ProjectStatus } from '../../../../shared/srcs/types';
 import { useSocket } from '../context/SocketContext';
@@ -9,6 +9,16 @@ export function useProjectDetails(projectId: number) {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const socket = useSocket();
+
+  const reloadProject = useCallback(async () => {
+    try {
+      const res = await projectService.getById(projectId);
+      setProject(res.data);
+      setTasks(res.data.tasks || []);
+    } catch (error) {
+      console.error(error);
+    }
+  }, [projectId]);
 
   useEffect(() => {
     if (!projectId) return;
@@ -45,21 +55,34 @@ export function useProjectDetails(projectId: number) {
       );
     });
 
+    socket.on('task_created', (newTask: Task) => {
+      setTasks(prev => {
+        if (prev.some(t => t.id === newTask.id)) return prev;
+        return [...prev, newTask];
+      });
+    });
+
+    socket.on('task_deleted', (deletedTaskId: number) => {
+      setTasks(prev => prev.filter(t => t.id !== deletedTaskId));
+    });
+
+    socket.on('project_updated', (updatedProject: Project) => {
+      setProject(prev => prev ? { ...prev, ...updatedProject } : null);
+    });
+
+    socket.on('member_updated', () => {
+      reloadProject();
+    });
+
     return () => {
       socket.emit('left project', { username: currentUser.username, projectId });
       socket.off('task_updated');
+      socket.off('task_created');
+      socket.off('task_deleted');
+      socket.off('project_updated');
+      socket.off('member_updated');
     };
-  }, [socket, projectId, currentUser]);
-
-  const reloadProject = async () => {
-    try {
-      const res = await projectService.getById(projectId);
-      setProject(res.data);
-      setTasks(res.data.tasks || []);
-    } catch (error) {
-      console.error(error);
-    }
-  };
+  }, [socket, projectId, currentUser, reloadProject]);
 
   const changeTaskStatus = async (taskId: number, newStatus: TaskStatus) => {
     setTasks(prevTasks => 
@@ -70,8 +93,7 @@ export function useProjectDetails(projectId: number) {
       await taskService.update(taskId, { status: newStatus });
     } catch (error) {
       console.error(error);
-      const res = await projectService.getById(projectId);
-      setTasks(res.data.tasks || []);
+      reloadProject();
     }
   };
 
@@ -92,8 +114,7 @@ export function useProjectDetails(projectId: number) {
       await taskService.update(taskId, { assigneeIds: userIds });
     } catch (error) {
       console.error(error);
-      const res = await projectService.getById(projectId);
-      setTasks(res.data.tasks || []);
+      reloadProject();
     }
   };
 
@@ -106,8 +127,7 @@ export function useProjectDetails(projectId: number) {
       await projectService.update(projectId, { status: newStatus });
     } catch (error) {
       console.error(error);
-      const res = await projectService.getById(projectId);
-      setProject(res.data);
+      reloadProject();
     }
   };
 
@@ -139,5 +159,9 @@ export function useProjectDetails(projectId: number) {
     }
   };
 
-  return { project, tasks, currentUser, isLoading, reloadProject, changeTaskStatus, changeProjectStatus, assignTaskMember, removeProjectMember, removeTask, deleteProject };
+  return { 
+    project, tasks, currentUser, isLoading, reloadProject, 
+    changeTaskStatus, changeProjectStatus, assignTaskMember, 
+    removeProjectMember, removeTask, deleteProject 
+  };
 }
