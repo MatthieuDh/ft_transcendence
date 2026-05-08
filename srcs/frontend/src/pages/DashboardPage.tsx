@@ -32,17 +32,25 @@ function StatLine({ label, value }: { label: string; value: string | number }) {
 export default function DashboardPage() {
   const { metrics, currentUser, isLoading, error } = useDashboard({});
 
-  if (!currentUser) {
+  if (isLoading) {
     return (
       <Flex h="100vh" justify="center" align="center">
         <Spinner size="xl" color="purple.500" />
       </Flex>
     );
   }
-  if (isLoading) {
+
+  const isForbidden =
+    !currentUser ||
+    (typeof error === 'string' && /(forbidden|unauthorized|403|401)/i.test(error));
+
+  if (isForbidden) {
     return (
-      <Flex h="100vh" justify="center" align="center">
-        <Spinner size="xl" color="purple.500" />
+      <Flex h="100vh" justify="center" align="center" direction="column" gap={3}>
+        <Text fontWeight="bold" color="red.700">Forbidden</Text>
+        <Text color="gray.600" fontSize="sm">
+          You do not have permission to view this dashboard.
+        </Text>
       </Flex>
     );
   }
