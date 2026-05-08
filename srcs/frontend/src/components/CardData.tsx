@@ -1,5 +1,6 @@
 import { Box, HStack, VStack, Text, Heading, Badge, Card, Avatar } from '@chakra-ui/react';
 import { LuFolder, LuClock, LuCalendarDays, LuArrowRight } from 'react-icons/lu';
+import { useNavigate } from 'react-router-dom';
 import type { Project, Task } from '../../../../shared/srcs/types';
 
 export function ProjectCard({ project, onClick }: { project: Project, onClick: () => void }) {
@@ -29,10 +30,16 @@ export function ProjectCard({ project, onClick }: { project: Project, onClick: (
 }
 
 export function TaskCard({ task, onClick }: { task: Task, onClick: () => void }) {
+  const navigate = useNavigate();
   const isOverdue = task.deadline && new Date(task.deadline) < new Date() && task.status !== 'DONE';
   const isDone = task.status === 'DONE';
-  const assigneeName = task.assignees?.[0]?.username || "Unassigned";
-  const assigneeAvatar = task.assignees?.[0]?.avatar;
+  
+  const assigneeData = (task as any).assignees?.[0] || (task as any).assignee?.[0];
+  const actualUser = assigneeData?.user || assigneeData;
+  
+  const assigneeName = actualUser?.username || "Unassigned";
+  const assigneeAvatar = actualUser?.avatar || undefined;
+  const assigneeId = actualUser?.id || undefined;
 
   return (
     <Card.Root 
@@ -55,14 +62,26 @@ export function TaskCard({ task, onClick }: { task: Task, onClick: () => void })
         </HStack>
         <HStack justify="space-between" mt={3}>
           <HStack gap={2}>
-            <Avatar.Root size="xs" borderRadius="full" overflow="hidden">
-              <Avatar.Image src={assigneeAvatar || undefined} />
+            <Avatar.Root 
+              size="xs" 
+              borderRadius="full" 
+              overflow="hidden"
+              cursor={assigneeId ? "pointer" : "default"}
+              onClick={(e) => {
+                if (assigneeId) {
+                  e.stopPropagation();
+                  navigate(`/profile/${assigneeId}`);
+                }
+              }}
+              _hover={assigneeId ? { opacity: 0.7 } : {}}
+            >
+              <Avatar.Image src={assigneeAvatar} />
               <Avatar.Fallback boxSize="full" display="flex" alignItems="center" justifyContent="center" bg={assigneeName === "Unassigned" ? "gray.400" : "purple.500"} color="white" fontSize="10px" fontWeight="bold">
                 {assigneeName.charAt(0).toUpperCase()}
               </Avatar.Fallback>
             </Avatar.Root>
             <VStack align="start" gap={0}>
-              <Text fontSize="xs" fontWeight="bold" color="gray.700" _dark={{ color: "gray.200" }} lineClamp={1}>{task.project?.name || 'No Project'}</Text>
+              <Text fontSize="xs" fontWeight="bold" color="gray.700" _dark={{ color: "gray.200" }} lineClamp={1}>{(task as any).project?.name || 'No Project'}</Text>
               <Text fontSize="10px" color="gray.500">{assigneeName}</Text>
             </VStack>
           </HStack>
