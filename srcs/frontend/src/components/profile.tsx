@@ -1,13 +1,13 @@
 import type { User } from '@transcendence/shared/srcs/types/user';
-import { Card, HStack, VStack, Avatar, Text, Heading, List, Tooltip, Box } from '@chakra-ui/react';
+import { Card, HStack, VStack, Avatar, Text, Heading, List, Tooltip } from '@chakra-ui/react';
 
 interface ProfileProps {
   user: User;
   roleSelect?: React.ReactNode;
+  editProfileButton?: React.ReactNode;
 }
 
-function Profile({ user, roleSelect }: ProfileProps) {
-  console.log(user.projectMemberships?.[0]?.project);
+function Profile({ user, roleSelect, editProfileButton }: ProfileProps) {
   return (
     <VStack gap={4} align="stretch">
       <Card.Root>
@@ -26,10 +26,11 @@ function Profile({ user, roleSelect }: ProfileProps) {
                 })}
               </Text>
             </VStack>
-            {roleSelect && (
-              <Box ml="auto">
+            {(roleSelect || editProfileButton) && (
+              <VStack align="end " gap={2} ml="auto">
                 {roleSelect}
-              </Box>
+                {editProfileButton}
+              </VStack>
             )}
           </HStack>
         </Card.Body>

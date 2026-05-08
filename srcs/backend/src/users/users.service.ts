@@ -1,9 +1,10 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { PrismaService} from '../prisma/prisma.service'
 import * as bcrypt from 'bcrypt';
 import { GlobalRole } from '@prisma/client';
+import { ChangePasswordDto } from './dto/changePasswordDto';
 
 const userSelect = {
   id: true,
@@ -98,12 +99,41 @@ export class UsersService {
   }
 
   async update(id: number, updateUserDto: UpdateUserDto) {
-    const hashedpassword = updateUserDto.password ? await bcrypt.hash(updateUserDto.password, 10) : undefined;
     return this.prisma.user.update({
       where: { id },
-      data: { username: updateUserDto.username, password: hashedpassword, avatar: updateUserDto.avatar, email: updateUserDto.email} ,
+      data: { 
+        username: updateUserDto.username, 
+        email: updateUserDto.email ,
+        avatar: updateUserDto.avatar},
       select: userSelect,
     });
+  }
+
+  async changePassword(id: number, dto: ChangePasswordDto){
+    if (dto.newPassword !== dto.confirmPassword) {
+      throw new ForbiddenException('New password and confirm password do not match');
+    }
+    const user = await this.prisma.user.findUnique({
+      where: { id },});
+      
+    if (!user) {
+      throw new ForbiddenException('User not found');
+    }
+
+    if (!user.password){
+      throw new BadRequestException('User does not have a password set');
+    }
+    const passwordMatch = await bcrypt.compare(dto.currentPassword, user.password);
+    if (!passwordMatch) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+    const hashedNewPassword = await bcrypt.hash(dto.newPassword, 10);
+    return this.prisma.user.update({
+      where: { id },
+      data: { password: hashedNewPassword },
+    });
+
+  
   }
 
   async updateByName(username: string, updateUserDto: UpdateUserDto) {
