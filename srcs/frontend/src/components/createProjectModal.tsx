@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { Box, VStack, Text, Input, Textarea, Button } from '@chakra-ui/react';
-import { 
-  DialogRoot, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogBody, 
-  DialogFooter, 
-  DialogCloseTrigger 
-} from '@chakra-ui/react';
+import {
+  DialogRoot,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogBody,
+  DialogFooter,
+  DialogCloseTrigger
+} from './ui/dialog';
 import { projectService } from '../api/services';
 
 interface CreateProjectModalProps {
@@ -47,8 +47,8 @@ export default function CreateProjectModal({ isOpen, onClose, onCreated }: Creat
   };
 
   return (
-    <DialogRoot open={isOpen} onOpenChange={(e) => !e.open && onClose()} placement="center">
-      <DialogContent _dark={{ bg: "gray.800" }}>
+    <DialogRoot open={isOpen} onOpenChange={(e) => !e.open && onClose()} placement="center" motionPreset="scale">
+      <DialogContent _dark={{ bg: "gray.800" }} position="fixed" top="50%" left="50%" transform="translate(-50%, -50%)" margin="0">
         <DialogHeader>
           <DialogTitle textAlign="left">Create New Project</DialogTitle>
           <DialogCloseTrigger />
