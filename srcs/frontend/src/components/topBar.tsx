@@ -1,4 +1,4 @@
-import { Flex, HStack, Box, Heading, Text, VStack, Input, Button } from "@chakra-ui/react";
+import { Flex, HStack, Box, Heading, Text, VStack, Input, Button, Avatar } from "@chakra-ui/react";
 import { ColorModeButton } from "./ui/color-mode";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
@@ -141,8 +141,13 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
         <ColorModeButton />
 
         <Box position="relative" ref={profileMenuRef}>
-          <Box w="40px" h="40px" bg="purple.500" color="white" borderRadius="full" display="flex" alignItems="center" justifyContent="center" fontWeight="bold" cursor="pointer" _hover={{ bg: "purple.600" }} onClick={() => setIsProfileOpen(!isProfileOpen)}>
-            {currentUser?.username?.charAt(0).toUpperCase() || 'S'}
+          <Box cursor="pointer" onClick={() => setIsProfileOpen(!isProfileOpen)}>
+            <Avatar.Root size="md" w="40px" h="40px" _hover={{ opacity: 0.8 }} transition="opacity 0.2s">
+              <Avatar.Image src={currentUser?.avatar || undefined} />
+              <Avatar.Fallback bg="purple.500" color="white" fontWeight="bold" display="flex" alignItems="center" justifyContent="center" boxSize="full">
+                {currentUser?.username?.charAt(0).toUpperCase() || 'S'}
+              </Avatar.Fallback>
+            </Avatar.Root>
           </Box>
 
           {isProfileOpen && (
