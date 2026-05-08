@@ -32,6 +32,7 @@ export function TaskCard({ task, onClick }: { task: Task, onClick: () => void })
   const isOverdue = task.deadline && new Date(task.deadline) < new Date() && task.status !== 'DONE';
   const isDone = task.status === 'DONE';
   const assigneeName = task.assignees?.[0]?.username || "Unassigned";
+  const assigneeAvatar = task.assignees?.[0]?.avatar;
 
   return (
     <Card.Root 
@@ -55,6 +56,7 @@ export function TaskCard({ task, onClick }: { task: Task, onClick: () => void })
         <HStack justify="space-between" mt={3}>
           <HStack gap={2}>
             <Avatar.Root size="xs" borderRadius="full" overflow="hidden">
+              <Avatar.Image src={assigneeAvatar || undefined} />
               <Avatar.Fallback boxSize="full" display="flex" alignItems="center" justifyContent="center" bg={assigneeName === "Unassigned" ? "gray.400" : "purple.500"} color="white" fontSize="10px" fontWeight="bold">
                 {assigneeName.charAt(0).toUpperCase()}
               </Avatar.Fallback>
