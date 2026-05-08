@@ -41,7 +41,7 @@ export class TasksService {
           create: { status: TaskStatus.TODO }
         },
       },
-      include: { assignees: { select: { id: true, username: true } } },
+      include: { assignees: { select: { id: true, username: true, avatar: true } } },
     });
 
     if (assigneeIds && assigneeIds.length > 0) {
@@ -60,7 +60,7 @@ export class TasksService {
   async findAll() {
     return this.prisma.task.findMany({
       include: {
-        assignees: { select: { username: true } },
+        assignees: { select: { id: true, username: true, avatar: true } },
         project: { select: { name: true } },
       },
     });
@@ -76,7 +76,7 @@ export class TasksService {
         },
       },
       include: {
-        assignees: { select: { username: true } },
+        assignees: { select: { id: true, username: true, avatar: true } },
         project: { select: { name: true } },
       },
     });
@@ -86,7 +86,7 @@ export class TasksService {
     return this.prisma.task.findUnique({
       where: { id },
       include: {
-        assignees: { select: { username: true } },
+        assignees: { select: { id: true, username: true, avatar: true } },
         project: { select: { name: true } },
       },
     });
