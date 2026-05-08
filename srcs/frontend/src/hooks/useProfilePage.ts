@@ -1,14 +1,12 @@
-import { useState,  } from "react";
+import { useState, useEffect } from "react";
 import { useProfile } from "./useProfile";
-import { useFriend } from "./useFriend";
-import { useSentRequests } from "./useFriend";
-import { useEffect } from "react";
+import { useFriend, useSentRequests } from "./useFriend";
 import { useAuth } from "../context/AuthContext";
 
 export function useProfilePage(userId: number) {
   const { user } = useProfile(userId);
   const { friends } = useFriend(userId);
-  const { currentUser, isLoading: authLoading } = useAuth();
+  const { currentUser, setCurrentUser, isLoading: authLoading } = useAuth();
   const { friends: myFriends, isLoading: friendsLoading, refetch: refetchMyFriends } = useFriend(currentUser?.id ?? 0);
   const { sentRequests, refetch: refetchSentRequests } = useSentRequests();
   const [localUser, setLocalUser] = useState(user);
@@ -24,6 +22,7 @@ export function useProfilePage(userId: number) {
     localUser, setLocalUser,
     friends,
     currentUser,
+    setCurrentUser,
     authLoading,
     friendsLoading,
     isOwnProfile,

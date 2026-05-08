@@ -15,7 +15,7 @@ export function SocketProvider({ children, currentUserId }: SocketProviderProps)
   useEffect(() => {
     if (!currentUserId) return;
 
-    const newSocket = io("https://localhost");
+    const newSocket = io(window.location.origin);
     setSocket(newSocket);
 
     newSocket.on("connect", () => {

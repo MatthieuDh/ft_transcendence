@@ -1,15 +1,17 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import type { User } from "@transcendence/shared";
+import type { User } from "../../../../shared/srcs/types/user";
 import { userService } from "../api/services";
 
 interface AuthContextType {
   currentUser: User | null;
   isLoading: boolean;
+  setCurrentUser: React.Dispatch<React.SetStateAction<User | null>>;
 }
 
 const AuthContext = createContext<AuthContextType>({
   currentUser: null,
   isLoading: true,
+  setCurrentUser: () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -23,13 +25,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    userService.getMe()  // ← endpoint that returns the logged in user
+    userService.getMe()
       .then(response => setCurrentUser(response.data))
+      .catch(() => setCurrentUser(null))
       .finally(() => setIsLoading(false));
   }, []);
 
   return (
-    <AuthContext.Provider value={{ currentUser, isLoading }}>
+    <AuthContext.Provider value={{ currentUser, isLoading, setCurrentUser }}>
       {children}
     </AuthContext.Provider>
   );

@@ -13,7 +13,7 @@ export function ProfilePage() {
   const { userId } = useParams();
   const {
     localUser, setLocalUser,
-    friends, currentUser,
+    friends, currentUser, setCurrentUser,
     authLoading, friendsLoading,
     isOwnProfile, isFriend, isPending,
     friendship, refetchMyFriends, refetchSentRequests,
@@ -25,7 +25,7 @@ export function ProfilePage() {
     <Container maxW="1400px" mt={8}>
       <HStack gap={4} align="start" flexWrap="wrap">
         <Box flex="3 1 62%" minW="60%">
-          <Profile user={localUser!} 
+          <Profile user={localUser} 
             roleSelect={
               currentUser?.globalRole === 'ADMIN' && !isOwnProfile
                 ? <RoleSelect
@@ -39,7 +39,12 @@ export function ProfilePage() {
               isOwnProfile
                 ? <EditProfileModal
                     user={localUser}
-                    onSuccess={(updatedUser) => { setLocalUser(updatedUser); }}
+                    onSuccess={(updatedUser) => { 
+                      setLocalUser(updatedUser); 
+                      if (currentUser?.id === updatedUser.id) {
+                        setCurrentUser(updatedUser);
+                      }
+                    }}
                   />
                 : undefined
             }
