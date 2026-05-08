@@ -111,6 +111,8 @@ export const userService = {
   delete: (userId: number) => client.delete<void>(`/users/${userId}`),
   updateUser: (data: { username?: string; email?: string; password?: string; avatar?: string }) =>
     client.patch<User>('/users/me', data),
+  changePassword: (data: { currentPassword: string; newPassword: string }) =>
+    client.patch('/users/change-password', data),
   promoteUser: (userId: number) => client.patch<PromotedUser>(`/users/promote/${userId}`),
   demoteUser: (userId: number) => client.patch<PromotedUser>(`/users/demote/${userId}`),
 };
