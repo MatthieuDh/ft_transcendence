@@ -36,8 +36,8 @@ services:
       SMTP_USER: ${SMTP_USER}
       SMTP_PASS: ${SMTP_PASS}
       FRONTED_URL: ${FRONTEND_URL}
-    expose:
-      - "3000"
+    ports:
+      - "3000:3000"
     volumes:
       - .:/app
       - /app/node_modules

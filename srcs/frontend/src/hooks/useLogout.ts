@@ -1,14 +1,10 @@
-// useLogout.ts (of .js)
-
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom'
 
 export function useLogout() {
-  const navigate = useNavigate();
-
+  const navigate = useNavigate()
   const logout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    navigate('/login');   
-  };
-  return { logout };
+    localStorage.removeItem('access_token')
+    navigate('/login')
+  }
+  return { logout }
 }
