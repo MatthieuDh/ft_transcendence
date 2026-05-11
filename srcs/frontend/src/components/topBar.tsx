@@ -8,7 +8,6 @@ import { useLogout } from "../hooks/useLogout";
 import { useFriendRequests } from "../hooks/useFriend";
 import { useAuth } from "../context/AuthContext";
 import ChangePasswordModal from "./changePasswordModal";
-import Logo from "./logo";
 
 interface TopBarProps {
   searchQuery: string;
@@ -57,12 +56,9 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
   return (
     <Flex as="header" w="full" h="72px" align="center" justify="space-between" px={8} position="relative" zIndex={100} backdropFilter="blur(12px)" bg="rgba(255,255,255,0.8)" borderBottom="1px solid" borderColor="rgba(255,255,255,0.15)" _dark={{ bg: "rgba(10,10,15,0.85)", borderColor: "rgba(255,255,255,0.08)" }}>
 
-      <HStack gap={4}>
-        <Logo /> 
-        <Heading size="lg" fontWeight="bold" color="gray.800" _dark={{ color: "white" }} display={{ base: "none", sm: "block" }}>
-          {getPageTitle(location.pathname)}
-        </Heading>
-      </HStack>
+      <Heading size="lg" fontWeight="bold" color="gray.800" _dark={{ color: "white" }}>
+        {getPageTitle(location.pathname)}
+      </Heading>
 
       <HStack gap={5}>
         {(location.pathname === '/' || location.pathname === '/main') && (
@@ -117,7 +113,6 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
                 )}
               </Flex>
               <VStack maxH="300px" overflowY="auto" align="stretch" gap={0}>
-
                 {requests.map(req => (
                   <Box key={`req-${req.id}`} p={3} borderBottom="1px solid" borderColor="gray.100" bg="purple.50" _dark={{ borderColor: "gray.700", bg: "purple.900" }}>
                     <Text fontSize="sm" color="gray.800" _dark={{ color: "white" }} mb={2}>
@@ -133,7 +128,6 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
                     </HStack>
                   </Box>
                 ))}
-
                 {displayNotifications.length === 0 && requests.length === 0 ? (
                   <Text p={4} textAlign="center" fontSize="sm" color="gray.500">No notifications</Text>
                 ) : (
@@ -175,9 +169,7 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
               <VStack align="stretch" gap={0}>
                 <Box p={3} cursor="pointer" _hover={{ bg: "gray.50", _dark: { bg: "gray.700" } }} onClick={() => {
                   setIsProfileOpen(false);
-                  if (currentUser) {
-                    navigate(`/profile/${currentUser.id}`);
-                  }
+                  if (currentUser) navigate(`/profile/${currentUser.id}`);
                 }}>
                   <Text fontSize="sm" fontWeight="bold">My Profile</Text>
                 </Box>
@@ -188,10 +180,7 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
                   borderTop="1px solid"
                   borderColor="gray.100"
                   _dark={{ borderColor: "gray.700" }}
-                  onClick={() => {
-                    setIsProfileOpen(false);
-                    setChangePasswordOpen(true);
-                  }}
+                  onClick={() => { setIsProfileOpen(false); setChangePasswordOpen(true); }}
                 >
                   <Text fontSize="sm" fontWeight="bold">Change Password</Text>
                 </Box>
@@ -203,10 +192,7 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
                   borderTop="1px solid"
                   borderColor="gray.100"
                   _dark={{ borderColor: "gray.700" }}
-                  onClick={() => {
-                    setIsProfileOpen(false);
-                    logout();
-                  }}
+                  onClick={() => { setIsProfileOpen(false); logout(); }}
                 >
                   <Text fontSize="sm" fontWeight="bold">Logout</Text>
                 </Box>
