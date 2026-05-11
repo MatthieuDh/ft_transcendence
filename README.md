@@ -5,6 +5,8 @@ Transcendence is a full-stack web application built as a monorepo with a React f
 ## Table of contents
 
 - [Project overview](#project-overview)
+- [Team members](#team-members)
+- [Management approach](#management-approach)
 - [Tech stack](#tech-stack)
 - [Architecture](#architecture)
 - [Main features](#main-features)
@@ -31,6 +33,24 @@ NGINX receives the browser request and sends it to the correct service:
 - `/` goes to the frontend.
 - `/api/` goes to the backend API.
 - `/socket.io/` goes to the backend WebSocket gateway.
+
+## Team members
+
+- PO: gvan-gom
+- PM: side-boe
+- Project lead: mdhooghe
+- Developers: gvan-gom, mdhooghe, side-boe, svan-den, dzotti, gwindey
+
+## Management approach
+
+The project is organized with a simple and transparent workflow to keep development coordinated across the team:
+
+- **PO** defines the priorities, feature scope and acceptance criteria.
+- **PM** tracks progress, deadlines and team coordination.
+- **Project lead** validates architecture choices and keeps the technical direction consistent.
+- **Developers** work in feature branches, keep changes small and review each other’s work through merge requests.
+- Regular syncs are used to unblock issues, split tasks and keep the roadmap aligned with the current sprint.
+- Backend, frontend and infrastructure changes are documented in the repository so the whole team can follow the same source of truth.
 
 ## Tech stack
 
@@ -609,3 +629,58 @@ In simple terms, this project works like this:
 - Make sure every protected route consistently returns the correct user role field expected by guards.
 - Make sure update methods return the updated object where the frontend expects a response.
 - Add more clear tests for guards, permissions and project membership edge cases.
+
+## Claimed modules
+
+- Major (2p): Use a framework for both the frontend and backend. (side-boe, mdhooghe, gvan-gom, svan-den, dzotti, gwindey)
+  - Use a frontend framework (React, Vue, Angular, Svelte, etc.).
+  - Use a backend framework (Express, NestJS, Django, Flask, Ruby on Rails, etc.).
+  - Full-stack frameworks (Next.js, Nuxt.js, SvelteKit) count as both if you use both their frontend and backend capabilities.
+- Major (4p): Implement real-time features using WebSockets or similar technology. (mdhooghe, side-boe)
+  - Real-time updates across clients.
+  - Handle connection/disconnection gracefully.
+  - Efficient message broadcasting.
+- Major (6p): Allow users to interact with other users. The minimum requirements are: (side-boe, mdhooghe, dzotti)
+  - A basic chat system (send/receive messages between users).
+  - A profile system (view user information).
+  - A friends system (add/remove friends, see friends list).
+- Major (8p): A public API to interact with the database with a secured API key, rate (svan-den)
+  limiting, documentation, and at least 5 endpoints:
+  - GET /api/{something}
+  - POST /api/{something}
+  - PUT /api/{something}
+  - DELETE /api/{something}
+- Minor (9p): Use an ORM for the database. (mdhooghe)
+- Minor (10p): A complete notification system for all creation, update, and deletion actions. (side-boe, gwindey)
+  - Store notifications in the database.
+  - Mark/read notification flow.
+  - Real-time delivery through WebSocket gateway.
+- Minor (11p): Real-time collaborative features (shared workspaces, live editing, collaborative drawing, etc.). (gvan-gom)
+- Minor (18p): User activity analytics and insights dashboard. (svan-den, mdhooghe)
+  - Track user activity (logins, actions, etc.).
+  - Display insights through charts and graphs.
+  - Filter analytics by date range, user role, etc.
+- Minor (12p): Support for additional browsers. (dzotti, gwindey)
+  - Full compatibility with at least 2 additional browsers (Firefox, Safari, Edge, etc.).
+  - Test and fix all features in each browser.
+  - Document any browser-specific limitations.
+  - Consistent UI/UX across all supported browsers.
+- Major (14p): Standard user management and authentication. (side-boe, mdhooghe, gvan-gom)
+  - Users can update their profile information.
+  - Users can upload an avatar (with a default avatar if none provided).
+  - Users can add other users as friends and see their online status.
+  - Users have a profile page displaying their information.
+- Minor (15p): Implement remote authentication with OAuth 2.0 (Google, GitHub, 42, etc.). (side-boe)
+- Major (17p): Advanced permissions system: (svan-den)
+  - View, edit, and delete users (CRUD).
+  - Roles management (admin, user, guest, moderator, etc.).
+  - Different views and actions based on user role.
+- Major (20p): Advanced analytics dashboard with data visualization. (svan-den, mdhooghe)
+  - Interactive charts and graphs (line, bar, pie, etc.).
+  - Real-time data updates.
+  - Export functionality (PDF, CSV, etc.).
+  - Customizable date ranges and filters.
+- Minor (21p): Use a frontend framework (React, Vue, Angular, Svelte, etc.). (svan-den, dzotti, gwindey, gvan-gom, side-boe, mdhooghe)
+- Minor (22p): Use a backend framework (Express, Fastify, NestJS, Django, etc.). (svan-den, dzotti, gwindey, gvan-gom, side-boe, mdhooghe)
+
+So we claim 22 points for 7 major and 8 minor modules.
