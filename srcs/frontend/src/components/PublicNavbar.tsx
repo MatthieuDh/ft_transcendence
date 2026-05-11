@@ -1,5 +1,6 @@
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
-import { Box, Button, Container, Flex, Heading, HStack } from '@chakra-ui/react';
+import { Box, Button, Container, Flex, HStack } from '@chakra-ui/react';
+import Logo from './logo';
 
 export default function PublicNavbar() {
     const navigate = useNavigate();
@@ -17,19 +18,12 @@ export default function PublicNavbar() {
         >
             <Container maxW="7xl" py={4}>
                 <Flex align="center" justify="space-between" gap={4}>
+                    
                     <RouterLink to="/">
-                        <HStack gap={3} cursor="pointer">
-                            <Box
-                                w={3}
-                                h={3}
-                                borderRadius="full"
-                                bg="purple.500"
-                                boxShadow="0 0 24px rgba(168, 85, 247, 0.95)"
-                            />
-                            <Heading size="md" letterSpacing="-0.04em" color="white">
-                                Sigma
-                            </Heading>
-                        </HStack>
+                        <Box cursor="pointer" _hover={{ opacity: 0.8 }} transition="opacity 0.2s">
+                            {/* Hier roepen we jullie ECHTE logo aan, met witte tekst voor de dark mode header! */}
+                            <Logo height="28px" iconColor="#a855f7" textColor="white" />
+                        </Box>
                     </RouterLink>
 
                     <HStack gap={3}>

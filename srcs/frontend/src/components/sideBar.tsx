@@ -26,11 +26,12 @@ export default function Sidebar() {
       direction="column"
       position="sticky"
       top="0"
+      display={{ base: "none", md: "flex" }}
     >
-      <Box p="clamp(16px, 2vw, 24px)" display="flex" alignItems="center" justifyContent="center">
-        <Link asChild outline="none" boxShadow="none" border="none" _hover={{ textDecoration: 'none' }} _focusVisible={{ outline: "none", boxShadow: "none" }} _focus={{ boxShadow: "none" }} _active={{ boxShadow: "none" }}>
+      <Box p="clamp(16px, 2vw, 24px)" display="flex" alignItems="center" justifyContent="flex-start">
+        <Link asChild outline="none" boxShadow="none" border="none" _hover={{ textDecoration: 'none', opacity: 0.8 }} transition="opacity 0.2s">
           <RouterLink to="/main">
-            <SigmaLogo height="32px" />
+            <SigmaLogo height="32px" iconColor="#a855f7" textColor="inherit" />
           </RouterLink>
         </Link>
       </Box>
@@ -48,9 +49,6 @@ export default function Sidebar() {
               boxShadow="none"
               border="none"
               _hover={{ textDecoration: 'none', bg: 'gray.100', _dark: { bg: 'rgba(168,85,247,0.08)' } }}
-              _focusVisible={{ outline: "none", boxShadow: "none" }}
-              _focus={{ boxShadow: "none" }}
-              _active={{ boxShadow: "none" }}
               p={3}
               borderRadius="md"
               fontWeight="medium"
@@ -70,9 +68,7 @@ export default function Sidebar() {
             </Link>
           );
         })}
-
       </VStack>
-
     </Flex>
   );
 }
