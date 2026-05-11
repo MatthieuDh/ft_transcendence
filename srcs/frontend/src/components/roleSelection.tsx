@@ -5,7 +5,7 @@ import { GlobalRole } from "@transcendence/shared/srcs/types/user";
 interface RoleSelectProps {
   targetUserId: number;
   currentRole: GlobalRole;
-  onSuccess?: () => void;
+  onSuccess?: (newRole: GlobalRole) => void;
 }
 
 function RoleSelect({ targetUserId, currentRole, onSuccess }: RoleSelectProps) {
@@ -15,7 +15,7 @@ function RoleSelect({ targetUserId, currentRole, onSuccess }: RoleSelectProps) {
     const newRole = e.target.value as GlobalRole;
     if (newRole === currentRole) return;
     await changeRole(targetUserId, newRole);
-    onSuccess?.();
+    onSuccess?.(newRole);
   };
 
   return (

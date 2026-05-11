@@ -54,7 +54,9 @@ export function ProfilePage() {
                 ? <RoleSelect
                     targetUserId={Number(userId)}
                     currentRole={localUser.globalRole as GlobalRole}
-                    onSuccess={() => {}}
+                    onSuccess={(newRole) => {
+                      setLocalUser(prev => prev ? { ...prev, globalRole: newRole } : prev);
+                    }}
                   />
                 : undefined
             }
