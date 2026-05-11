@@ -24,6 +24,7 @@ export interface ProjectHealthItem {
 export interface DashboardMetrics {
     totalProjects: number;
     completedProjects: number;
+    averageProjectAgeDays?: number;
     totalTasks: number;
     completedTasks: number;
     overdueTasks: number;

@@ -99,7 +99,7 @@ export const dashboardMetrics = {
   getProjectMetrics: (projectId: number, filters: DashboardFilters) => 
     client.get<DashboardMetrics>(`/dashboard/projects/${projectId}`, {params: filters}),
   exportMetrics: (filters: DashboardFilters, format: 'csv' | 'pdf') =>
-    client.get('dashboard/export', {params: {...filters, format}, responseType: 'blob'}),
+    client.get('/dashboard/export', {params: {...filters, format}, responseType: 'blob'}),
 };
 
 export const userService = {
