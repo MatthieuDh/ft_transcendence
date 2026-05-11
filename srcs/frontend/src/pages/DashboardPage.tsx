@@ -1,36 +1,63 @@
+import { useState, type ReactNode } from 'react';
 import { useDashboard } from '../hooks/useDashboard.ts';
 import {
   Box,
-  Flex,
-  Text,
-  Grid,
-  Spinner,
-  HStack,
-  VStack,
+  Button,
   Card,
+  Flex,
+  Grid,
   Heading,
+  HStack,
+  Input,
+  NativeSelect,
+  Spinner,
+  Text,
+  VStack,
 } from '@chakra-ui/react';
+import { LuDownload, LuRefreshCw, LuTriangleAlert } from 'react-icons/lu';
+import { dashboardMetrics } from '../api/services';
 import {
-  LuTriangleAlert,
-} from 'react-icons/lu';
-import type { ProjectRiskLevel } from '../../../../shared/srcs/types';
+  ProjectStatus,
+  TaskStatus,
+  type DashboardFilters,
+  type ProjectRiskLevel,
+} from '../../../../shared/srcs/types';
 import { DonutChart } from '../components/ui/donut-chart.tsx';
 
 function StatLine({ label, value }: { label: string; value: string | number }) {
   return (
     <HStack justify="space-between" w="100%">
-      <Text fontSize="sm">
-        {label}
-      </Text>
-      <Text fontWeight="bold">
-        {value}
-      </Text>
+      <Text fontSize="sm">{label}</Text>
+      <Text fontWeight="bold">{value}</Text>
     </HStack>
   );
 }
 
+function FilterField({
+  label,
+  children,
+}: {
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <Box>
+      <Text fontSize="sm" fontWeight="medium" mb={1}>
+        {label}
+      </Text>
+      {children}
+    </Box>
+  );
+}
+
+function formatEnumLabel(value: string) {
+  return value.replace(/_/g, ' ');
+}
+
 export default function DashboardPage() {
-  const { metrics, currentUser, isLoading, error } = useDashboard({});
+  const [filters, setFilters] = useState<DashboardFilters>({});
+  const [isExporting, setIsExporting] = useState(false);
+  const { metrics, currentUser, isLoading, error, reloadDashboard } = useDashboard(filters);
 
   if (isLoading) {
     return (
@@ -46,11 +73,14 @@ export default function DashboardPage() {
 
   if (isForbidden) {
     return (
-      <Flex h="100vh" justify="center" align="center" direction="column" gap={3}>
-        <Text fontWeight="bold" color="red.700">Forbidden</Text>
-        <Text color="gray.600" fontSize="sm">
+      <Flex h="100vh" justify="center" align="center" direction="column" gap={3} px={6} textAlign="center">
+        <Text fontWeight="bold" fontSize="lg">
+          Forbidden
+        </Text>
+        <Text fontSize="sm">
           You do not have permission to view this dashboard.
         </Text>
+        {error && <Text fontSize="sm">{error}</Text>}
       </Flex>
     );
   }
@@ -59,7 +89,7 @@ export default function DashboardPage() {
     return (
       <Flex h="100vh" justify="center" align="center" direction="column" gap={4}>
         <Text fontWeight="bold">Failed to load dashboard metrics.</Text>
-        {error && <Text color="red.600" fontSize="sm">{error}</Text>}
+        {error && <Text fontSize="sm">{error}</Text>}
       </Flex>
     );
   }
@@ -73,24 +103,58 @@ export default function DashboardPage() {
   );
 
   const inProgressProjects = Math.max(metrics.totalProjects - metrics.completedProjects, 0);
+  const riskyProjects = riskCounts.AT_RISK + riskCounts.CRITICAL;
+  const averageProjectDays = metrics.averageProjectAgeDays;
+
+  const updateFilter = <K extends keyof DashboardFilters>(
+    key: K,
+    value: DashboardFilters[K] | undefined,
+  ) => {
+    setFilters((prev) => {
+      const next = { ...prev } as DashboardFilters;
+      if (value === undefined || value === null || value === '') {
+        delete next[key];
+      } else {
+        next[key] = value;
+      }
+      return next;
+    });
+  };
+
+  const handleExport = async (format: 'csv' | 'pdf') => {
+    setIsExporting(true);
+    try {
+      const response = await dashboardMetrics.exportMetrics(filters, format);
+      const blob = response.data as Blob;
+      const url = window.URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = `dashboard-${new Date().toISOString().split('T')[0]}.${format}`;
+      document.body.appendChild(anchor);
+      anchor.click();
+      document.body.removeChild(anchor);
+      window.URL.revokeObjectURL(url);
+    } catch (exportError) {
+      console.error('Export failed:', exportError);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   return (
     <Flex h="100%" direction="column" gap={6} align="stretch">
       {error && (
         <Box
-          bg="red.100"
           p={4}
           borderRadius="md"
-          border="1px solid"
-          borderColor="red.300"
         >
           <HStack gap={2}>
-            <LuTriangleAlert color="red" size={20} />
+            <LuTriangleAlert size={20} />
             <VStack align="flex-start" gap={0}>
-              <Text fontWeight="bold" color="red.800">
+              <Text fontWeight="bold">
                 Error Loading Dashboard
               </Text>
-              <Text fontSize="sm" color="red.700">
+              <Text fontSize="sm">
                 {error}
               </Text>
             </VStack>
@@ -98,15 +162,101 @@ export default function DashboardPage() {
         </Box>
       )}
 
+      <Card.Root>
+        <Card.Body p={6}>
+          <Flex justify="space-between" align={{ base: 'stretch', md: 'center' }} gap={4} wrap="wrap">
+            <Box>
+              <Heading size="lg">Dashboard</Heading>
+              <Text>Project and task analytics overview</Text>
+            </Box>
+
+            <HStack gap={2} wrap="wrap">
+              <Button onClick={() => void reloadDashboard()} loading={isLoading}>
+                <LuRefreshCw /> Refresh
+              </Button>
+              <Button onClick={() => void handleExport('csv')} loading={isExporting}>
+                <LuDownload /> CSV
+              </Button>
+            </HStack>
+          </Flex>
+
+          <Grid
+            mt={6}
+            templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)', xl: 'repeat(5, 1fr)' }}
+            gap={4}
+          >
+            <FilterField label="From">
+              <Input
+                type="date"
+                size="sm"
+                value={filters.from ?? ''}
+                onChange={(e) => updateFilter('from', e.target.value || undefined)}
+              />
+            </FilterField>
+
+            <FilterField label="To">
+              <Input
+                type="date"
+                size="sm"
+                value={filters.to ?? ''}
+                onChange={(e) => updateFilter('to', e.target.value || undefined)}
+              />
+            </FilterField>
+
+            <FilterField label="Member ID">
+              <Input
+                type="number"
+                size="sm"
+                value={filters.memberId ?? ''}
+                onChange={(e) => updateFilter('memberId', e.target.value ? Number(e.target.value) : undefined)}
+              />
+            </FilterField>
+
+            <FilterField label="Project status">
+              <NativeSelect.Root>
+                <NativeSelect.Field
+                  w="100%"
+                  value={filters.projectStatus ?? ''}
+                  onChange={(e) => updateFilter('projectStatus', e.target.value ? (e.target.value as ProjectStatus) : undefined)}
+                >
+                  <option value="">All project statuses</option>
+                  {Object.values(ProjectStatus).map((status) => (
+                    <option key={status} value={status}>
+                      {formatEnumLabel(status)}
+                    </option>
+                  ))}
+                </NativeSelect.Field>
+                <NativeSelect.Indicator />
+              </NativeSelect.Root>
+            </FilterField>
+
+            <FilterField label="Task status">
+              <NativeSelect.Root>
+                <NativeSelect.Field
+                  w="100%"
+                  value={filters.taskStatus ?? ''}
+                  onChange={(e) => updateFilter('taskStatus', e.target.value ? (e.target.value as TaskStatus) : undefined)}
+                >
+                  <option value="">All task statuses</option>
+                  {Object.values(TaskStatus).map((status) => (
+                    <option key={status} value={status}>
+                      {formatEnumLabel(status)}
+                    </option>
+                  ))}
+                </NativeSelect.Field>
+                <NativeSelect.Indicator />
+              </NativeSelect.Root>
+            </FilterField>
+          </Grid>
+        </Card.Body>
+      </Card.Root>
+
       <Grid
         templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }}
         gap={6}
         alignItems="stretch"
       >
-        <Grid
-          minH="360px"
-          placeItems="center"
-        >
+        <Grid minH="360px" placeItems="center">
           <DonutChart
             title="Projects"
             centerLabel={metrics.totalProjects}
@@ -117,6 +267,29 @@ export default function DashboardPage() {
             ]}
           />
         </Grid>
+
+        <Card.Root minH="360px">
+          <Card.Body p={6}>
+            <VStack align="stretch" gap={4} h="100%">
+              <Heading size="md">Project stats</Heading>
+              <VStack align="stretch" gap={2}>
+                <StatLine label="Total projects" value={metrics.totalProjects} />
+                <StatLine label="Completed" value={metrics.completedProjects} />
+                <StatLine label="In progress" value={inProgressProjects} />
+                <StatLine label="At risk" value={riskyProjects} />
+              </VStack>
+
+              <Box mt="auto" pt={4} borderTop="1px solid">
+                <Text fontSize="sm">
+                  Average number of days
+                </Text>
+                <Heading size="lg">
+                  {averageProjectDays !== undefined ? `${averageProjectDays.toFixed(1)} days` : '—'}
+                </Heading>
+              </Box>
+            </VStack>
+          </Card.Body>
+        </Card.Root>
 
         <Grid minH="360px" placeItems="center">
           <DonutChart
@@ -131,21 +304,6 @@ export default function DashboardPage() {
           />
         </Grid>
 
-        <Card.Root
-          minH="360px"
-          boxShadow="sm"
-          border="1px solid"
-        >
-          <Card.Body p={6}>
-            <VStack align="stretch" gap={3} flex="1">
-              <Heading size="md">Avg time per stage (days)</Heading>
-              <StatLine label="Todo" value={metrics.avgTimePerStage.TODO} />
-              <StatLine label="In progess" value={metrics.avgTimePerStage.IN_PROGRESS} />
-              <StatLine label="Pending" value={metrics.avgTimePerStage.PENDING_EVALUATION} />
-              <StatLine label="Done" value={metrics.avgTimePerStage.DONE} />
-            </VStack>
-          </Card.Body>
-        </Card.Root>
 
         <Grid minH="360px" placeItems="center">
           <DonutChart
