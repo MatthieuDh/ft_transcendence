@@ -8,6 +8,7 @@ import { useLogout } from "../hooks/useLogout";
 import { useFriendRequests } from "../hooks/useFriend";
 import { useAuth } from "../context/AuthContext";
 import ChangePasswordModal from "./changePasswordModal";
+import Logo from "./logo"; // 👈 HIER IS JOUW LOGO IMPORT TERUG!
 
 interface TopBarProps {
   searchQuery: string;
@@ -56,9 +57,13 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
   return (
     <Flex as="header" w="full" h="72px" align="center" justify="space-between" px={8} position="relative" zIndex={100} backdropFilter="blur(12px)" bg="rgba(255,255,255,0.8)" borderBottom="1px solid" borderColor="rgba(255,255,255,0.15)" _dark={{ bg: "rgba(10,10,15,0.85)", borderColor: "rgba(255,255,255,0.08)" }}>
 
-      <Heading size="lg" fontWeight="bold" color="gray.800" _dark={{ color: "white" }} minW="150px">
-        {getPageTitle(location.pathname)}
-      </Heading>
+      {/* 👈 HIER STAAT JE LOGO NU WEER NETJES NAAST DE TITEL */}
+      <HStack gap={4}>
+        <Logo /> 
+        <Heading size="lg" fontWeight="bold" color="gray.800" _dark={{ color: "white" }} display={{ base: "none", sm: "block" }}>
+          {getPageTitle(location.pathname)}
+        </Heading>
+      </HStack>
 
       <HStack gap={5}>
         {(location.pathname === '/' || location.pathname === '/main') && (
