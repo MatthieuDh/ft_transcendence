@@ -1,13 +1,14 @@
-import { Flex, HStack, Box, Heading, Text, VStack, Input, Button, Avatar } from "@chakra-ui/react";
+import { Flex, HStack, Box, Heading, Text, VStack, Input, Button, Avatar, IconButton, Drawer } from "@chakra-ui/react";
 import { ColorModeButton } from "./ui/color-mode";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import { useNotifications } from "../hooks/useNotification";
-import { LuBell, LuSearch } from "react-icons/lu";
+import { LuBell, LuSearch, LuMenu, LuX } from "react-icons/lu";
 import { useLogout } from "../hooks/useLogout";
 import { useFriendRequests } from "../hooks/useFriend";
 import { useAuth } from "../context/AuthContext";
 import ChangePasswordModal from "./changePasswordModal";
+import { SidebarContent } from "./sideBar";
 
 interface TopBarProps {
   searchQuery: string;
@@ -24,6 +25,7 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const profileMenuRef = useRef<HTMLDivElement>(null);
 
@@ -54,11 +56,22 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
   const totalAlerts = unreadCount + requests.length;
 
   return (
-    <Flex as="header" w="full" h="72px" align="center" justify="space-between" px={8} position="relative" zIndex={100} backdropFilter="blur(12px)" bg="rgba(255,255,255,0.8)" borderBottom="1px solid" borderColor="rgba(255,255,255,0.15)" _dark={{ bg: "rgba(10,10,15,0.85)", borderColor: "rgba(255,255,255,0.08)" }}>
+    <Flex as="header" w="full" h="72px" align="center" justify="space-between" px={{ base: 4, md: 8 }} position="relative" zIndex={100} backdropFilter="blur(12px)" bg="rgba(255,255,255,0.8)" borderBottom="1px solid" borderColor="rgba(255,255,255,0.15)" _dark={{ bg: "rgba(10,10,15,0.85)", borderColor: "rgba(255,255,255,0.08)" }}>
 
-      <Heading size="lg" fontWeight="bold" color="gray.800" _dark={{ color: "white" }}>
-        {getPageTitle(location.pathname)}
-      </Heading>
+      <HStack gap={3} minW={0}>
+        <IconButton
+          aria-label="Open navigation menu"
+          variant="ghost"
+          display={{ base: "inline-flex", md: "none" }}
+          onClick={() => setIsSidebarOpen(true)}
+        >
+          <LuMenu />
+        </IconButton>
+
+        <Heading size="lg" fontWeight="bold" color="gray.800" _dark={{ color: "white" }}>
+          {getPageTitle(location.pathname)}
+        </Heading>
+      </HStack>
 
       <HStack gap={5}>
         {(location.pathname === '/' || location.pathname === '/main') && (
@@ -203,6 +216,24 @@ export default function TopBar({ searchQuery, onSearchChange }: TopBarProps) {
 
         <ChangePasswordModal open={changePasswordOpen} onOpenChange={setChangePasswordOpen} />
       </HStack>
+
+      <Drawer.Root open={isSidebarOpen} onOpenChange={(e) => setIsSidebarOpen(e.open)} placement="start">
+        <Drawer.Backdrop />
+        <Drawer.Positioner>
+          <Drawer.Content maxW="280px" w="80vw" bg="gray.50" _dark={{ bg: "rgba(10,10,15,0.98)" }}>
+            <Flex align="center" justify="space-between" p={4} borderBottom="1px solid" borderColor="gray.200" _dark={{ borderColor: "gray.700" }}>
+              <Heading size="md">Menu</Heading>
+              <IconButton aria-label="Close navigation menu" variant="ghost" onClick={() => setIsSidebarOpen(false)}>
+                <LuX />
+              </IconButton>
+            </Flex>
+
+            <Box h="calc(100vh - 64px)" overflowY="auto">
+              <SidebarContent onNavigate={() => setIsSidebarOpen(false)} />
+            </Box>
+          </Drawer.Content>
+        </Drawer.Positioner>
+      </Drawer.Root>
     </Flex>
   );
 }

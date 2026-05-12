@@ -4,17 +4,76 @@ import { LuHouse, LuUsers, LuActivity, LuUser } from 'react-icons/lu';
 import { useAuth } from '../context/AuthContext';
 import SigmaLogo from './logo';
 
-export default function Sidebar() {
-  const location = useLocation();
-  const { currentUser } = useAuth();
-
-  const NAV_ITEMS = [
+function getNavItems(currentUser: ReturnType<typeof useAuth>['currentUser']) {
+  return [
     { label: 'Home', path: '/main', icon: LuHouse, aliases: ['/', '/main'] },
     { label: 'Users', path: '/users', icon: LuUsers },
     { label: 'Dashboard', path: '/dashboard', icon: LuActivity },
     ...(currentUser ? [{ label: 'Profile', path: `/profile/${currentUser.id}`, icon: LuUser }] : []),
   ];
+}
 
+export function SidebarContent({ onNavigate }: { onNavigate?: () => void }) {
+  const location = useLocation();
+  const { currentUser } = useAuth();
+
+  const NAV_ITEMS = getNavItems(currentUser);
+
+  return <>
+    <Box p="clamp(16px, 2vw, 24px)" display="flex" alignItems="center" justifyContent="flex-start">
+      <Link
+        asChild
+        outline="none"
+        boxShadow="none"
+        border="none"
+        _hover={{ textDecoration: 'none', opacity: 0.8 }}
+        transition="opacity 0.2s"
+        onClick={onNavigate}
+      >
+        <RouterLink to="/main">
+          <SigmaLogo height="32px" iconColor="#a855f7" textColor="inherit" />
+        </RouterLink>
+      </Link>
+    </Box>
+
+    <VStack as="nav" gap={2} px={4} flex={1} align="stretch">
+      {NAV_ITEMS.map((item) => {
+        const isActive = location.pathname === item.path || item.aliases?.includes(location.pathname);
+        const Icon = item.icon;
+
+        return (
+          <Link
+            key={item.path}
+            asChild
+            outline="none"
+            boxShadow="none"
+            border="none"
+            _hover={{ textDecoration: 'none', bg: 'gray.100', _dark: { bg: 'rgba(168,85,247,0.08)' } }}
+            p={3}
+            borderRadius="md"
+            fontWeight="medium"
+            display="flex"
+            alignItems="center"
+            gap={3}
+            color={isActive ? "purple.500" : "gray.700"}
+            _dark={{ color: isActive ? "purple.400" : "gray.200" }}
+            borderLeft="3px solid"
+            borderColor={isActive ? "purple.500" : "transparent"}
+            bg={isActive ? "rgba(168,85,247,0.08)" : "transparent"}
+            onClick={onNavigate}
+          >
+            <RouterLink to={item.path}>
+              <Icon size={20} style={{ flexShrink: 0 }} />
+              {item.label}
+            </RouterLink>
+          </Link>
+        );
+      })}
+    </VStack>
+  </>;
+}
+
+export default function Sidebar() {
   return (
     <Flex
       w="clamp(200px, 20vw, 260px)"
@@ -28,47 +87,7 @@ export default function Sidebar() {
       top="0"
       display={{ base: "none", md: "flex" }}
     >
-      <Box p="clamp(16px, 2vw, 24px)" display="flex" alignItems="center" justifyContent="flex-start">
-        <Link asChild outline="none" boxShadow="none" border="none" _hover={{ textDecoration: 'none', opacity: 0.8 }} transition="opacity 0.2s">
-          <RouterLink to="/main">
-            <SigmaLogo height="32px" iconColor="#a855f7" textColor="inherit" />
-          </RouterLink>
-        </Link>
-      </Box>
-
-      <VStack as="nav" gap={2} px={4} flex={1} align="stretch">
-        {NAV_ITEMS.map((item) => {
-          const isActive = location.pathname === item.path || item.aliases?.includes(location.pathname);
-          const Icon = item.icon;
-
-          return (
-            <Link
-              key={item.path}
-              asChild
-              outline="none"
-              boxShadow="none"
-              border="none"
-              _hover={{ textDecoration: 'none', bg: 'gray.100', _dark: { bg: 'rgba(168,85,247,0.08)' } }}
-              p={3}
-              borderRadius="md"
-              fontWeight="medium"
-              display="flex"
-              alignItems="center"
-              gap={3}
-              color={isActive ? "purple.500" : "gray.700"}
-              _dark={{ color: isActive ? "purple.400" : "gray.200" }}
-              borderLeft="3px solid"
-              borderColor={isActive ? "purple.500" : "transparent"}
-              bg={isActive ? "rgba(168,85,247,0.08)" : "transparent"}
-            >
-              <RouterLink to={item.path}>
-                <Icon size={20} style={{ flexShrink: 0 }} />
-                {item.label}
-              </RouterLink>
-            </Link>
-          );
-        })}
-      </VStack>
+      <SidebarContent />
     </Flex>
   );
 }
